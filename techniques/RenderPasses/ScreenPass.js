@@ -4,7 +4,7 @@
  */
 GG.ScreenPass = function(spec) {
 	spec = spec || {};
-	uniforms = spec.uniforms || [];
+	var uniforms = spec.uniforms || [];
 	uniforms = uniforms.concat(['u_sourceTexture']);
 	spec.uniforms = uniforms;
 

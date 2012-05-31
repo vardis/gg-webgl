@@ -5,17 +5,17 @@
  * the x and y axis.
  */
 GG.PlaneGeometry = function(divisions) {
-	divs = divisions - 1 || 1;
+	var divs = divisions - 1 || 1;
 
-	verticesPerDim = divs+1;
+	var verticesPerDim = divs+1;
 	this.vertices = new Float32Array(verticesPerDim*verticesPerDim*3);
 	this.normals = new Float32Array(verticesPerDim*verticesPerDim*3);
 	this.texCoords = new Float32Array(verticesPerDim*verticesPerDim*2);
 	this.indices = new Uint16Array(divs*divs*6);
 
-	i = 0;
-	for (y = 0; y <= 1.0; y += 1.0/divs) {
-		for (x = 0; x <= 1.0; x += 1.0/divs) {
+	var i = 0;
+	for (var y = 0; y <= 1.0; y += 1.0/divs) {
+		for (var x = 0; x <= 1.0; x += 1.0/divs) {
 			this.vertices[3*i] = x - 0.5;
 			this.vertices[3*i + 1] = y - 0.5;
 			this.vertices[3*i + 2] = 0.0;
@@ -30,9 +30,9 @@ GG.PlaneGeometry = function(divisions) {
 	}
 
 	i = 0;
-	for (ny = 0; ny < verticesPerDim - 1; ny++) {
-		for (nx = 0; nx < verticesPerDim - 1; nx++) {
-			vi = ny*verticesPerDim + nx;
+	for (var ny = 0; ny < verticesPerDim - 1; ny++) {
+		for (var nx = 0; nx < verticesPerDim - 1; nx++) {
+			var vi = ny*verticesPerDim + nx;
 			this.indices[i] = vi;
 			this.indices[i+1] = vi + 1;
 			this.indices[i+2] = vi + verticesPerDim + 1;

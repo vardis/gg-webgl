@@ -54,11 +54,11 @@ GG.TexturedShadelessTechnique.prototype.destroy = function() {
 	gl.deleteProgram(this.program);
 };
 
-GG.TexturedShadelessTechnique.prototype.render = function(mesh, material) {
+GG.TexturedShadelessTechnique.prototype.render = function(mesh, renderContext) {
 	// this could go to the renderer
 	gl.useProgram(this.program);			
 	
-	MV = mat4.create();
+	var MV = mat4.create();
 	mat4.multiply(this.renderer.getViewMatrix(), mesh.getModelMatrix(), MV);
 	gl.uniformMatrix4fv(this.program.uniformMV, false, MV);
 	gl.uniformMatrix4fv(this.program.uniformProjection, false, this.renderer.getProjectionMatrix());

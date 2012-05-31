@@ -6,8 +6,7 @@ GG_files = [
 	'utils/AjaxUtils.js',
 	'utils/Loader.js',
 	'ShaderLib.js',
-	'utils/MathUtils.js',
-	'samples/screen_pass.js',
+	'utils/MathUtils.js',	
 	'utils/ProgramUtils.js',
 	'Light.js',
 	'geometries/Geometry.js',
@@ -21,8 +20,13 @@ GG_files = [
 	'renderables/StaticParticleSystem.js',
 	'cameras/PerspectiveCamera.js',
 	'render/RenderTarget.js',
+	'render/RenderContext.js',
 	'GLSLProgram.js',
-	'BaseMaterial.js',
+	'materials/BaseMaterial.js',
+	'materials/PhongMaterial.js',
+	'techniques/RenderPasses/RenderPass.js',
+	'techniques/RenderPasses/ScreenPass.js',
+	'techniques/RenderPasses/BlitPass.js',	
 	'techniques/BaseTechnique.js',
 	'techniques/ConstantLightingTechnique.js',
 	'techniques/TexturedShadelessTechnique.js',
@@ -30,12 +34,12 @@ GG_files = [
 	'techniques/ReflectiveTechnique.js',
 	'techniques/PhongShadingTechnique.js',
 	'techniques/particles/ParticlesTechnique.js',
-	'render/Renderer.js',
-	'techniques/RenderPass.js',
-	'techniques/ScreenPass.js',
-	'techniques/RenderPasses/BlitPass.js',
+	'techniques/shadow_mapping/ShadowMapDepthPass.js',
+	'render/Renderer.js',	
 	'interaction/MouseHandler.js',
-	'Scene.js'
+	'scene/Scene.js',
+	'scene/DefaultSceneRenderer.js',
+	'samples/screen_pass.js'
 ]
 
 def merge(files):

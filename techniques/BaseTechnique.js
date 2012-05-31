@@ -2,7 +2,7 @@ GG.BaseTechnique = function(spec) {
 	spec = spec || {};
 	
 	this.textures = spec.textures != undefined ? spec.textures : [];
-	this.renderer = spec.renderer;	
+	this.renderer = GG.renderer;	
 }
 
 GG.BaseTechnique.prototype.constructor = GG.BaseTechnique;

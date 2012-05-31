@@ -1,22 +1,23 @@
-
+var renderer;
 var cubeMesh;
 var planeMesh;
 
-var phongTE;
-var mouseHandler;
 var y_rot = 0.0;
+
+var mouseHandler;
 
 var redLight, greenLight;
 var phongMat;
 
 var highResFBO;
-var blitPass;
+
+var sceneRenderer;
 
 function tick() {
 
 	GG.clock.tick();	
 
-	GG.renderer.prepareNextFrame();	
+	renderer.prepareNextFrame();	
 	drawScene();
 
 	redLight.position[0] = 30.0*Math.cos(y_rot);
@@ -39,30 +40,13 @@ function tick() {
 	requestAnimFrame(tick);
 }
 
-var renderContext;
-
 function drawScene() {
 	highResFBO.activate();
-
-	renderContext = new GG.RenderContext();
-	renderContext.scene = new GG.Scene();
-	renderContext.scene.addLight(greenLight);
-	renderContext.camera = camera;
-	renderContext.renderTarget = highResFBO;
-
-	phongTE.render(cubeMesh, renderContext);
-
-	renderContext.scene = new GG.Scene();
-	renderContext.scene.addLight(redLight);
-	phongTE.render(planeMesh, renderContext);
-
+	sceneRenderer.render();
 	highResFBO.deactivate();
 
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-	blitPass.sourceTexture = highResFBO.getColorAttachment(0);
-	blitPass.render();
 }
 			
 function webGLStart(sampleName)  {
@@ -100,18 +84,15 @@ function webGLStart(sampleName)  {
 		camera = new GG.PerspectiveCamera();
 		camera.setPosition([0.0, 0.0, 2.8]);
 		mouseHandler.setCamera(camera);
-
-		GG.renderer = new GG.Renderer();
-
-		GG.renderer.setCamera(camera);
+		
+		renderer = new GG.Renderer();
+		renderer.setCamera(camera);
+		GG.renderer = renderer;
 
 		cubeMesh = new GG.TriangleMesh(new GG.CubeGeometry());
 		planeMesh = new GG.TriangleMesh(new GG.PlaneGeometry(16));
-		
-		phongTE = new GG.PhongShadingTechnique({ renderer : GG.renderer });
-		phongTE.initialize();
 
-		phongMat = new GG.BaseMaterial();
+		phongMat = new GG.PhongMaterial();
 		phongMat.ambient = [0.0, 0.0, 0.0, 1.0];
 		phongMat.shininess = 20.0;
 
@@ -134,6 +115,12 @@ function webGLStart(sampleName)  {
 			diffuse : [0.0, 1.0, 0.0]
 		});
 
+		testScene = new GG.Scene();
+		testScene.addObject(cubeMesh)
+			.addObject(planeMesh)
+			.addLight(redLight)
+			.addLight(greenLight);
+
 		highResFBO = new GG.RenderTarget({
 			width : 1024,
 			height : 1024,
@@ -141,7 +128,7 @@ function webGLStart(sampleName)  {
 			magFilter : gl.LINEAR
 		});
 
-		blitPass = new GG.BlitPass(highResFBO.getColorAttachment(0));
+		sceneRenderer = new GG.DefaultSceneRenderer({ scene : testScene, camera : camera });
 
 		tick();
 		

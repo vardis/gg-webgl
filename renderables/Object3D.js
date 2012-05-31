@@ -1,7 +1,9 @@
-GG.Object3D = function(spec) {	
+GG.Object3D = function(spec) {
+	spec = spec || {};	
 	this.pos = [0.0, 0.0, 0.0];
 	this.rotation = [0.0, 0.0, 0.0];
 	this.scale = [1.0, 1.0, 1.0];	
+	this.material = spec.material || null;
 }
 
 
@@ -22,4 +24,13 @@ GG.Object3D.prototype.getModelMatrix=function() {
 	mat4.rotate(model, this.rotation[2], [0, 0, 1]);
 	mat4.scale(model, this.scale);
 	return model;
+};
+
+GG.Object3D.prototype.getMaterial = function () {
+	return this.material;
+};
+
+GG.Object3D.prototype.setMaterial = function (m) {
+	this.material = m;
+	return this;
 };

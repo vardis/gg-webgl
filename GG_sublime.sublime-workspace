@@ -4,6 +4,50 @@
 		"selected_items":
 		[
 			[
+				"sc",
+				"sceneRenderer"
+			],
+			[
+				"Sc",
+				"sceneRenderer"
+			],
+			[
+				"ad",
+				"addLight"
+			],
+			[
+				"re",
+				"renderer"
+			],
+			[
+				"ren",
+				"renderable"
+			],
+			[
+				"pr",
+				"proto	Prototype"
+			],
+			[
+				"u",
+				"u_matView"
+			],
+			[
+				"v",
+				"v_viewPosition"
+			],
+			[
+				"add",
+				"addBlockFromLib"
+			],
+			[
+				"bl",
+				"blockName"
+			],
+			[
+				"de",
+				"declName"
+			],
+			[
 				"attr",
 				"attribName"
 			],
@@ -14,18 +58,6 @@
 			[
 				"p",
 				"predefined"
-			],
-			[
-				"re",
-				"render"
-			],
-			[
-				"u",
-				"u_texture"
-			],
-			[
-				"v",
-				"v_texCoords"
 			],
 			[
 				"he",
@@ -84,24 +116,12 @@
 				"uniformsDetails"
 			],
 			[
-				"sc",
-				"screenQuad"
-			],
-			[
 				"sor",
 				"sourceTexture"
 			],
 			[
-				"pr",
-				"program"
-			],
-			[
 				"is",
 				"isScreenPass"
-			],
-			[
-				"ren",
-				"renderTarget"
 			],
 			[
 				"pro",
@@ -494,27 +514,28 @@
 			[
 				"j",
 				"joinArrays"
-			],
-			[
-				"inde",
-				"indexBuffer"
-			],
-			[
-				"cre",
-				"createBuffer"
-			],
-			[
-				"s",
-				"segments"
-			],
-			[
-				"nu",
-				"numItems"
 			]
 		]
 	},
 	"buffers":
 	[
+		{
+			"file": "scene/DefaultSceneRenderer.js",
+			"settings":
+			{
+				"buffer_size": 519,
+				"line_ending": "Windows",
+				"name": "DefaultSceneRenderer"
+			}
+		},
+		{
+			"file": "scene/Scene.js",
+			"settings":
+			{
+				"buffer_size": 771,
+				"line_ending": "Windows"
+			}
+		},
 		{
 			"file": "samples/screen_pass.js",
 			"settings":
@@ -524,10 +545,35 @@
 			}
 		},
 		{
-			"file": "render/RenderTarget.js",
+			"file": "samples/scene_renderer.js",
 			"settings":
 			{
-				"buffer_size": 5788,
+				"buffer_size": 3227,
+				"line_ending": "Windows",
+				"name": "scene_renderer"
+			}
+		},
+		{
+			"file": "techniques/shadow_mapping/ShadowMapDepthPass.js",
+			"settings":
+			{
+				"buffer_size": 2078,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "build.py",
+			"settings":
+			{
+				"buffer_size": 1464,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/User/GG_webgl.sublime-build",
+			"settings":
+			{
+				"buffer_size": 80,
 				"line_ending": "Windows"
 			}
 		}
@@ -556,6 +602,27 @@
 	},
 	"file_history":
 	[
+		"/D/webgl/GG_sublime.sublime-project",
+		"/D/webgl/GG_init.js",
+		"/D/webgl/samples/Reflections.js",
+		"/D/webgl/techniques/BaseTechnique.js",
+		"/D/webgl/techniques/PhongShadingTechnique.js",
+		"/D/webgl/techniques/TexturedShadelessTechnique.js",
+		"/D/webgl/techniques/ReflectiveTechnique.js",
+		"/D/webgl/techniques/CubemapTechnique.js",
+		"/D/webgl/techniques/ConstantLightingTechnique.js",
+		"/D/webgl/techniques/shadow_mapping/ShadowMapDepthPass.js",
+		"/D/webgl/utils/ShaderBuilder.js",
+		"/D/webgl/techniques/RenderPasses/BlitPass.js",
+		"/D/webgl/ShaderLib.js",
+		"/D/webgl/GLSLProgram.js",
+		"/D/webgl/techniques/RenderPass.js",
+		"/D/webgl/utils/ProgramUtils.js",
+		"/D/webgl/build.py",
+		"/D/webgl/techniques/ScreenPass.js",
+		"/D/webgl/scene/Scene.js",
+		"/D/webgl/samples/screen_pass.js",
+		"/D/webgl/render/RenderTarget.js",
 		"/D/webgl/techniques/RenderPass.js",
 		"/D/webgl/techniques/ScreenPass.js",
 		"/D/webgl/build.py",
@@ -572,7 +639,6 @@
 		"/D/webgl/GG_all.js",
 		"/D/webgl/sample_base.js",
 		"/D/webgl/techniques/BaseTechnique.js",
-		"/D/webgl/render/RenderTarget.js",
 		"/D/webgl/render/RenderContext.js",
 		"/D/webgl/techniques/ConstantLightingTechnique.js",
 		"/D/webgl/Light.js",
@@ -628,7 +694,7 @@
 	},
 	"find_in_files":
 	{
-		"height": 93.0,
+		"height": 0.0,
 		"where_history":
 		[
 			""
@@ -706,10 +772,65 @@
 	"groups":
 	[
 		{
+			"selected": 1,
 			"sheets":
 			[
 				{
 					"buffer": 0,
+					"file": "scene/DefaultSceneRenderer.js",
+					"settings":
+					{
+						"buffer_size": 519,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								154,
+								154
+							]
+						],
+						"settings":
+						{
+							"auto_name": "DefaultSceneRenderer",
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "scene/Scene.js",
+					"settings":
+					{
+						"buffer_size": 771,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								185,
+								185
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 2,
 					"file": "samples/screen_pass.js",
 					"settings":
 					{
@@ -720,36 +841,62 @@
 						"selection":
 						[
 							[
-								859,
-								859
+								819,
+								841
 							]
 						],
 						"settings":
 						{
-							"auto_name": "",
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 641.0,
+						"translation.y": 760.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
-					"buffer": 1,
-					"file": "render/RenderTarget.js",
+					"buffer": 3,
+					"file": "samples/scene_renderer.js",
 					"settings":
 					{
-						"buffer_size": 5788,
+						"buffer_size": 3227,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1343,
-								1343
+								3145,
+								3145
+							]
+						],
+						"settings":
+						{
+							"auto_name": "scene_renderer",
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 2251.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "techniques/shadow_mapping/ShadowMapDepthPass.js",
+					"settings":
+					{
+						"buffer_size": 2078,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								389,
+								389
 							]
 						],
 						"settings":
@@ -758,7 +905,60 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 114.0,
+						"translation.y": 748.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "build.py",
+					"settings":
+					{
+						"buffer_size": 1464,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								785,
+								785
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 230.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/User/GG_webgl.sublime-build",
+					"settings":
+					{
+						"buffer_size": 80,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								80,
+								80
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JSON.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -819,6 +1019,10 @@
 		"height": 500.0,
 		"selected_items":
 		[
+			[
+				"",
+				"/D/webgl/GG_sublime.sublime-project"
+			]
 		],
 		"width": 380.0
 	},

@@ -38,6 +38,13 @@ GG.ProgramUtils = function() {
 			uniformNames.forEach(function(u) {
 				program[u] = gl.getUniformLocation(program, u);
 			});
+
+			['u_matView', 'u_matProjection', 'fTime0_X'].forEach(function(u) {
+				loc = gl.getUniformLocation(program, u);
+				if (loc != undefined) {
+					program[u] = loc;
+				}
+			});
 		},
 
 		/**
@@ -46,28 +53,74 @@ GG.ProgramUtils = function() {
 		 * be set to a float value equal to the total time elapsed since the 
 		 * application started running.
 		 */
-		injectBuiltInUniforms : function(program) {
+		injectBuiltInUniforms : function(program, renderContext) {
 			predefined = {
-				'fTime0_X' : function(p, uname) { gl.uniform1f(p[uname], GG.clock.totalRunningTime()); },
-				'u_matView' : function(p, uname) { gl.uniformMatrix4fv(p[uname], false, GG.renderer.getViewMatrix()); },
-				'u_matProjection' : function(p, uname) { gl.uniformMatrix4fv(p[uname], false, GG.renderer.getProjectionMatrix()); },
+				'fTime0_X' : function(p, uname) { gl.uniform1f(p[uname], renderContext.clock.totalRunningTime()); },
+				'u_matView' : function(p, uname) { gl.uniformMatrix4fv(p[uname], false, renderContext.camera.getViewMatrix()); },
+				'u_matProjection' : function(p, uname) { gl.uniformMatrix4fv(p[uname], false, renderContext.camera.getProjectionMatrix()); },
 
 			}
 			for ( u in predefined) {
-				predefined[u](program, u);
+				if (program[u]) {
+					predefined[u](program, u);
+				}				
 			}
 		},
 
-		injectBuiltInAttributes : function(program) {
+		getAttributeLocations : function(program, attributeNames) {
 			predefined = [
 				'a_position',
 				'a_normal',
 				'a_texCoords'
 			];
+			predefined.concat(attributeNames);
 			for (attr in GG.GLSLProgram.BuiltInAttributes) {
 				loc = gl.getAttribLocation(program, GG.GLSLProgram.BuiltInAttributes[attr]);
 				if (loc >= 0) {
 					program[attr] = loc;
+				}
+			}
+		},
+
+		setLightsUniform : function (program, viewMat, uniformName, lights) {
+			uniforms = {
+				position : ["position", 3],
+				direction : ["direction", 3],
+				diffuse : ["diffuse", 3],
+				specular : ["specular", 3],
+				attenuation : ["attenuation", 1],
+				cosCutOff : ["cosCutOff", 1]
+			}
+			for (var i = 0; i < lights.length; i++) {
+				lightIndex = lights.length > 1 ? "[" + i + "]" : "";
+				for (k in uniforms) {
+					field = uniformName + lightIndex + "." + uniforms[k][0] ;			
+					var val = lights[i][k];
+					eval("gl.uniform" + (uniforms[k][1] > 1 ? "3fv" : "1f") + "(program[field], val)");
+				}
+			}
+		},
+
+		createLightUniforms : function (program, uniformName, lights) {
+			uniforms = {
+				position : ["position", 3],
+				direction : ["direction", 3],
+				diffuse : ["diffuse", 3],
+				specular : ["specular", 3],
+				attenuation : ["attenuation", 1],
+				cosCutOff : ["cosCutOff", 1]
+			}
+			
+			for (var i = 0; i < lights.length; i++) {
+				lightIndex = lights.length > 1 ? "[" + i + "]" : "";
+				for (k in uniforms) {
+					field = uniformName + lightIndex + "." + uniforms[k][0];
+					try {
+						eval("program[field] = gl.getUniformLocation(program, field);");	
+					}catch (ex) {
+						console.log(ex)
+					}
+					
 				}
 			}
 		}

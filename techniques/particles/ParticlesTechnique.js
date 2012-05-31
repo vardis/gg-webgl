@@ -99,7 +99,7 @@ GG.ParticlesTechnique.prototype.render = function(ps) {
 	if (!program.uniformMV) {	
 		program.uniformMV = gl.getUniformLocation(program, "u_matModelView");		
 	}
-	MV = mat4.create();
+	var MV = mat4.create();
 	mat4.multiply(this.renderer.getViewMatrix(), ps.getModelMatrix(), MV);
 	gl.uniformMatrix4fv(program.uniformMV, false, MV);
 
@@ -115,10 +115,10 @@ GG.ParticlesTechnique.prototype.render = function(ps) {
 
 GG.ParticlesTechnique.prototype.getSuitableProgram = function(ps) {
 
-	vs = this.vertexShader;
-	fs = this.fragmentShader;
-	progKey = 1;
-	instr = "";
+	var vs = this.vertexShader;
+	var fs = this.fragmentShader;
+	var progKey = 1;
+	var instr = "";
 
 	if (this.texture != null) {
 		progKey += 2;
@@ -141,7 +141,7 @@ GG.ParticlesTechnique.prototype.getSuitableProgram = function(ps) {
 		fs = "#define NO_COLORS_OR_MAP\n" + fs;
 	}
 
-	prog = this.programCache[progKey];
+	var prog = this.programCache[progKey];
 	if (prog == null) {
 		prog = this.programCache[progKey] = this.createProgram(vs, fs);
 	}

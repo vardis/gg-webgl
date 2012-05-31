@@ -44,7 +44,7 @@ GG.RenderTarget = function(spec) {
 			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, spec.flipY || true);
 
 			// maps a format to the triple [internalFormat, format, type] as accepted by gl.TexImage2D
-			formatDetails = {};
+			var formatDetails = {};
 			formatDetails[gl.RGB] = [gl.RGB, gl.RGB, gl.UNSIGNED_BYTE];
 			formatDetails[gl.RGBA] = [gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE];
 			formatDetails[gl.RGBA4] = [gl.RGBA, gl.RGBA, gl.UNSIGNED_SHORT_4_4_4_4];
@@ -72,7 +72,7 @@ GG.RenderTarget = function(spec) {
 			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, this.depthAttachment, 0);
 
 		} else if (this.useDepth) {
-			buff = gl.createRenderbuffer();
+			var buff = gl.createRenderbuffer();
 			gl.bindRenderbuffer(gl.RENDERBUFFER, buff);
 			gl.renderbufferStorage(gl.RENDERBUFFER, this.depthFormat, this.width, this.height);
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);	
@@ -87,7 +87,7 @@ GG.RenderTarget = function(spec) {
 			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.STENCIL_ATTACHMENT, gl.TEXTURE_2D, this.stencilAttachment, 0);
 
 		} else if (this.useStencil) {
-			buff = gl.createRenderbuffer();
+			var buff = gl.createRenderbuffer();
 			gl.bindRenderbuffer(gl.RENDERBUFFER, buff);
 			gl.renderbufferStorage(gl.RENDERBUFFER, this.stencilFormat, this.width, this.height);
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);	

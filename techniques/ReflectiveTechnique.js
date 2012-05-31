@@ -107,11 +107,11 @@ GG.ReflectiveTechnique.prototype.initialize = function() {
 	this.program.uniformFresnelParams = gl.getUniformLocation(this.program, "u_fresnelParams");
 };
 
-GG.ReflectiveTechnique.prototype.render = function(mesh, material) {
+GG.ReflectiveTechnique.prototype.render = function(mesh, renderContext) {
 	// this could go to the renderer
 	gl.useProgram(this.program);				
 	
-	MV = mat4.create();
+	var MV = mat4.create();
 	mat4.multiply(this.renderer.getViewMatrix(), mesh.getModelMatrix(), MV);
 	gl.uniformMatrix4fv(this.program.uniformMV, false, MV);
 	gl.uniformMatrix4fv(this.program.uniformProjection, false, this.renderer.getProjectionMatrix());

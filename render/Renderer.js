@@ -34,8 +34,8 @@ GG.Renderer.prototype.getViewProjectionMatrix = function () {
 };
 
 GG.Renderer.prototype.prepareNextFrame = function () {	
-	this.persp = this.camera.getPerspectiveMatrix();
-	this.view = this.camera.getViewingMatrix();
+	this.persp = this.camera.getProjectionMatrix();
+	this.view = this.camera.getViewMatrix();
 	mat4.inverse(this.view, this.inverseView);
 	return this;
 };

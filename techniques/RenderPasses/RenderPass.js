@@ -7,8 +7,12 @@
  * spec.sourceTexture : a texture object to bind as source before rendering
  * spec.vertexShader : the vertex shader code
  * spec.fragmentShader : the fragment shader code
- * spec.uniforms : a map containing the uniform names as keys and the uniform
- * values as the corresponding values.
+ * spec.uniforms : a list containing the uniform names.
+ * spec.attributeNames : a list containing the attribute names.
+ * spec.renderableType : a constant that defines the type of renderable that
+ * this pass expects. If it is set to undefined or null, then the __renderGeometry
+ * method will be called to do the actual rendering. Otherwise, RenderPass will
+ * take care of calling the appropriate render method for this renderable type.
  * 
  * The class is extensible by providing implementations for the following member
  * methods:
@@ -20,56 +24,58 @@
  * attributes
  *
  * RenderPass.__renderGeometry : overridde this method to render the renderable
- * object. The default implementation performs no rendering.
+ * object. The default implementation performs no rendering. Not necessary if you
+ * provide a renderableType in the input specifications.
  */
 GG.RenderPass = function (spec) {
 	spec = spec || {}	
 	this.vertexShader = spec.vertexShader || null;
 	this.fragmentShader = spec.fragmentShader || null;
-
+	this.renderableType = spec.renderableType || GG.RenderPass.MESH;
+	this.callback = spec.callback || this;
 	this.uniforms = spec.uniforms || [];
+	this.attributeNames = spec.attributeNames || [];
 	this.program = null;
-}
+};
+
+GG.RenderPass.MESH = 1;
 
 GG.RenderPass.prototype.initialize = function() {
 	// create the gpu program if it is not linked already
 	this.program = GG.ProgramUtils.createProgram(this.vertexShader, this.fragmentShader);
 	GG.ProgramUtils.getUniformsLocations(this.program, this.uniforms);
+	GG.ProgramUtils.getAttributeLocations(this.program, this.attributeNames);
 };
 
-GG.RenderPass.prototype.render = function(renderable, targetFBO) {
+GG.RenderPass.prototype.render = function(renderable, renderContext) {
 	if (this.program == null) {
 		this.initialize();
 	}
 
 	gl.useProgram(this.program);
-	if (targetFBO) {
-		targetFBO.activate();
-	}
-
-	GG.ProgramUtils.injectBuiltInAttributes(this.program);
 
 	// this should be overridden in each subclass
-	this.__setCustomAttributes();	
+	this.callback.__setCustomAttributes(renderable, renderContext, this.program);	
 
 	// scans the passed uniforms and sets a value if any of those belong to the built-in list
-	GG.ProgramUtils.injectBuiltInUniforms(this.program, this.uniforms);
+	GG.ProgramUtils.injectBuiltInUniforms(this.program, renderContext);
 
 	// this should be overridden in each subclass
-	this.__setCustomUniforms();	
+	this.callback.__setCustomUniforms(renderable, renderContext, this.program);	
 
-	this.__renderGeometry(renderable);
-	
-	if (targetFBO) {
-		targetFBO.deactivate();
+	if (renderable && this.renderableType == GG.RenderPass.MESH) {
+		renderContext.renderer.renderMesh(renderable, this.program);
+	} else {
+		this.callback.__renderGeometry(renderable);
 	}
+	
 	gl.useProgram(null);
 };
 
 // no-op default implementations
-GG.RenderPass.prototype.__setCustomUniforms = function() {};
-GG.RenderPass.prototype.__setCustomAttributes = function() {};
-GG.RenderPass.prototype.__renderGeometry = function(renderable) {};
+GG.RenderPass.prototype.__setCustomUniforms = function(renderable, renderContext) {};
+GG.RenderPass.prototype.__setCustomAttributes = function(renderable, renderContext) {};
+GG.RenderPass.prototype.__renderGeometry = function(renderable, renderContext) {};
 
 /*
 pass = new RenderPass({

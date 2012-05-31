@@ -17,7 +17,7 @@ GG.Loader = {
 	loadImages : function(urls, callback) {
 		var loaded = 0;
 		var images = [];
-		for ( i = 0; i < urls.length; i++) {
+		for (var i = 0; i < urls.length; i++) {
 			GG.Loader.loadImage("dummy", urls[i], new function(index) {
 				return function(req, img) {
 					loaded++;

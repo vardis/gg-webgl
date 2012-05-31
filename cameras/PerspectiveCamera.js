@@ -9,25 +9,25 @@ GG.PerspectiveCamera = function() {
 	this.far = 100.0;
 	this.aspectRatio = 1.33;
 
-	this.viewingMatrix = mat4.create();
+	this.viewMatrix = mat4.create();
 	this.projectionMatix = mat4.create();	
 }
 
 GG.PerspectiveCamera.prototype.constructor = GG.PerspectiveCamera;
 
-GG.PerspectiveCamera.prototype.getPerspectiveMatrix = function() {
+GG.PerspectiveCamera.prototype.getProjectionMatrix = function() {
 	mat4.perspective(this.fov, this.aspectRatio, this.near, this.far, this.projectionMatix);
 	return this.projectionMatix;
 };
 
-GG.PerspectiveCamera.prototype.getViewingMatrix = function() {
-	mat4.identity(this.viewingMatrix); 	 
-	mat4.rotate(this.viewingMatrix, GG.MathUtils.degToRads(this.rotation[0]), [1, 0, 0]);
-	mat4.rotate(this.viewingMatrix, GG.MathUtils.degToRads(this.rotation[1]), [0, 1, 0]); 	
-	mat4.translate(this.viewingMatrix, [-this.position[0], -this.position[1], -this.position[2]]);
+GG.PerspectiveCamera.prototype.getViewMatrix = function() {
+	mat4.identity(this.viewMatrix); 	 
+	mat4.rotate(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[0]), [1, 0, 0]);
+	mat4.rotate(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[1]), [0, 1, 0]); 	
+	mat4.translate(this.viewMatrix, [-this.position[0], -this.position[1], -this.position[2]]);
 	
-	//mat4.lookAt(this.position, this.lookAt, this.up, this.viewingMatrix);
-	return this.viewingMatrix;
+	//mat4.lookAt(this.position, this.lookAt, this.up, this.viewMatrix);
+	return this.viewMatrix;
 };
 
 GG.PerspectiveCamera.prototype.getPosition = function() {

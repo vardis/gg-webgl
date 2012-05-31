@@ -36,7 +36,7 @@ GG.TextureCubemap = function(spec) {
 GG.TextureCubemap.prototype.constructor = GG.TextureCubemap;
 
 GG.TextureCubemap.prototype.loadTextures = function(spec) {
-	for (i = 0; i < this.faces.length; i++) {
+	for (var i = 0; i < this.faces.length; i++) {
 		var that = this;
 		var f = this.faces[i];
 		var img = new Image();
@@ -52,7 +52,7 @@ GG.TextureCubemap.prototype.loadTextures = function(spec) {
 };
 
 GG.TextureCubemap.prototype.loadHDRTextures = function(spec) {
-	for (i = 0; i < this.faces.length; i++) {
+	for (var i = 0; i < this.faces.length; i++) {
 		var that = this;
 		var f = this.faces[i];
 		this.images[f] = null;
