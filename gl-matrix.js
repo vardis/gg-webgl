@@ -1317,7 +1317,7 @@ mat4.frustum = function (left, right, bottom, top, near, far, dest) {
  * Generates a perspective projection matrix with the given bounds
  *
  * @param {number} fovy Vertical field of view
- * @param {number} aspect Aspect ratio. typically viewport width/height
+ * @param {number} aspect Aspect ratio. typically viewport width/heigh
  * @param {number} near Near bound of the frustum
  * @param {number} far Far bound of the frustum
  * @param {mat4} [dest] mat4 frustum matrix will be written into

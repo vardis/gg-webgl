@@ -3,9 +3,9 @@ GG.BaseMaterial = function(spec) {
 	
 	this.technique = spec.technique;
 
-	this.ambient = spec.ambient || [0.1, 0.1, 0.1, 1.0];
-	this.diffuse = spec.diffuse || [1.0, 1.0, 1.0, 1.0];
-	this.specular = spec.specular || [1.0, 1.0, 1.0, 1.0];
+	this.ambient = spec.ambient || [0.1, 0.1, 0.1];
+	this.diffuse = spec.diffuse || [1.0, 1.0, 1.0];
+	this.specular = spec.specular || [1.0, 1.0, 1.0];
 	this.shininess = spec.shininess || 10.0;
 
 	this.diffuseMap = null;

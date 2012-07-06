@@ -4,88 +4,268 @@
 		"selected_items":
 		[
 			[
-				"sc",
-				"sceneRenderer"
+				"shad",
+				"shadowCamera"
 			],
 			[
-				"Sc",
-				"sceneRenderer"
+				"sh",
+				"shadowCamera"
 			],
 			[
-				"ad",
-				"addLight"
+				"set",
+				"setPosition"
 			],
 			[
-				"re",
-				"renderer"
+				"add",
+				"addObject"
+			],
+			[
+				"dep",
+				"depthOffset"
+			],
+			[
+				"ro",
+				"rotX"
+			],
+			[
+				"u_li",
+				"u_lightSpaceDepthRange"
+			],
+			[
+				"pro",
+				"program"
+			],
+			[
+				"pr",
+				"projectionMatix"
+			],
+			[
+				"c",
+				"cameras"
+			],
+			[
+				"l",
+				"left"
+			],
+			[
+				"lo",
+				"lookAt"
+			],
+			[
+				"LT",
+				"LT_POINT"
+			],
+			[
+				"li",
+				"lightType"
+			],
+			[
+				"cle",
+				"clearDepth"
+			],
+			[
+				"clear",
+				"clearColor"
+			],
+			[
+				"di",
+				"direction"
+			],
+			[
+				"u",
+				"u_matModel"
 			],
 			[
 				"ren",
 				"renderable"
 			],
 			[
-				"pr",
-				"proto	Prototype"
+				"pc",
+				"pcfSize"
 			],
 			[
-				"u",
-				"u_matView"
+				"de",
+				"delegate"
+			],
+			[
+				"sha",
+				"shadowType"
+			],
+			[
+				"fun",
+				"fun	Function"
+			],
+			[
+				"num",
+				"numAttributes"
+			],
+			[
+				"ini",
+				"initializeUniforms"
+			],
+			[
+				"per",
+				"perDirectionalLightBlock"
+			],
+			[
+				"pe",
+				"perPointLightBlock"
+			],
+			[
+				"poi",
+				"pointLightBlocks"
+			],
+			[
+				"fr",
+				"fragmentShader"
+			],
+			[
+				"ve",
+				"vertexShader"
 			],
 			[
 				"v",
-				"v_viewPosition"
+				"vertexShader"
 			],
 			[
-				"add",
-				"addBlockFromLib"
+				"us",
+				"usesSceneLighting"
+			],
+			[
+				"has",
+				"hash"
+			],
+			[
+				"sce",
+				"scene"
+			],
+			[
+				"sc",
+				"scene"
+			],
+			[
+				"to",
+				"toString"
+			],
+			[
+				"ada",
+				"adaptProgramToScene"
+			],
+			[
+				"r",
+				"return"
+			],
+			[
+				"p",
+				"program"
+			],
+			[
+				"fo",
+				"forEach"
+			],
+			[
+				"__",
+				"__setCustomAttributes"
+			],
+			[
+				"uni",
+				"uniformName"
+			],
+			[
+				"un",
+				"uniformName"
+			],
+			[
+				"gl",
+				"glsl"
+			],
+			[
+				"type",
+				"typeDeclarations"
+			],
+			[
+				"for",
+				"for	for (…) {…}"
+			],
+			[
+				"tp",
+				"typeDeclarations"
+			],
+			[
+				"at",
+				"attr"
+			],
+			[
+				"attr",
+				"attributes"
+			],
+			[
+				"att",
+				"attribute"
+			],
+			[
+				"ty",
+				"typeDeclarations"
+			],
+			[
+				"u_",
+				"u_pointLights"
+			],
+			[
+				"Program",
+				"ProgramUtils"
+			],
+			[
+				"blo",
+				"block"
+			],
+			[
+				"ma",
+				"mainBlocks"
+			],
+			[
+				"ad",
+				"addMainBlock"
+			],
+			[
+				"u_ma",
+				"u_matView"
+			],
+			[
+				"ctx",
+				"renderContext"
+			],
+			[
+				"re",
+				"renderContext"
+			],
+			[
+				"rend",
+				"renderer"
+			],
+			[
+				"mat",
+				"material"
+			],
+			[
+				"Sc",
+				"sceneRenderer"
 			],
 			[
 				"bl",
 				"blockName"
 			],
 			[
-				"de",
-				"declName"
-			],
-			[
-				"attr",
-				"attribName"
-			],
-			[
-				"att",
-				"attr"
-			],
-			[
-				"p",
-				"predefined"
-			],
-			[
 				"he",
 				"highResFBO"
-			],
-			[
-				"us",
-				"useDepth"
 			],
 			[
 				"render",
 				"renderTarget"
 			],
 			[
-				"rend",
-				"renderable"
-			],
-			[
 				"Re",
 				"RenderPass"
-			],
-			[
-				"ve",
-				"verticesPerDim"
-			],
-			[
-				"di",
-				"divs"
 			],
 			[
 				"red",
@@ -94,10 +274,6 @@
 			[
 				"lig",
 				"lightIndex"
-			],
-			[
-				"fr",
-				"fragmentPointLight"
 			],
 			[
 				"SPE",
@@ -112,20 +288,12 @@
 				"lightInfo"
 			],
 			[
-				"un",
-				"uniformsDetails"
-			],
-			[
 				"sor",
 				"sourceTexture"
 			],
 			[
 				"is",
 				"isScreenPass"
-			],
-			[
-				"pro",
-				"program"
 			],
 			[
 				"setS",
@@ -136,24 +304,12 @@
 				"upscaledFBO"
 			],
 			[
-				"sce",
-				"sceneCopyFBO"
-			],
-			[
 				"dire",
 				"directionalLights"
 			],
 			[
 				"po",
 				"pointLights"
-			],
-			[
-				"__",
-				"__createLightUniforms"
-			],
-			[
-				"LT",
-				"LT_SPOT"
 			],
 			[
 				"vi",
@@ -174,10 +330,6 @@
 			[
 				"v_",
 				"v_viewVector"
-			],
-			[
-				"num",
-				"numPointLights"
 			],
 			[
 				"light",
@@ -212,14 +364,6 @@
 				"greenLight"
 			],
 			[
-				"gl",
-				"gl_FragColor"
-			],
-			[
-				"uni",
-				"uniformLightPos"
-			],
-			[
 				"pho",
 				"phongMat"
 			],
@@ -244,28 +388,12 @@
 				"u_lightSpecular"
 			],
 			[
-				"u_li",
-				"u_lightDiffuse"
-			],
-			[
 				"u_m",
 				"u_matDiffuse"
 			],
 			[
-				"u_ma",
-				"u_matNormals"
-			],
-			[
 				"spec",
 				"specular"
-			],
-			[
-				"for",
-				"forEach"
-			],
-			[
-				"li",
-				"lights"
 			],
 			[
 				"obj",
@@ -304,16 +432,8 @@
 				"attribColor"
 			],
 			[
-				"u_",
-				"u_pointSize"
-			],
-			[
 				"get",
 				"getUniformLocation"
-			],
-			[
-				"ini",
-				"initialized"
 			],
 			[
 				"initi",
@@ -356,10 +476,6 @@
 				"a_position"
 			],
 			[
-				"at",
-				"attenuation"
-			],
-			[
 				"item",
 				"itemSize"
 			],
@@ -370,10 +486,6 @@
 			[
 				"cube",
 				"cubeMesh"
-			],
-			[
-				"lo",
-				"loaded"
 			],
 			[
 				"L",
@@ -402,145 +514,32 @@
 			[
 				"g",
 				"getTime"
-			],
-			[
-				"start",
-				"startTime"
-			],
-			[
-				"las",
-				"lastDelta"
-			],
-			[
-				"last",
-				"lastTick"
-			],
-			[
-				"fun",
-				"function"
-			],
-			[
-				"ro",
-				"rotY"
-			],
-			[
-				"rot",
-				"rotX"
-			],
-			[
-				"ca",
-				"camera"
-			],
-			[
-				"prot",
-				"prototype"
-			],
-			[
-				"pos",
-				"position"
-			],
-			[
-				"c",
-				"create"
-			],
-			[
-				"Cu",
-				"cubemapTechnique"
-			],
-			[
-				"cu",
-				"cubemapTexture"
-			],
-			[
-				"bind",
-				"bindTexture"
-			],
-			[
-				"TEXTU",
-				"TEXTURE_2D"
-			],
-			[
-				"tex",
-				"texturedTechnique"
-			],
-			[
-				"color",
-				"colorAttachments"
-			],
-			[
-				"te",
-				"texturedTechnique"
-			],
-			[
-				"sten",
-				"stencilFormat"
-			],
-			[
-				"dep",
-				"depthAttachment"
-			],
-			[
-				"ste",
-				"stencilAttachment"
-			],
-			[
-				"dept",
-				"depthAttachment"
-			],
-			[
-				"col",
-				"colorAttachments"
-			],
-			[
-				"co",
-				"colorFormat"
-			],
-			[
-				"fl",
-				"flipY"
-			],
-			[
-				"R",
-				"RGB565"
-			],
-			[
-				"RGB",
-				"RGBA4"
-			],
-			[
-				"getIn",
-				"getIndexBuffer"
-			],
-			[
-				"j",
-				"joinArrays"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "scene/DefaultSceneRenderer.js",
+			"file": "techniques/shadow_mapping/ShadowMapSimple.js",
 			"settings":
 			{
-				"buffer_size": 519,
-				"line_ending": "Windows",
-				"name": "DefaultSceneRenderer"
-			}
-		},
-		{
-			"file": "scene/Scene.js",
-			"settings":
-			{
-				"buffer_size": 771,
+				"buffer_size": 2083,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "samples/screen_pass.js",
+			"file": "techniques/shadow_mapping/ShadowMapTechnique.js",
 			"settings":
 			{
-				"buffer_size": 3242,
+				"buffer_size": 3059,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "techniques/shadow_mapping/ShadowMapDepthPass.js",
+			"settings":
+			{
+				"buffer_size": 2300,
 				"line_ending": "Windows"
 			}
 		},
@@ -548,32 +547,63 @@
 			"file": "samples/scene_renderer.js",
 			"settings":
 			{
-				"buffer_size": 3227,
-				"line_ending": "Windows",
-				"name": "scene_renderer"
-			}
-		},
-		{
-			"file": "techniques/shadow_mapping/ShadowMapDepthPass.js",
-			"settings":
-			{
-				"buffer_size": 2078,
+				"buffer_size": 3821,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "build.py",
+			"file": "Light.js",
 			"settings":
 			{
-				"buffer_size": 1464,
+				"buffer_size": 1066,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/User/GG_webgl.sublime-build",
+			"file": "render/RenderTarget.js",
 			"settings":
 			{
-				"buffer_size": 80,
+				"buffer_size": 6039,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "scene/DefaultSceneRenderer.js",
+			"settings":
+			{
+				"buffer_size": 3828,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "techniques/RenderPasses/RenderPass.js",
+			"settings":
+			{
+				"buffer_size": 4722,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "techniques/PhongShadingTechnique.js",
+			"settings":
+			{
+				"buffer_size": 3351,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "utils/ProgramUtils.js",
+			"settings":
+			{
+				"buffer_size": 4932,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "renderables/Object3D.js",
+			"settings":
+			{
+				"buffer_size": 1108,
 				"line_ending": "Windows"
 			}
 		}
@@ -602,6 +632,61 @@
 	},
 	"file_history":
 	[
+		"/D/webgl/gg-webgl/ShaderLib.js",
+		"/D/webgl/gg-webgl/gl-matrix.js",
+		"/D/webgl/gg-webgl/Light.js",
+		"/D/webgl/gg-webgl/samples/screen_pass.js",
+		"/D/webgl/gg-webgl/cameras/OrthographicCamera.js",
+		"/D/webgl/gg-webgl/scene/DefaultSceneRenderer.js",
+		"/D/webgl/gg-webgl/cameras/BaseCamera.js",
+		"/D/webgl/gg-webgl/interaction/MouseHandler.js",
+		"/D/webgl/gg-webgl/cameras/PerspectiveCamera.js",
+		"/D/webgl/gg-webgl/renderables/Object3D.js",
+		"/D/webgl/gg-webgl/scene/Scene.js",
+		"/D/webgl/gg-webgl/build.py",
+		"/D/webgl/gg-webgl/techniques/PhongShadingTechnique.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/RenderPass.js",
+		"/D/webgl/gg-webgl/utils/ProgramUtils.js",
+		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapSimple.js",
+		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapTechnique.js",
+		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapDepthPass.js",
+		"/D/webgl/gg-webgl/samples/scene_renderer.js",
+		"/D/webgl/gg-webgl/render/RenderTarget.js",
+		"/D/webgl/gg-webgl/ProgramSource.js",
+		"/D/webgl/gg-webgl/GLSLProgram.js",
+		"/D/webgl/gg-webgl/techniques/TexturedShadelessTechnique.js",
+		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapPCF.js",
+		"/D/webgl/gg-webgl/GG_init.js",
+		"/D/webgl/gg-webgl/samples/Reflections.js",
+		"/D/webgl/gg-webgl/techniques/BaseTechnique.js",
+		"/D/webgl/gg-webgl/render/Renderer.js",
+		"/D/webgl/gg-webgl/utils/ShaderBuilder.js",
+		"/D/webgl/gg-webgl/GG_all.js",
+		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/User/Preferences.sublime-settings",
+		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/Default/Preferences.sublime-settings",
+		"/D/webgl/gg-webgl/materials/BaseMaterial.js",
+		"/D/webgl/gg-webgl/render/RenderContext.js",
+		"/D/webgl/gg-webgl/geometries/SphereGeometry.js",
+		"/D/webgl/gg-webgl/textures/TextureCubemap.js",
+		"/D/webgl/gg-webgl/Clock.js",
+		"/D/webgl/gg-webgl/utils/AjaxUtils.js",
+		"/D/webgl/gg-webgl/utils/MathUtils.js",
+		"/D/webgl/gg-webgl/utils/Loader.js",
+		"/D/webgl/gg-webgl/geometries/ScreenAlignedQuad.js",
+		"/D/webgl/gg-webgl/geometries/PlaneGeometry.js",
+		"/D/webgl/gg-webgl/geometries/Geometry.js",
+		"/D/webgl/gg-webgl/geometries/CubeGeometry.js",
+		"/D/webgl/gg-webgl/materials/PhongMaterial.js",
+		"/D/webgl/gg-webgl/techniques/particles/ParticlesTechnique.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/ScreenPass.js",
+		"/D/webgl/gg-webgl/techniques/ConstantLightingTechnique.js",
+		"/D/webgl/gg-webgl/techniques/CubemapTechnique.js",
+		"/D/webgl/gg-webgl/techniques/ReflectiveTechnique.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/BlitPass.js",
+		"/D/webgl/gg-webgl/BaseMaterial.js",
+		"/D/webgl/gg-webgl/renderables/StaticParticleSystem.js",
+		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/User/GG_webgl.sublime-build",
+		"/D/webgl/gg-webgl/renderables/TriangleMesh.js",
 		"/D/webgl/GG_sublime.sublime-project",
 		"/D/webgl/GG_init.js",
 		"/D/webgl/samples/Reflections.js",
@@ -674,19 +759,7 @@
 		"/D/webgl/MathUtils.js",
 		"/D/webgl/Renderer.js",
 		"/C/Users/Giorgos/Downloads/base.js",
-		"/D/webgl/notes.txt",
-		"/D/webgl/RenderTarget.js",
-		"/D/webgl/TexturedShadelessTechnique.js",
-		"/D/webgl/ConstantLightingTechnique.js",
-		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/User/GG_webgl.sublime-build",
-		"/D/webgl/TriangleMesh.js",
-		"/D/webgl/BaseTechnique.js",
-		"/D/webgl/SphereGeometry.js",
-		"/D/webgl/all.js",
-		"/D/webgl/Object3D.js",
-		"/D/webgl/CubeGeometry.js",
-		"/C/Users/Giorgos/AppData/Local/Temp/7zE9DE4.tmp/tonemap.cg",
-		"/C/Users/Giorgos/AppData/Local/Temp/7zEB79C.tmp/tonemap.cg"
+		"/D/webgl/notes.txt"
 	],
 	"find":
 	{
@@ -697,6 +770,7 @@
 		"height": 0.0,
 		"where_history":
 		[
+			"*.js",
 			""
 		]
 	},
@@ -705,6 +779,26 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"u_matModel",
+			"mat3.mul",
+			"mat3.m",
+			"mat3.rot",
+			"mat4.frus",
+			"addPostShadingBlock",
+			"precision(",
+			"__setCustomUniforms",
+			"getUniformsLocations",
+			"BuiltInAttributes",
+			"trackedObject ",
+			"8",
+			"createLightUniforms",
+			"u_matNormal",
+			"BuiltInUniforms",
+			"getPerspectiveMatrix",
+			"__setCustomAttributes",
+			"injectBuiltInAttributes",
+			"getViewingMatrix",
+			"activate(",
 			"forEach",
 			"gl.useProgram",
 			"i,",
@@ -777,45 +871,45 @@
 			[
 				{
 					"buffer": 0,
-					"file": "scene/DefaultSceneRenderer.js",
+					"file": "techniques/shadow_mapping/ShadowMapSimple.js",
 					"settings":
 					{
-						"buffer_size": 519,
+						"buffer_size": 2083,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								154,
-								154
+								1288,
+								1288
 							]
 						],
 						"settings":
 						{
-							"auto_name": "DefaultSceneRenderer",
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 224.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 1,
-					"file": "scene/Scene.js",
+					"file": "techniques/shadow_mapping/ShadowMapTechnique.js",
 					"settings":
 					{
-						"buffer_size": 771,
+						"buffer_size": 3059,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								185,
-								185
+								1739,
+								1739
 							]
 						],
 						"settings":
@@ -824,25 +918,25 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 434.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 2,
-					"file": "samples/screen_pass.js",
+					"file": "techniques/shadow_mapping/ShadowMapDepthPass.js",
 					"settings":
 					{
-						"buffer_size": 3242,
+						"buffer_size": 2300,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								819,
-								841
+								695,
+								695
 							]
 						],
 						"settings":
@@ -851,7 +945,7 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 760.0,
+						"translation.y": 224.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -861,42 +955,15 @@
 					"file": "samples/scene_renderer.js",
 					"settings":
 					{
-						"buffer_size": 3227,
+						"buffer_size": 3821,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								3145,
-								3145
-							]
-						],
-						"settings":
-						{
-							"auto_name": "scene_renderer",
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 2251.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 4,
-					"file": "techniques/shadow_mapping/ShadowMapDepthPass.js",
-					"settings":
-					{
-						"buffer_size": 2078,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								389,
-								389
+								3034,
+								3034
 							]
 						],
 						"settings":
@@ -905,57 +972,193 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 748.0,
+						"translation.y": 1316.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "Light.js",
+					"settings":
+					{
+						"buffer_size": 1066,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								668,
+								668
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 5,
-					"file": "build.py",
+					"file": "render/RenderTarget.js",
 					"settings":
 					{
-						"buffer_size": 1464,
+						"buffer_size": 6039,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								785,
-								785
+								0,
+								0
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/Python/Python.tmLanguage",
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 230.0,
+						"translation.y": 1302.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 6,
-					"file": "/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/User/GG_webgl.sublime-build",
+					"file": "scene/DefaultSceneRenderer.js",
 					"settings":
 					{
-						"buffer_size": 80,
+						"buffer_size": 3828,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								80,
-								80
+								3391,
+								3391
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/JavaScript/JSON.tmLanguage"
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 532.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "techniques/RenderPasses/RenderPass.js",
+					"settings":
+					{
+						"buffer_size": 4722,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2318,
+								2318
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 756.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 8,
+					"file": "techniques/PhongShadingTechnique.js",
+					"settings":
+					{
+						"buffer_size": 3351,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1248,
+								1248
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 210.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 9,
+					"file": "utils/ProgramUtils.js",
+					"settings":
+					{
+						"buffer_size": 4932,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2599,
+								2599
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 546.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 10,
+					"file": "renderables/Object3D.js",
+					"settings":
+					{
+						"buffer_size": 1108,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								605,
+								605
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -997,10 +1200,6 @@
 		]
 	},
 	"menu_visible": true,
-	"output.exec":
-	{
-		"height": 130.0
-	},
 	"replace":
 	{
 		"height": 62.0
@@ -1011,6 +1210,50 @@
 		"height": 0.0,
 		"selected_items":
 		[
+			[
+				"sh",
+				"ShaderLib.js"
+			],
+			[
+				"rendp",
+				"techniques/RenderPasses/RenderPass.js"
+			],
+			[
+				"d",
+				"scene/DefaultSceneRenderer.js"
+			],
+			[
+				"ren",
+				"render/RenderTarget.js"
+			],
+			[
+				"mou",
+				"interaction/MouseHandler.js"
+			],
+			[
+				"def",
+				"scene/DefaultSceneRenderer.js"
+			],
+			[
+				"ortho",
+				"cameras/OrthographicCamera.js"
+			],
+			[
+				"base",
+				"cameras/BaseCamera.js"
+			],
+			[
+				"pro",
+				"utils/ProgramUtils.js"
+			],
+			[
+				"lig",
+				"Light.js"
+			],
+			[
+				"gl",
+				"GLSLProgram.js"
+			]
 		],
 		"width": 0.0
 	},

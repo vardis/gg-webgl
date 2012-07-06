@@ -72,6 +72,7 @@ function webGLStart(sampleName)  {
 		gl = canvas.getContext("experimental-webgl");
 		GG.context = gl;
 		GG.canvas = canvas;
+		GG.init();
 		GG.clock = new GG.Clock();
 		
 		/**
@@ -112,7 +113,7 @@ function webGLStart(sampleName)  {
 		phongTE.initialize();
 
 		phongMat = new GG.BaseMaterial();
-		phongMat.ambient = [0.0, 0.0, 0.0, 1.0];
+		phongMat.ambient = [0.0, 0.0, 0.0];
 		phongMat.shininess = 20.0;
 
 		cubeMesh.material = phongMat;

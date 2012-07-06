@@ -30,6 +30,9 @@ GG.RenderTarget = function(spec) {
 	this.useDepth = spec.useDepth || true;
 	this.useStencil = spec.useStencil || false;
 
+	this.clearColor = spec.clearColor || [0.0, 0.0, 0.0, 1.0];
+	this.clearDepth = spec.clearDepth || 1.0;
+
 	this.fbo = gl.createFramebuffer();
 	try {
 	    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
@@ -38,7 +41,7 @@ GG.RenderTarget = function(spec) {
 		if (this.useColor && spec.colorAttachment0 != undefined) {
 			this.colorAttachments.push(spec.colorAttachment0);
 		} else if (this.useColor) {
-			tex = gl.createTexture();
+			var tex = gl.createTexture();
 			gl.bindTexture(gl.TEXTURE_2D, tex);
 
 			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, spec.flipY || true);
@@ -115,10 +118,12 @@ GG.RenderTarget.prototype.activate = function() {
 		gl.drawBuffer(gl.NONE);
     	gl.colorMask(false, false, false, false);
 	} else {
+		gl.clearColor(this.clearColor[0], this.clearColor[1], this.clearColor[2], this.clearColor[3]);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 	}
 
 	if (this.useDepth) {
+		gl.clearDepth(this.clearDepth);
 		gl.clear(gl.DEPTH_BUFFER_BIT);
 	}	
 

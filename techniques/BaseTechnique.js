@@ -3,6 +3,7 @@ GG.BaseTechnique = function(spec) {
 	
 	this.textures = spec.textures != undefined ? spec.textures : [];
 	this.renderer = GG.renderer;	
+	this.passes = spec.passes || [];
 }
 
 GG.BaseTechnique.prototype.constructor = GG.BaseTechnique;
@@ -20,6 +21,16 @@ GG.BaseTechnique.prototype.initialize = function() {
 
 GG.BaseTechnique.prototype.destroy = function() {
 
+};
+
+GG.BaseTechnique.prototype.renderPasses = function() {
+	return [].concat(this.passes);
+};
+
+GG.BaseTechnique.prototype.render = function(mesh, ctx) {	
+	this.passes.forEach(function(pass) {
+		pass.render(mesh, ctx);
+	});
 };
 
 GG.BaseTechnique.prototype.createProgram = function(vs, fs) {

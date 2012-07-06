@@ -2,6 +2,7 @@ GG.ShadowMapDepthPass = function (spec) {
 
 	spec = spec || {};
 	this.vsmMode = spec.vsmMode || false;
+	this.camera = spec.camera || null;
 	this.nearPlaneDist = spec.nearPlaneDist || 1.0;
 	this.farPlaneDist = spec.farPlaneDist || 100.0;
 
@@ -9,17 +10,17 @@ GG.ShadowMapDepthPass = function (spec) {
 			"attribute vec4 a_position;",
 			"varying vec4 v_viewPosition;",
 			"uniform mat4 u_matModel;",
-			"uniform mat4 u_matView;",
-			"uniform mat4 u_matProjection;",
+			"uniform mat4 u_matLightView;",
+			"uniform mat4 u_matLightProjection;",
 
 			"void main() {",
-			"	v_viewPosition = u_matView * u_matModel * a_position;",
-			"	gl_Position = u_matProjection * v_viewPosition;",
+			"	v_viewPosition = u_matLightView * u_matModel * a_position;",
+			"	gl_Position = u_matLightProjection * v_viewPosition;",
 			"}"
 		].join('\n');
 
 	spec.fragmentShader = [
-			"precision mediump float;",
+			"precision highp float;",
 			"varying vec4 v_viewPosition;",
 
 			// this is 1.0 / (far_plane_dist - near_plane_dist)
@@ -45,7 +46,6 @@ GG.ShadowMapDepthPass = function (spec) {
 
 		].join('\n');
 
-	spec.uniforms = ['u_matModel', 'u_invertedDepthRange', 'u_useVSM'];
 	spec.renderableType = GG.RenderPass.MESH;
 	
 	GG.RenderPass.call(this, spec);
@@ -55,11 +55,20 @@ GG.ShadowMapDepthPass.prototype = new GG.RenderPass();
 
 GG.ShadowMapDepthPass.prototype.constructor = GG.ShadowMapDepthPass;
 
+GG.ShadowMapDepthPass.prototype.setCamera = function(camera) {
+	this.camera = camera;
+};
+
 GG.ShadowMapDepthPass.prototype.__setCustomUniforms = function (renderable) {
-	gl.uniformMatrix4fv(this.program.u_matModel, false, renderable.getModelMatrix());
-	var invertedRange = 1.0 / (this.farPlaneDist - this.nearPlaneDist);
-	gl.uniform1f(this.program.u_invertedDepthRange, invertedRange);
 	gl.uniform1i(this.program.u_useVSM, this.vsmMode);
+
+	if (this.camera) {
+		var invertedRange = 1.0 / (this.camera.far - this.camera.near);
+		gl.uniform1f(this.program.u_invertedDepthRange, invertedRange);
+	
+		gl.uniformMatrix4fv(this.program.u_matLightView, false, this.camera.getViewMatrix());
+		gl.uniformMatrix4fv(this.program.u_matLightProjection, false, this.camera.getProjectionMatrix());
+	}
 }
 
 GG.ShadowMapDepthPass.prototype.__renderGeometry = function (renderable) {

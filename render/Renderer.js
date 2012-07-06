@@ -41,22 +41,26 @@ GG.Renderer.prototype.prepareNextFrame = function () {
 };
 
 GG.Renderer.prototype.renderMesh = function (mesh, program) {		
-	if (program.attribPosition != undefined) {
+
+	var attribPosition = program[GG.GLSLProgram.BuiltInAttributes.attribPosition];
+	if (attribPosition != undefined) {
 		gl.bindBuffer(gl.ARRAY_BUFFER, mesh.getPositionsBuffer());
-		gl.enableVertexAttribArray(program.attribPosition);
-		gl.vertexAttribPointer(program.attribPosition, mesh.getPositionsBuffer().itemSize, mesh.getPositionsBuffer().itemType, false, 0, 0);
+		gl.enableVertexAttribArray(attribPosition);
+		gl.vertexAttribPointer(attribPosition, mesh.getPositionsBuffer().itemSize, mesh.getPositionsBuffer().itemType, false, 0, 0);
 	}
 
-	if (program.attribNormal != undefined) {
+	var attribNormal = program[GG.GLSLProgram.BuiltInAttributes.attribNormal];
+	if (attribNormal != undefined) {
 		gl.bindBuffer(gl.ARRAY_BUFFER, mesh.getNormalsBuffer());
-		gl.enableVertexAttribArray(program.attribNormal);
-		gl.vertexAttribPointer(program.attribNormal, mesh.getNormalsBuffer().itemSize, mesh.getNormalsBuffer().itemType, false, 0, 0);
+		gl.enableVertexAttribArray(attribNormal);
+		gl.vertexAttribPointer(attribNormal, mesh.getNormalsBuffer().itemSize, mesh.getNormalsBuffer().itemType, false, 0, 0);
 	}
 
-	if (program.attribTexCoords != undefined) {
+	var attribTexCoords = program[GG.GLSLProgram.BuiltInAttributes.attribTexCoords];
+	if (attribTexCoords != undefined) {
 		gl.bindBuffer(gl.ARRAY_BUFFER, mesh.getTexCoordsBuffer());
-		gl.enableVertexAttribArray(program.attribTexCoords);
-		gl.vertexAttribPointer(program.attribTexCoords, mesh.getTexCoordsBuffer().itemSize, mesh.getTexCoordsBuffer().itemType, false, 0, 0);
+		gl.enableVertexAttribArray(attribTexCoords);
+		gl.vertexAttribPointer(attribTexCoords, mesh.getTexCoordsBuffer().itemSize, mesh.getTexCoordsBuffer().itemType, false, 0, 0);
 	}
 
 	if (mesh.getIndexBuffer() != undefined) {

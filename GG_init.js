@@ -9,8 +9,27 @@ var GG = {
 			joined = joined.concat(arrays[i]);
 		}
 		return joined;
+	},
+
+	cloneDictionary : function(dict) {
+		var clone = {};
+		for (var k in dict) {
+			clone[k] = dict[k];
+		}
+		return clone;
+	},
+
+	init : function () {
+		GG.TEX_UNIT_DIFFUSE_MAP = { texUnit : gl.TEXTURE0, uniform : 0},
+		GG.TEX_UNIT_NORMAL_MAP = { texUnit : gl.TEXTURE1, uniform : 1},
+		GG.TEX_UNIT_SPECULAR_MAP = { texUnit : gl.TEXTURE2, uniform : 2},
+		GG.TEX_UNIT_ALPHA_MAP = { texUnit : gl.TEXTURE3, uniform : 3},
+		GG.TEX_UNIT_GLOW_MAP = { texUnit : gl.TEXTURE4, uniform : 4},
+		GG.TEX_UNIT_SHADOW_MAP = { texUnit : gl.TEXTURE8, uniform : 8}
 	}
+	
 };
+
 			
 var gl, canvas;
 			

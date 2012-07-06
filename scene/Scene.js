@@ -5,6 +5,8 @@ GG.Scene = function(name) {
 	this.pointLights = [];
 	this.directionaLights = [];
 	this.spotLights = [];
+	this.shadowsEnabled = false;
+	this.fogEnabled = false;
 };
 
 GG.Scene.prototype.addObject = function(object) {
@@ -46,6 +48,18 @@ GG.Scene.prototype.listSpotLights = function() {
 	return [].concat(this.spotLights);
 };
 
+GG.Scene.prototype.numPointLights = function() {
+	return this.pointLights.length;
+};
+
+GG.Scene.prototype.numDirectionalLights = function() {
+	return this.directionaLights.length;
+};
+
+GG.Scene.prototype.numSpotLights = function() {
+	return this.spotLights.length;
+};
+
 GG.Scene.prototype.hasPointLights = function() {
 	return this.pointLights.length > 0;
 };
@@ -64,6 +78,15 @@ GG.Scene.prototype.listLights = function() {
 		.concat(this.directionaLights)
 		.concat(this.spotLights);
 }
+
+GG.Scene.prototype.hasShadows = function() {
+	return this.shadowsEnabled;
+};
+
+GG.Scene.prototype.shadows = function(flag) {
+	this.shadowsEnabled = flag;
+};
+
 GG.Scene.prototype = new GG.Scene();
 GG.Scene.prototype.constructor = GG.Scene;
 

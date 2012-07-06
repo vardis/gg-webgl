@@ -7,8 +7,7 @@ GG_files = [
 	'utils/Loader.js',
 	'ShaderLib.js',
 	'utils/MathUtils.js',	
-	'utils/ProgramUtils.js',
-	'Light.js',
+	'utils/ProgramUtils.js',	
 	'geometries/Geometry.js',
 	'geometries/PlaneGeometry.js',
 	'geometries/SphereGeometry.js',
@@ -18,10 +17,14 @@ GG_files = [
 	'textures/TextureCubemap.js',
 	'renderables/TriangleMesh.js',	
 	'renderables/StaticParticleSystem.js',
+	'cameras/BaseCamera.js',
 	'cameras/PerspectiveCamera.js',
+	'cameras/OrthographicCamera.js',
+	'Light.js',
 	'render/RenderTarget.js',
 	'render/RenderContext.js',
 	'GLSLProgram.js',
+	'ProgramSource.js',
 	'materials/BaseMaterial.js',
 	'materials/PhongMaterial.js',
 	'techniques/RenderPasses/RenderPass.js',
@@ -35,11 +38,13 @@ GG_files = [
 	'techniques/PhongShadingTechnique.js',
 	'techniques/particles/ParticlesTechnique.js',
 	'techniques/shadow_mapping/ShadowMapDepthPass.js',
+	'techniques/shadow_mapping/ShadowMapSimple.js',
+	'techniques/shadow_mapping/ShadowMapTechnique.js',
 	'render/Renderer.js',	
 	'interaction/MouseHandler.js',
 	'scene/Scene.js',
 	'scene/DefaultSceneRenderer.js',
-	'samples/screen_pass.js'
+	'samples/scene_renderer.js'
 ]
 
 def merge(files):
