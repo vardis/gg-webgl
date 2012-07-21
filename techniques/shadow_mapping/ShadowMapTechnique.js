@@ -89,6 +89,8 @@ GG.ShadowMapTechnique.prototype.setUniforms = function(program, context) {
 
 GG.ShadowMapTechnique.prototype.switchDelegate = function() {
 	switch (this.shadowType) {
+		case GG.SHADOW_MAPPING_PCF:
+			return GG.ShadowMapPCF;			
 		case GG.SHADOW_MAPPING:
 		default:
 			return GG.ShadowMapSimple;

@@ -13,10 +13,8 @@ GG.ShadowMapSimple.adaptProgram = function(vertexProgram, fragmentProgram) {
 			].join('\n'));
 
 	fragmentProgram
-		.floatPrecision('highp')		
-		.uniform('float', 'u_texStep')
-		.uniform('float', 'u_depthOffset')
-		.uniform('int', 'u_filterSize')	
+		.floatPrecision('highp')				
+		.uniform('float', 'u_depthOffset')		
 		.uniform('float', 'u_lightSpaceDepthRange')	
 		.varying('vec4', 'v_posLightPerspective')
 		.varying('vec4', 'v_lightViewPos')

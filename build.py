@@ -39,6 +39,7 @@ GG_files = [
 	'techniques/particles/ParticlesTechnique.js',
 	'techniques/shadow_mapping/ShadowMapDepthPass.js',
 	'techniques/shadow_mapping/ShadowMapSimple.js',
+	'techniques/shadow_mapping/ShadowMapPCF.js',
 	'techniques/shadow_mapping/ShadowMapTechnique.js',
 	'render/Renderer.js',	
 	'interaction/MouseHandler.js',

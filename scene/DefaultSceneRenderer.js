@@ -2,7 +2,7 @@ GG.DefaultSceneRenderer = function (spec) {
 	this.scene = spec.scene || null;
 	this.camera = spec.camera || null;
 	this.programCache = {};
-	this.shadowTechnique = new GG.ShadowMapTechnique();
+	this.shadowTechnique = new GG.ShadowMapTechnique({ shadowType : GG.SHADOW_MAPPING_PCF });
 };
 
 GG.DefaultSceneRenderer.prototype.setScene = function(sc) {
