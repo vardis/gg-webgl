@@ -4,9 +4,6 @@
  */
 GG.ScreenPass = function(spec) {
 	spec = spec || {};
-	var uniforms = spec.uniforms || [];
-	uniforms = uniforms.concat(['u_sourceTexture']);
-	spec.uniforms = uniforms;
 
 	GG.RenderPass.call(this, spec);
 
@@ -28,13 +25,16 @@ GG.ScreenPass.prototype.__renderGeometry = function(renderable) {
 	GG.renderer.renderMesh(this.screenQuad, this.program);
 };
 
-GG.ScreenPass.prototype.__setCustomUniforms = function() {
-	// the default sourceTexture always goes to texture unit 0
+GG.ScreenPass.prototype.__setCustomUniforms = function(renderable, renderContext, program) {
+	// the default sourceTexture always goes to texture unit GG.TEX_UNIT_DIFFUSE_MAP
 	if (this.sourceTexture != null) {
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.sourceTexture);
-		gl.uniform1i(this.program.u_sourceTexture, 0);
+		this.sourceTexture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAP);		
+		gl.uniform1i(this.program.u_sourceTexture, GG.TEX_UNIT_DIFFUSE_MAP);
 	}
-}
+};
+
+GG.ScreenPass.prototype.setSourceTexture = function(texture) {
+	this.sourceTexture = texture;
+};
 
 

@@ -1,9 +1,9 @@
 GG.Renderer = function() {
-	this.camera = null;
-	this.persp = mat4.create();
-	this.view = mat4.create();
+	this.camera      = null;
+	this.persp       = mat4.create();
+	this.view        = mat4.create();
 	this.inverseView = mat4.create();
-	this.MVP = mat4.create();
+	this.MVP         = mat4.create();
 }
 
 GG.Renderer.prototype.constructor = GG.Renderer;

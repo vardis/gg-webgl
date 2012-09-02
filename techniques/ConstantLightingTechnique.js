@@ -1,10 +1,18 @@
-GG.ConstantLightingTechnique = function(spec) {	
-	
+GG.ConstantLightingTechnique = function(spec) {		
 	spec = spec || {};
-	GG.BaseTechnique.call(this, spec);
-	this.color = spec.color != undefined ? spec.color : [1.0, 1.0, 1.0];
+	spec.passes = [ new GG.FlatShadePass() ];
 	
-	this.vertexShader = [
+	GG.BaseTechnique.call(this, spec);
+}
+
+GG.ConstantLightingTechnique.prototype = new GG.BaseTechnique();
+GG.ConstantLightingTechnique.prototype.constructor = GG.ConstantLightingTechnique;
+
+GG.FlatShadePass = function(spec) {
+	spec = spec || {};
+	spec.adaptsToScene = false;
+
+	spec.vertexShader = [
 		"attribute vec4 a_position;",
 		"uniform mat4 u_matModelView;",
 		"uniform mat4 u_matProjection;",
@@ -13,51 +21,32 @@ GG.ConstantLightingTechnique = function(spec) {
 		"}"
 	].join("\n");
 	
-	this.fragmentShader = [
+	spec.fragmentShader = [
 		"precision mediump float;",
 		
-		"uniform vec4 u_color;",
+		"uniform vec3 u_color;",
 		"void main() {",
-		"	gl_FragColor = u_color;",
+		"	gl_FragColor = vec4(u_color, 1.0);",
 		"}"
 	].join("\n");
-	
-	this.program = null;
-}
 
-GG.ConstantLightingTechnique.prototype = new GG.BaseTechnique();
-GG.ConstantLightingTechnique.prototype.constructor = GG.ConstantLightingTechnique;
-GG.ConstantLightingTechnique.prototype.getColor = function() {
-	return this.color;
+	GG.RenderPass.call(this, spec);
 };
 
-GG.ConstantLightingTechnique.prototype.setColor = function(c) {
-	this.color = c;
-};
+GG.FlatShadePass.prototype = new GG.RenderPass();
+GG.FlatShadePass.prototype.constructor = GG.FlatShadePass;
 
-GG.ConstantLightingTechnique.prototype.initialize = function() {
-	GG.BaseTechnique.prototype.initialize();
-	this.program = this.createProgram(this.vertexShader, this.fragmentShader);
-	gl.useProgram(this.program);
-	this.program.attribPosition = gl.getAttribLocation(this.program, "a_position");
-	this.program.uniformColor = gl.getUniformLocation(this.program, "u_color");
-	this.program.uniformMV = gl.getUniformLocation(this.program, "u_matModelView");
-	this.program.uniformProjection = gl.getUniformLocation(this.program, "u_matProjection");
-};
-
-GG.ConstantLightingTechnique.prototype.destroy = function() {
+GG.FlatShadePass.prototype.destroy = function() {
 	GG.BaseTechnique.prototype.destroy();
 	gl.deleteProgram(this.program);
 };
 
-GG.ConstantLightingTechnique.prototype.render = function(mesh, renderContext) {
-	// this could go to the renderer
-	gl.useProgram(this.program);			
-	gl.uniform4fv(this.program.uniformColor, this.color);		
-	
+GG.FlatShadePass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	var viewMat = ctx.camera.getViewMatrix();
+
 	var MV = mat4.create();
-	mat4.multiply(this.renderer.getViewMatrix(), mesh.getModelMatrix(), MV);
-	gl.uniformMatrix4fv(this.program.uniformMV, false, MV);
-	gl.uniformMatrix4fv(this.program.uniformProjection, false, this.renderer.getProjectionMatrix());
-	this.renderer.renderMesh(mesh, this.program);
+	mat4.multiply(viewMat, renderable.getModelMatrix(), MV);
+	gl.uniformMatrix4fv(program.u_matModelView, false, MV);
+
+	gl.uniform3fv(program.u_color, renderable.getMaterial().diffuse);		
 };

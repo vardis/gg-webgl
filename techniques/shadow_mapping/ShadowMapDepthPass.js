@@ -1,10 +1,9 @@
 GG.ShadowMapDepthPass = function (spec) {
-
-	spec = spec || {};
-	this.vsmMode = spec.vsmMode || false;
-	this.camera = spec.camera || null;
+	spec               = spec || {};
+	this.vsmMode       = spec.vsmMode || false;
+	this.camera        = spec.camera || null;
 	this.nearPlaneDist = spec.nearPlaneDist || 1.0;
-	this.farPlaneDist = spec.farPlaneDist || 100.0;
+	this.farPlaneDist  = spec.farPlaneDist || 100.0;
 
 	spec.vertexShader = [
 			"attribute vec4 a_position;",

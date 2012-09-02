@@ -29,18 +29,18 @@
  *	v_normal - the interpolated normal
  */
 GG.ProgramSource = function (spec) {
-	this.shaderType = 'vertex';
-	this.fpPrecision = 'highp';
-	this.typeDeclarations = {};
-	this.declarations = [];
-	this.uniforms = {};
-	this.attributes = {};
-	this.varyings = {};
-	this.mainInit = [];	
-	this.mainBlocks = [];
-	this.pointLightBlocks = [];
+	this.shaderType             = 'vertex';
+	this.fpPrecision            = 'highp';
+	this.typeDeclarations       = {};
+	this.declarations           = [];
+	this.uniforms               = {};
+	this.attributes             = {};
+	this.varyings               = {};
+	this.mainInit               = [];	
+	this.mainBlocks             = [];
+	this.pointLightBlocks       = [];
 	this.directionalLightBlocks = [];
-	this.spotLightBlocks = [];
+	this.spotLightBlocks        = [];
 };
 
 GG.ProgramSource.prototype.asVertexShader = function() {

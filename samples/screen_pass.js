@@ -141,6 +141,7 @@ function webGLStart(sampleName)  {
 			minFilter : gl.LINEAR,
 			magFilter : gl.LINEAR
 		});
+		highResFBO.initialize();
 
 		blitPass = new GG.BlitPass(highResFBO.getColorAttachment(0));
 

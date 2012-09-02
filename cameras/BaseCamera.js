@@ -1,20 +1,46 @@
 GG.BaseCamera = function (spec) {
-	spec = spec || {};
-	this.position = spec.position || [ 0.0, 0.0, 0.0];
-	this.lookAt = spec.lookAt || [ 0.0, 0.0, -1.0];
-	this.up = spec.up || [ 0.0, 1.0, 0.0 ];
-	this.rotation = spec.rotation || [ 0.0, 0.0, 0.0];
-	this.near = spec.near || 0.1;
-	this.far = spec.far || 100.0;
-	this.aspectRatio = spec.aspectRatio || 1.33;
-
-	this.viewMatrix = mat4.create();	
+	spec             = spec || {};
+	this.position    = spec.position || [ 0.0, 0.0, 0.0];
+	this.offset		 = [0.0, 0.0, 0.0];
+	this.lookAt      = spec.lookAt || [ 0.0, 0.0, -1.0];
+	this.up          = spec.up || [ 0.0, 1.0, 0.0 ];
+	this.rotation    = spec.rotation || [ 0.0, 0.0, 0.0];
+	this.near        = spec.near || 0.1;
+	this.far         = spec.far || 100.0;
+	this.aspectRatio = spec.aspectRatio || 1.33;	
+	this.viewMatrix  = mat4.create();	
 };
 
-GG.BaseCamera.FORWARD_VECTOR = [0.0, 0.0, 1.0];
+GG.BaseCamera.FORWARD_VECTOR = [0.0, 0.0, 1.0, 0.0];
+GG.BaseCamera.UP_VECTOR      = [0.0, 1.0, 0.0, 0.0];
 
 GG.BaseCamera.prototype.getViewMatrix = function() {
-	//mat4.lookAt(this.position, this.lookAt, this.up, this.viewMatrix);
+	mat4.identity(this.viewMatrix); 	 
+	mat4.rotate(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[0]), [1, 0, 0]);
+	mat4.rotate(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[1]), [0, 1, 0]); 	
+	
+	
+	var base = vec3.create([this.viewMatrix[0], this.viewMatrix[4], this.viewMatrix[8]]);
+	vec3.scale(base, this.offset[0], base);
+	vec3.add(this.position, base, this.position);
+
+	var base = vec3.create([this.viewMatrix[1], this.viewMatrix[5], this.viewMatrix[9]]);
+	vec3.scale(base, this.offset[1], base);
+	vec3.add(this.position, base, this.position);	
+
+ 	var base = vec3.create([this.viewMatrix[2], this.viewMatrix[6], this.viewMatrix[10]]);
+	vec3.scale(base, this.offset[2], base);
+	vec3.add(this.position, base, this.position);	
+
+	mat4.translate(this.viewMatrix, [-this.position[0], -this.position[1], -this.position[2]]);
+/*
+	console.log('looking dir ' + this.lookAt[0] + ', ' + this.lookAt[1] + ', ' + this.lookAt[2]);
+	console.log('position ' + this.position[0] + ', ' + this.position[1] + ', ' + this.position[2]);
+	console.log('lt ' + lt[0] + ', ' + lt[1] + ', ' + lt[2]);
+	*/
+	
+	//mat4.lookAt(this.position, lt, this.up, this.viewMatrix);
+	this.offset = [0.0, 0.0, 0.0];
 	return this.viewMatrix;
 };
 
@@ -29,17 +55,39 @@ GG.BaseCamera.prototype.setPosition = function(p) {
 GG.BaseCamera.prototype.getRotation = function() {
 	return this.rotation;
 };
-
 GG.BaseCamera.prototype.setRotation = function(r) {
 	this.rotation = r;
-	mat4.identity(this.viewMatrix); 	 
-	mat4.rotate(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[0]), [1, 0, 0]);
-	mat4.rotate(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[1]), [0, 1, 0]); 	
 	
-	mat4.multiplyVec3(this.viewMatrix, GG.BaseCamera.FORWARD_VECTOR, this.lookAt);
-	
-	mat4.translate(this.viewMatrix, [-this.position[0], -this.position[1], -this.position[2]]);
 	return this;
+};
+
+GG.BaseCamera.prototype.forward = function (units) {
+	this.offset[2] += units;
+	//this.position[2] += units;
+	/*
+	var dir = vec3.normalize(this.lookAt);
+	var offset = vec3.create();
+	vec3.scale(dir, units, offset);
+	vec3.add(this.position, offset, this.position);
+	*/
+	//vec3.add(this.position, dir, this.lookAt);
+};
+
+GG.BaseCamera.prototype.right = function (units) {
+	this.offset[0] += units;
+	/*
+	var up       = vec3.create();
+	var rightVec = vec3.create();
+	mat4.multiplyVec4(this.viewMatrix, GG.BaseCamera.UP_VECTOR, up);
+	vec3.normalize(up);
+	vec3.normalize(this.lookAt);
+	vec3.cross(this.lookAt, up, rightVec);
+
+	vec3.scale(rightVec, units);
+	vec3.add(this.position, rightVec, this.position);
+	*/
+	//vec3.add(this.position, this.lookAt, this.lookAt);
+	//vec3.normalize(this.lookAt);
 };
 
 GG.BaseCamera.constructor = GG.BaseCamera;

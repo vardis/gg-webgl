@@ -23,6 +23,7 @@ GG.ProgramUtils = function() {
 			gl.linkProgram(shaderProgram);
 
 			if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+				console.log(gl.getProgramInfoLog(shaderProgram));
 			  shaderProgram = null;
 			}
 			return shaderProgram;

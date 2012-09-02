@@ -5,13 +5,13 @@
  * the x and y axis.
  */
 GG.PlaneGeometry = function(divisions) {
-	var divs = divisions - 1 || 1;
-
+	var divs           = divisions - 1 || 1;
+	
 	var verticesPerDim = divs+1;
-	this.vertices = new Float32Array(verticesPerDim*verticesPerDim*3);
-	this.normals = new Float32Array(verticesPerDim*verticesPerDim*3);
-	this.texCoords = new Float32Array(verticesPerDim*verticesPerDim*2);
-	this.indices = new Uint16Array(divs*divs*6);
+	this.vertices      = new Float32Array(verticesPerDim*verticesPerDim*3);
+	this.normals       = new Float32Array(verticesPerDim*verticesPerDim*3);
+	this.texCoords     = new Float32Array(verticesPerDim*verticesPerDim*2);
+	this.indices       = new Uint16Array(divs*divs*6);
 
 	var i = 0;
 	for (var y = 0; y <= 1.0; y += 1.0/divs) {

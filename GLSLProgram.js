@@ -1,10 +1,10 @@
 GG.GLSLProgram = function (spec) {
-	spec = spec || {};
-	this.vertexShader = spec.vertexShader || '';
+	spec                = spec || {};
+	this.vertexShader   = spec.vertexShader || '';
 	this.fragmentShader = spec.fragmentShader || '';
-	this.compiled = false;
-	this.gpuProgram = null;
-	this.hashKey = 0;
+	this.compiled       = false;
+	this.gpuProgram     = null;
+	this.hashKey        = 0;
 };
 
 GG.GLSLProgram.prototype.destroy = function() {

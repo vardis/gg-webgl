@@ -37,4 +37,17 @@ GG.Loader = {
 			}						
 		});
 	},
+
+	/**
+	 * Loads a JSON document from the given url and invokes the callback
+	 * upon success.
+	 * The callback will receive the parsed JSON object.
+	 */
+	loadJSON : function (requestId, url, callback) {
+		GG.AjaxUtils.getRequest(url, "application/x-javascript", function (jsonData) {
+			if (callback) {
+				callback(JSON.parse(jsonData));
+			}
+		});
+	}
 }

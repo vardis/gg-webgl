@@ -2,7 +2,8 @@ GG.DefaultSceneRenderer = function (spec) {
 	this.scene = spec.scene || null;
 	this.camera = spec.camera || null;
 	this.programCache = {};
-	this.shadowTechnique = new GG.ShadowMapTechnique({ shadowType : GG.SHADOW_MAPPING_PCF });
+	this.shadowTechnique = new GG.ShadowMapTechnique({ shadowType : GG.SHADOW_MAPPING });
+	this.dbg = new GG.DepthMapDebugOutput();
 };
 
 GG.DefaultSceneRenderer.prototype.setScene = function(sc) {
@@ -34,12 +35,14 @@ GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {
 	var depthPass = this.depthPass;
 	var that = this;
 
-	this.shadowTechnique.scenePrePass(this.scene, ctx);
+	var enableShadows = this.scene.hasShadows() && this.shadowTechnique;
+	if (enableShadows) {
+		this.shadowTechnique.scenePrePass(this.scene, ctx);
+	}
 
 	try {
-		if (renderTarget) renderTarget.activate();
-	
-		var enableShadows = this.scene.hasShadows() && this.shadowTechnique;
+		if (renderTarget) renderTarget.activate();	
+		
 		this.scene.perObject(function (renderable) {
 			
 			var technique = renderable.getMaterial().getTechnique();
@@ -75,10 +78,20 @@ GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {
 			});
 			if (technique) {
 				technique.render(renderable, ctx);
-			}
-			
-			
+			}					
 		});
+
+		if (enableShadows) {
+			gl.viewport(0, 0, 320, 200);
+			var cam = this.scene.listDirectionalLights()[0].getShadowCamera();
+			
+			this.dbg.sourceTexture = this.shadowTechnique.getShadowMapTexture();
+			this.dbg.minDepth = cam.near;
+			this.dbg.maxDepth = cam.far;
+			this.dbg.render();
+
+		}
+		
 	} finally {
 		if (renderTarget) renderTarget.deactivate();
 	}

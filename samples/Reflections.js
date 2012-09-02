@@ -1,7 +1,7 @@
 ReflectionsSample = function() {
 	this.cubemapTexture = null;
-	this.y_rot = 0.0;
-	this.initialized = false;
+	this.y_rot          = 0.0;
+	this.initialized    = false;
 	this.resourcesReady = false;
 };
 

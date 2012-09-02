@@ -7,21 +7,20 @@
  * Note: The input geometry is expected to be flatten.
  */
 GG.StaticParticleSystem = function(geometry, material, spec) {
-	spec = spec || {};
-	this.pointSize = spec.pointSize || 1.0;
-
-	this.vertexBuffer = gl.createBuffer(1);
-	this.vertexBuffer.size = geometry.getVertices().length / 3;	
+	spec                        = spec || {};
+	this.pointSize              = spec.pointSize || 1.0;
+	
+	this.vertexBuffer           = gl.createBuffer(1);
+	this.vertexBuffer.size      = geometry.getVertices().length / 3;	
 	this.vertexBuffer.numPoints = geometry.getVertices().length / 3;	
-	this.vertexBuffer.itemSize = 3;
-	this.vertexBuffer.itemType = gl.FLOAT;
+	this.vertexBuffer.itemSize  = 3;
+	this.vertexBuffer.itemType  = gl.FLOAT;
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);	
 	gl.bufferData(gl.ARRAY_BUFFER, geometry.getVertices(), gl.STATIC_DRAW);
 
 	if (geometry.getColors()) {
-		this.colorsBuffer = gl.createBuffer(1);
-		
-		this.colorsBuffer.size = geometry.getColors().length / 3;
+		this.colorsBuffer          = gl.createBuffer(1);		
+		this.colorsBuffer.size     = geometry.getColors().length / 3;
 		this.colorsBuffer.itemType = gl.FLOAT;
 		this.colorsBuffer.itemSize = 3;
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.colorsBuffer);

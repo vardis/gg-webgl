@@ -1,6 +1,10 @@
-GG.ShadowMapSimple = {};
+GG.ShadowMapSimple = function (spec) {
 
-GG.ShadowMapSimple.adaptProgram = function(vertexProgram, fragmentProgram) {
+};
+
+GG.ShadowMapSimple.prototype.constructor = GG.ShadowMapSimple;
+
+GG.ShadowMapSimple.prototype.adaptProgram = function(vertexProgram, fragmentProgram) {
 	vertexProgram.varying('vec4', 'v_posLightPerspective')
 		.varying('vec4', 'v_lightViewPos')
 		.uniform('mat4', 'u_matModel')
@@ -20,21 +24,21 @@ GG.ShadowMapSimple.adaptProgram = function(vertexProgram, fragmentProgram) {
 		.varying('vec4', 'v_lightViewPos')
 		.addDecl(GG.ShaderLib.blocks['libUnpackRrgbaToFloat'])
 		.perDirectionalLightBlock([
-			"vec2 lightUV = v_posLightPerspective.xy / v_posLightPerspective.w;",
-			"if (!(lightUV.s < 0.0 || lightUV.t < 0.0 || lightUV.s > 1.0 || lightUV.t > 1.0)) {", 
-			"	float lightDistance = length(v_lightViewPos.xyz);",
+			"	vec2 lightUV = v_posLightPerspective.xy / v_posLightPerspective.w;",
+			"	if (!(lightUV.s < 0.0 || lightUV.t < 0.0 || lightUV.s > 1.0 || lightUV.t > 1.0)) {", 
+			"		float lightDistance = length(v_lightViewPos.xyz);",
 			// normalize the distance
-			"	lightDistance *= 1.0 / u_lightSpaceDepthRange;",
-			"	lightDistance -= u_depthOffset;",
+			"		lightDistance *= 1.0 / u_lightSpaceDepthRange;",
+			"		lightDistance -= u_depthOffset;",
 
-			"	float depth = libUnpackRrgbaToFloat(texture2D(u_depthMap, lightUV));",
-			"	diffuse *= (depth > lightDistance) ? 1.0 : u_shadowFactor;",
-			"}"
+			"		float depth = libUnpackRrgbaToFloat(texture2D(u_depthMap, lightUV));",
+			"		diffuse *= (depth > lightDistance) ? 1.0 : u_shadowFactor;",
+			"	}"
 		].join('\n'));
 
 };
 
-GG.ShadowMapSimple.setUniforms = function(program, ctx, options) {
+GG.ShadowMapSimple.prototype.setUniforms = function(program, ctx, options) {
 	//var pcfSize = options.pcfSize || 4;	
 	//gl.uniform1i(program.u_filterSize, pcfSize);
 
@@ -46,4 +50,8 @@ GG.ShadowMapSimple.setUniforms = function(program, ctx, options) {
 	gl.uniformMatrix4fv(program.u_matLightView, false, cam.getViewMatrix());
 	gl.uniformMatrix4fv(program.u_matLightProjection, false, cam.getProjectionMatrix());
 	gl.uniform1f(program.u_depthOffset, options.depthOffset);
+};
+
+GG.ShadowMapSimple.prototype.postShadowMapConstruct = function(shadowMapTexture) {
+
 };

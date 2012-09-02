@@ -27,16 +27,18 @@
  * provide a renderableType in the input specifications.
  */
 GG.RenderPass = function (spec) {
-	spec = spec || {}	
-	this.vertexShader = spec.vertexShader || null;
+	spec                = spec || {}	
+	this.vertexShader   = spec.vertexShader || null;
 	this.fragmentShader = spec.fragmentShader || null;
 	this.renderableType = spec.renderableType || GG.RenderPass.MESH;
-	this.callback = spec.callback || this;
+	this.callback       = spec.callback || this;
 	this.attributeNames = spec.attributeNames || [];
-	this.program = null;
-	this.adaptsToScene = spec.adaptsToScene || false;
-	this.usesLighting = spec.usesLighting || true;
+	this.program        = null;
+	this.adaptsToScene  = spec.adaptsToScene || false;
+	this.usesLighting   = spec.usesLighting || true;
 };
+
+GG.RenderPass.prototype.constructor = GG.RenderPass;
 
 GG.RenderPass.MESH = 1;
 
@@ -63,6 +65,8 @@ GG.RenderPass.prototype.render = function(renderable, renderContext) {
 		this.initialize();
 	}
 
+	this.__setCustomRenderState(renderable, renderContext, this.program);
+
 	gl.useProgram(this.program);
 
 	// this should be overridden in each subclass
@@ -72,7 +76,7 @@ GG.RenderPass.prototype.render = function(renderable, renderContext) {
 	GG.ProgramUtils.injectBuiltInUniforms(this.program, renderContext, renderable);
 
 	// this should be overridden in each subclass	
-	this.__setCustomUniforms(renderable, renderContext, this.program);	
+	this.__setCustomUniforms(renderable, renderContext, this.program);		
 
 	if (renderable && this.renderableType == GG.RenderPass.MESH) {
 		renderContext.renderer.renderMesh(renderable, this.program);
@@ -109,6 +113,7 @@ GG.RenderPass.prototype.__locateCustomUniforms = function(program) {};
 GG.RenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__setCustomAttributes = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__renderGeometry = function(renderable, ctx, program) {};
+GG.RenderPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {};
 
 /*
 pass = new RenderPass({

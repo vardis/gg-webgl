@@ -1,8 +1,7 @@
 GG.PerspectiveCamera = function(spec) {
-	spec = spec || {};
+	spec                 = spec || {};
 	GG.BaseCamera.call(this, spec);
-	this.fov = 45.0;
-
+	this.fov             = 45.0;	
 	this.projectionMatix = mat4.create();	
 }
 
@@ -16,12 +15,12 @@ GG.PerspectiveCamera.prototype.getProjectionMatrix = function() {
 
 
 GG.PerspectiveCamera.prototype.setup = function(pos, lookAt, up, fov, aspectRatio, near, far) {
-	this.position = pos;
-	this.lookAt = lookAt;
-	this.up = up;
-	this.fov = fov;
-	this.near = near;
-	this.far = far;
+	this.position    = pos;
+	this.lookAt      = lookAt;
+	this.up          = up;
+	this.fov         = fov;
+	this.near        = near;
+	this.far         = far;
 	this.aspectRatio = aspectRatio;
 	mat4.lookAt(pos, lookAt, up, this.viewMatrix);
 	return this;

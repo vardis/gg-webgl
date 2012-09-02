@@ -1,11 +1,10 @@
 GG.ShadowMapPCF = function (spec) {
-	// options: light projection near & far planes
-	// pcf filter size, shadow map size
-	// a light to cast the shadows (only one for starters)
+	
 };
-GG.ShadowMapPCF = {};
 
-GG.ShadowMapPCF.adaptProgram = function(vertexProgram, fragmentProgram) {
+GG.ShadowMapPCF.prototype.constructor = GG.ShadowMapPCF;
+
+GG.ShadowMapPCF.prototype.adaptProgram = function(vertexProgram, fragmentProgram) {
 	vertexProgram.varying('vec4', 'v_posLightPerspective')
 		.varying('vec4', 'v_lightViewPos')
 		.uniform('mat4', 'u_matModel')
@@ -57,7 +56,7 @@ GG.ShadowMapPCF.adaptProgram = function(vertexProgram, fragmentProgram) {
 
 };
 
-GG.ShadowMapPCF.setUniforms = function(program, ctx, options) {
+GG.ShadowMapPCF.prototype.setUniforms = function(program, ctx, options) {
 	var pcfSize = options.pcfSize || 4;	
 	gl.uniform1f(program.u_filterSize, pcfSize);
 
@@ -69,4 +68,8 @@ GG.ShadowMapPCF.setUniforms = function(program, ctx, options) {
 	gl.uniformMatrix4fv(program.u_matLightView, false, cam.getViewMatrix());
 	gl.uniformMatrix4fv(program.u_matLightProjection, false, cam.getProjectionMatrix());
 	gl.uniform1f(program.u_depthOffset, options.depthOffset);
+};
+
+GG.ShadowMapPCF.prototype.postShadowMapConstruct = function(shadowMapTexture) {
+
 };

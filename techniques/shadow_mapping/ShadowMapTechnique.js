@@ -24,18 +24,36 @@ GG.ShadowMapTechnique = function (spec) {
 	this.options = GG.cloneDictionary(spec || {});
 	this.shadowType = this.options.shadowType || GG.SHADOW_MAPPING;
 	
-	this.options.shadowMapWidth = this.options.shadowMapWidth || 800;
+	this.options.shadowMapWidth  = this.options.shadowMapWidth || 800;
 	this.options.shadowMapHeight = this.options.shadowMapHeight || 600;
-	this.options.depthOffset = this.options.depthOffset || 0.04;
-	this.options.shadowFactor = this.options.shadowFactor || 0.5;
+	this.options.depthOffset     = this.options.depthOffset || 0.04;
+	this.options.shadowFactor    = this.options.shadowFactor || 0.5;
 
 	this.depthPassFBO = new GG.RenderTarget({
 		width : this.options.shadowMapWidth,
 		height : this.options.shadowMapHeight,
 		clearColor : [1.0, 1.0, 1.0, 1.0]
 	});
+	this.depthPassFBO.initialize();
 	this.depthPass = new GG.ShadowMapDepthPass();
 	
+	this.delegates = {};
+	this.delegates[GG.SHADOW_MAPPING]     = new GG.ShadowMapSimple();
+	this.delegates[GG.SHADOW_MAPPING_PCF] = new GG.ShadowMapPCF();
+	this.delegates[GG.SHADOW_MAPPING_VSM] = new GG.ShadowMapVSM();	
+};
+
+/*
+GG.ShadowMapTechnique.prototype.initialize = function() {
+	GG.BaseTechnique.prototype.initialize();
+	for (var k in this.delegates) {
+		this.delegates[k].initialize();
+	}
+};
+*/
+
+GG.ShadowMapTechnique.prototype.getShadowMapTexture = function() {
+	return this.depthPassFBO.getColorAttachment(0)
 };
 
 /**
@@ -44,8 +62,9 @@ GG.ShadowMapTechnique = function (spec) {
  */
 GG.ShadowMapTechnique.prototype.scenePrePass = function(scene, context) {
 	var that = this;
-	this.depthPass.setCamera(context.scene.listDirectionalLights()[0].getShadowCamera());
-
+	this.depthPass.setCamera(context.scene.listDirectionalLights()[0].getShadowCamera());	
+	this.depthPass.vsmMode = (this.shadowType == GG.SHADOW_MAPPING_VSM);
+	
 	try {
 		this.depthPassFBO.activate();		
 		scene.perObject(function (renderable) {
@@ -55,6 +74,10 @@ GG.ShadowMapTechnique.prototype.scenePrePass = function(scene, context) {
 	} finally {
 		this.depthPassFBO.deactivate();
 	}
+
+	// notify the active delegate that the shadow map is constructed
+	var delegate = this.switchDelegate();
+	delegate.postShadowMapConstruct(this.depthPassFBO.getColorAttachment(0), this.options);
 };
 
 /**
@@ -77,10 +100,8 @@ GG.ShadowMapTechnique.prototype.adaptProgram = function(vertexProgram, fragmentP
  * of preparing the uniform objects of the program.
  */
 GG.ShadowMapTechnique.prototype.setUniforms = function(program, context) {
-	gl.activeTexture(GG.TEX_UNIT_SHADOW_MAP.texUnit);
-	gl.bindTexture(gl.TEXTURE_2D, this.depthPassFBO.getColorAttachment(0));
-	gl.uniform1i(program['u_depthMap'], GG.TEX_UNIT_SHADOW_MAP.uniform);
-
+	this.depthPassFBO.getColorAttachment(0).bindAtUnit(GG.TEX_UNIT_SHADOW_MAP);
+	gl.uniform1i(program['u_depthMap'], GG.TEX_UNIT_SHADOW_MAP);
 	gl.uniform1f(program.u_shadowFactor, this.options.shadowFactor);
 	
 	var delegate = this.switchDelegate();
@@ -88,12 +109,9 @@ GG.ShadowMapTechnique.prototype.setUniforms = function(program, context) {
 };
 
 GG.ShadowMapTechnique.prototype.switchDelegate = function() {
-	switch (this.shadowType) {
-		case GG.SHADOW_MAPPING_PCF:
-			return GG.ShadowMapPCF;			
-		case GG.SHADOW_MAPPING:
-		default:
-			return GG.ShadowMapSimple;
-			break;
+	if (this.shadowType in this.delegates) {
+		return this.delegates[this.shadowType];
+	} else {
+		return this.delegates[GG.SHADOW_MAPPING];
 	}
 };

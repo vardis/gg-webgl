@@ -20,59 +20,86 @@
  *	wrapT : wrap mode for the t coordinates: CLAMP_TO_EDGE, REPEAT, MIRRORED_REPEAT
  */
 GG.RenderTarget = function(spec) {
-	spec = spec || {};
-	this.width = spec.width || 320;
-	this.height = spec.height || 200;
-	this.colorFormat = spec.colorFormat || gl.RGBA;
-	this.depthFormat = spec.depthFormat || gl.DEPTH_COMPONENT16;
-	this.stencilFormat = spec.stencilFormat || gl.STENCIL_INDEX8;
-	this.useColor = spec.useColor || true;
-	this.useDepth = spec.useDepth || true;
-	this.useStencil = spec.useStencil || false;
+	spec                  = spec || {};	
+	this.width            = spec.width || 320;
+	this.height           = spec.height || 200;
+	this.colorFormat      = spec.colorFormat;
+	this.depthFormat      = spec.depthFormat;
+	this.stencilFormat    = spec.stencilFormat;
+	this.useColor         = spec.useColor || true;
+	this.useDepth         = spec.useDepth || true;
+	this.useStencil       = spec.useStencil || false;
+	
+	this.clearColor       = spec.clearColor || [0.0, 0.0, 0.0, 1.0];
+	this.clearDepth       = spec.clearDepth || 1.0;
+	
+	this.colorAttachments = [];
+	if (this.useColor && spec.colorAttachment0 != undefined) {
+		this.colorAttachments.push(spec.colorAttachment0);
+	} 
 
-	this.clearColor = spec.clearColor || [0.0, 0.0, 0.0, 1.0];
-	this.clearDepth = spec.clearDepth || 1.0;
+	this.depthAttachment = null;
+	if (this.useDepth && spec.depthAttachment != undefined) {
+		this.depthAttachment = spec.depthAttachment;
+	}
+
+	this.stencilAttachment = null;
+	if (this.useStencil && spec.stencilAttachment != undefined) {
+		this.stencilAttachment = spec.stencilAttachment;
+	}		
+
+	this.renderBuffers = [];
+};
+
+GG.RenderTarget.prototype.constructor = GG.RenderTarget;
+
+GG.RenderTarget.prototype.destroy = function () {
+	gl.deleteFramebuffer(this.fbo);
+	this.renderBuffers.forEach(function(rb) {
+		gl.deleteRenderbuffer(rb);
+	});	
+};
+
+GG.RenderTarget.prototype.initialize = function () {
+	this.colorFormat = this.colorFormat || gl.RGBA;
+	this.depthFormat = this.depthFormat || gl.DEPTH_COMPONENT16;
+	this.stencilFormat = this.stencilFormat || gl.STENCIL_INDEX8;
+
+	this.spec = {
+		width : this.width,
+		height : this.height,
+		colorFormat : this.colorFormat,
+		depthFormat : this.depthFormat,
+		stencilFormat : this.stencilFormat,
+		useColor : this.useColor,
+		useDepth : this.useDepth,
+		useStencil : this.useStencil,
+		clearColor : this.clearColor,
+		clearDepth : this.clearDepth,
+		colorAttachments : this.colorAttachments,
+		depthAttachment : this.depthAttachment,
+		stencilAttachment : this.stencilAttachment
+	};
 
 	this.fbo = gl.createFramebuffer();
 	try {
 	    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
 	    
-		this.colorAttachments = [];
-		if (this.useColor && spec.colorAttachment0 != undefined) {
-			this.colorAttachments.push(spec.colorAttachment0);
-		} else if (this.useColor) {
-			var tex = gl.createTexture();
-			gl.bindTexture(gl.TEXTURE_2D, tex);
-
-			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, spec.flipY || true);
-
-			// maps a format to the triple [internalFormat, format, type] as accepted by gl.TexImage2D
-			var formatDetails = {};
-			formatDetails[gl.RGB] = [gl.RGB, gl.RGB, gl.UNSIGNED_BYTE];
-			formatDetails[gl.RGBA] = [gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE];
-			formatDetails[gl.RGBA4] = [gl.RGBA, gl.RGBA, gl.UNSIGNED_SHORT_4_4_4_4];
-			formatDetails[gl.RGB5_A1] = [gl.RGBA, gl.RGBA, gl.UNSIGNED_SHORT_5_5_5_1];
-			formatDetails[gl.RGB565] = [gl.RGB, gl.RGB, gl.UNSIGNED_SHORT_5_6_5];
-			
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, spec.magFilter || gl.NEAREST);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, spec.minFilter || gl.NEAREST);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, spec.wrapS || gl.CLAMP_TO_EDGE);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, spec.wrapT || gl.CLAMP_TO_EDGE);
-
-			gl.texImage2D(gl.TEXTURE_2D, 0, formatDetails[this.colorFormat][0], this.width, this.height, 0, formatDetails[this.colorFormat][1], formatDetails[this.colorFormat][2], null);
-			gl.bindTexture(gl.TEXTURE_2D, null);
-
+		if (this.colorAttachments.length == 0 && this.useColor) {
+			var tex = GG.Texture.createTexture(this.spec);
 			this.colorAttachments.push(tex);
 		}
 
 		if (this.colorAttachments.length > 0) {
-			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.colorAttachments[0], 0);
+			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.colorAttachments[0].texture, 0);
+			if (this.colorAttachments.length == 2) {
+				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, this.colorAttachments[1].texture, 0);
+			}
 		}
 
-		this.depthAttachment = null;
-		if (this.useDepth && spec.depthAttachment != undefined) {
-			this.depthAttachment = spec.depthAttachment;
-			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, this.depthAttachment, 0);
+		
+		if (this.useDepth && this.depthAttachment != undefined) {
+			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, this.depthAttachment.texture, 0);
 
 		} else if (this.useDepth) {
 			var buff = gl.createRenderbuffer();
@@ -81,13 +108,12 @@ GG.RenderTarget = function(spec) {
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);	
 
 			this.depthAttachment = buff;	
+			this.renderBuffers.push(buff);
 			gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depthAttachment);
 		}
 
-		this.stencilAttachment = null;
-		if (this.useStencil && spec.stencilAttachment != undefined) {
-			this.stencilAttachment = spec.stencilAttachment;
-			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.STENCIL_ATTACHMENT, gl.TEXTURE_2D, this.stencilAttachment, 0);
+		if (this.useStencil && this.stencilAttachment != undefined) {
+			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.STENCIL_ATTACHMENT, gl.TEXTURE_2D, this.stencilAttachment.texture, 0);
 
 		} else if (this.useStencil) {
 			var buff = gl.createRenderbuffer();
@@ -96,16 +122,19 @@ GG.RenderTarget = function(spec) {
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);	
 
 			this.stencilAttachment = buff;	
+			this.renderBuffers.push(buff);
 			gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.STENCIL_ATTACHMENT, gl.RENDERBUFFER, this.stencilAttachment);
 		}
 		
 		this.valid = gl.checkFramebufferStatus(gl.FRAMEBUFFER) == gl.FRAMEBUFFER_COMPLETE;
+		if (!this.valid) {
+			throw "Could not create FBO";
+		}
+
 	} finally {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);	
 	}
 };
-
-GG.RenderTarget.prototype.constructor = GG.RenderTarget;
 
 GG.RenderTarget.prototype.isValid = function() {
 	return this.valid;

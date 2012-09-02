@@ -4,20 +4,20 @@ GG.ReflectiveTechnique = function(spec) {
 	GG.BaseTechnique.call(this, spec);
 
 	// amount of reflectance
-	this.reflectance = 0.80;
-
-	this.baseColor = spec.baseColor || [ 0.30, 0.30, 0.30, 1.0 ];
-
-	// index of refraction of the object being rendered
-	this.IOR = spec.IOR || [ 1.0, 1.0, 1.0 ];
-
-	// index of refraction of the environment surounding the object 
-	this.externalIOR = spec.externalIOR || [ 1.330, 1.31, 1.230 ];
-
-	this.cubemap = spec.cubemap || null;
+	this.reflectance     = 0.80;
 	
-	this.fresnelBias = spec.fresnelBias || 0.44;
-
+	this.baseColor       = spec.baseColor || [ 0.30, 0.30, 0.30, 1.0 ];
+	
+	// index of refraction of the object being rendered
+	this.IOR             = spec.IOR || [ 1.0, 1.0, 1.0 ];
+	
+	// index of refraction of the environment surounding the object 
+	this.externalIOR     = spec.externalIOR || [ 1.330, 1.31, 1.230 ];
+	
+	this.cubemap         = spec.cubemap || null;
+	
+	this.fresnelBias     = spec.fresnelBias || 0.44;
+	
 	this.fresnelExponent = spec.fresnelExponent || 2.0;
 
 	this.vertexShader = [

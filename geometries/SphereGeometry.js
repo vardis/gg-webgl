@@ -1,24 +1,24 @@
 GG.SphereGeometry = function(radius, rings, segments) {
-	this.radius = radius || 1.0;
-	this.rings = rings || 16;
-	this.segments = segments || 16;
-
-	this.vertices = new Float32Array(3 * (this.rings + 1) * (this.segments + 1));
-	this.normals = new Float32Array(3 * (this.rings + 1) * (this.segments + 1));
-	this.texCoords = new Float32Array(2 *  (this.rings + 1) * (this.segments + 1));
-	this.indices = new Uint16Array((this.segments + 1) * this.rings * 6);
-	var vv = 0;
-	var ii = 0;
-
+	this.radius            = radius || 1.0;
+	this.rings             = rings || 16;
+	this.segments          = segments || 16;
+	
+	this.vertices          = new Float32Array(3 * (this.rings + 1) * (this.segments + 1));
+	this.normals           = new Float32Array(3 * (this.rings + 1) * (this.segments + 1));
+	this.texCoords         = new Float32Array(2 *  (this.rings + 1) * (this.segments + 1));
+	this.indices           = new Uint16Array((this.segments + 1) * this.rings * 6);
+	var vv                 = 0;
+	var ii                 = 0;
+	
 	var vertexPositionData = [];
-    var normalData = [];
-    var textureCoordData = [];
-    var latitudeBands = this.rings;
-    var longitudeBands = this.segments;
-
- 	var fDeltaRingAngle = (GG.PI / this.rings);
-	var fDeltaSegAngle = (2.0 * GG.PI / this.segments);
-	var offset = 0;
+	var normalData         = [];
+	var textureCoordData   = [];
+	var latitudeBands      = this.rings;
+	var longitudeBands     = this.segments;
+	
+	var fDeltaRingAngle    = (GG.PI / this.rings);
+	var fDeltaSegAngle     = (2.0 * GG.PI / this.segments);
+	var offset             = 0;
 
 	// Generate the group of rings for the sphere
 	for (var ring = 0; ring <= this.rings; ring++) {
@@ -33,15 +33,15 @@ GG.SphereGeometry = function(radius, rings, segments) {
 			// Add one vertex to the strip which makes up the sphere
 			var invLen = 1.0 / Math.sqrt(x0*x0 + y0*y0 + z0*z0);
 
-			this.vertices[vv*3] = x0;
-			this.vertices[vv*3 + 1] = y0;
-			this.vertices[vv*3 + 2] = z0;
-
-			this.normals[vv*3] = invLen*x0;
-			this.normals[vv*3 + 1] = invLen*y0;
-			this.normals[vv*3 + 2] = invLen*z0;
+			this.vertices[vv*3]      = x0;
+			this.vertices[vv*3 + 1]  = y0;
+			this.vertices[vv*3 + 2]  = z0;
 			
-			this.texCoords[vv*2] = seg / this.segments;
+			this.normals[vv*3]       = invLen*x0;
+			this.normals[vv*3 + 1]   = invLen*y0;
+			this.normals[vv*3 + 2]   = invLen*z0;
+			
+			this.texCoords[vv*2]     = seg / this.segments;
 			this.texCoords[vv*2 + 1] = seg / this.rings;
 
 			vv++;		

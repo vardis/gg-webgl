@@ -37,6 +37,7 @@ GG.PhongPass.prototype.__setCustomUniforms = function(renderable, ctx, program) 
 
 	GG.ProgramUtils.setMaterialUniforms(program, 'u_material', renderable.material);
 	GG.ProgramUtils.setLightsUniform(program, viewMat, 'u_pointLights', ctx.scene.listPointLights());
+	GG.ProgramUtils.setLightsUniform(program, viewMat, 'u_directionalLights', ctx.scene.listDirectionalLights());
 };
 
 GG.PhongPass.prototype.createProgram = function() {
@@ -99,4 +100,12 @@ GG.PhongPass.prototype.createProgram = function() {
 		"	gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(0.5));"
 		].join('\n'));
 	this.fragmentShader = pg;	
+};
+
+GG.PhongPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
+	/*
+	gl.cullFace(gl.BACK);
+	gl.frontFace(gl.CW);
+	gl.enable(gl.CULL_FACE);
+	*/
 };

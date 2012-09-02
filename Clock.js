@@ -1,9 +1,9 @@
 GG.Clock = function() {
-	this.startTime = new Date();
-	this.pauseTime = null;
-	this.lastTick = new Date();
-	this.lastDelta = 0.0;
-	this.running = true;
+	this.startTime   = new Date();
+	this.pauseTime   = null;
+	this.lastTick    = new Date();
+	this.lastDelta   = 0.0;
+	this.running     = true;
 	this.scaleFactor = 1.0;
 };
 

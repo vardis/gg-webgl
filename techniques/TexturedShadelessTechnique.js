@@ -63,9 +63,8 @@ GG.TexturedShadelessTechnique.prototype.render = function(mesh, renderContext) {
 	gl.uniformMatrix4fv(this.program.uniformMV, false, MV);
 	gl.uniformMatrix4fv(this.program.uniformProjection, false, this.renderer.getProjectionMatrix());
 
-	gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.texture);
-    gl.uniform1i(this.program.samplerUniform, 0);
+	this.texture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAP);
+    gl.uniform1i(this.program.samplerUniform.handle(), 0);
 
 	this.renderer.renderMesh(mesh, this.program);
 };

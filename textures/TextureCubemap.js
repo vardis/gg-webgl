@@ -18,12 +18,12 @@ GG.TextureCubemap = function(spec) {
 		gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
 		gl.TEXTURE_CUBE_MAP_NEGATIVE_Z
 	];
-	this.images = {};
-
+	this.images     = {};
+	
 	this.imagesSize = spec.size || 1024;
 	this.hdrTexures = spec.floatTextures || false;
 	
-	this.gltex = gl.createTexture();
+	this.gltex      = gl.createTexture();
 
 	if (this.hdrTexures) {
 		this.loadHDRTextures(spec);

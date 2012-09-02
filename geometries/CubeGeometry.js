@@ -14,14 +14,14 @@
  */
 GG.CubeGeometry = function(dimensions) {
 	dimensions = dimensions || [1.0, 1.0, 1.0]
-	var x = dimensions[0], y = dimensions[1], z = dimensions[2];
+	var x      = dimensions[0], y = dimensions[1], z = dimensions[2];
 	
-	this.vertices = new Float32Array(36*3);
-	this.normals = new Float32Array(36*3);
+	this.vertices  = new Float32Array(36*3);
+	this.normals   = new Float32Array(36*3);
 	this.texCoords = new Float32Array(36*2);
-	var vv = 0;
-	var nn = 0;
-	var st = 0;
+	var vv         = 0;
+	var nn         = 0;
+	var st         = 0;
 	
 	// +Z
 	this.vertices.set([

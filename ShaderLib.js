@@ -29,7 +29,7 @@ GG.ShaderLib = new function (argument) {
 			"	float df = clamp(dot(normal, light), 0.0, 1.0);",
 			"	float sp = pow(max(0.0, dot(reflect(-light, normal), view)), mat.shininess);",
 			"	diffuse += df*lightInfo.diffuse;",
-			"	specular += step(0.0, df)*sp*lightInfo.specular;",
+			"	specular += step(0.00001, df)*sp*lightInfo.specular;",
 			"}"
 			].join('\n'),
 
@@ -38,7 +38,7 @@ GG.ShaderLib = new function (argument) {
 			"	float df = clamp(dot(normal, light), 0.0, 1.0);",
 			"	float sp = pow(max(0.0, dot(reflect(-light, normal), view)), mat.shininess);",
 			"	diffuse += df*lightInfo.diffuse;",
-			"	specular += step(0.0, df)*sp*lightInfo.specular;",
+			"	specular += step(0.00001, df)*sp*lightInfo.specular;",
 			"}"
 			].join('\n'),
 
@@ -80,6 +80,13 @@ GG.ShaderLib = new function (argument) {
 			'libUnpackRrgbaToFloat' : [
 				"float libUnpackRrgbaToFloat(vec4 enc) {",
 				"	const vec4 bitShifts = vec4(1.0, 1.0 / 256.0, 1.0 / (256.0 * 256.0), 1.0 / (256.0 * 256.0 * 256.0));",
+				"	return dot(enc, bitShifts);",
+				"}"
+			].join('\n'),
+
+			'libUnpackVec2ToFloat' : [
+				"float libUnpackVec2ToFloat(vec2 enc) {",
+				"	const vec2 bitShifts = vec2(1.0, 1.0 / 256.0);",
 				"	return dot(enc, bitShifts);",
 				"}"
 			].join('\n'),
