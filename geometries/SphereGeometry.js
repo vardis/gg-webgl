@@ -1,7 +1,7 @@
 GG.SphereGeometry = function(radius, rings, segments) {
-	this.radius            = radius || 1.0;
-	this.rings             = rings || 16;
-	this.segments          = segments || 16;
+	this.radius            = radius != undefined ? radius : 1.0;
+	this.rings             = rings != undefined ? rings : 16;
+	this.segments          = segments != undefined ? segments : 16;
 	
 	this.vertices          = new Float32Array(3 * (this.rings + 1) * (this.segments + 1));
 	this.normals           = new Float32Array(3 * (this.rings + 1) * (this.segments + 1));

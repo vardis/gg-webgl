@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+
+		<script src="../gl-matrix.js"></script>
+		<script>
+			var GG = {
+				version : "1.0",
+				context : null
+			};
+			
+		</script>
+		
+		<script type="text/javascript" src="../dat.gui.min.js"></script>
+
+		<script src="../GG_all.js"></script>
+
+		<script src="scene_renderer.js"></script>
+
+		<script>
+		
+		function init () {
+			new SceneRendererSample().start();
+
+			var gui = new dat.GUI();
+			gui.add(window.sample.redLight.shadowCamera, 'near', 0.0, 10.0);
+			gui.add(window.sample.redLight.shadowCamera, 'far', 0.0, 1000.0);
+			gui.add(window.sample.redLight.shadowCamera, 'right', 0.0, 1000.0);
+			gui.add(window.sample.redLight.shadowCamera, 'top', 0.0, 1000.0);
+		}
+		</script>
+		
+		
+	</head>
+	<body onload="init();">		
+		<canvas id="c" style="border: none;" width="640" height="480"></canvas>		
+	</body>
+</html>

@@ -1,26 +1,16 @@
-GG.ReflectiveTechnique = function(spec) {
-
-	spec = spec || {};
+GG.ReflectiveTechnique = function(spec) {	
+	spec        = spec || {};
+	spec.passes = [ new GG.ReflectiveTechnique.ReflectivePass(spec)];
 	GG.BaseTechnique.call(this, spec);
 
-	// amount of reflectance
-	this.reflectance     = 0.80;
-	
-	this.baseColor       = spec.baseColor || [ 0.30, 0.30, 0.30, 1.0 ];
-	
-	// index of refraction of the object being rendered
-	this.IOR             = spec.IOR || [ 1.0, 1.0, 1.0 ];
-	
-	// index of refraction of the environment surounding the object 
-	this.externalIOR     = spec.externalIOR || [ 1.330, 1.31, 1.230 ];
-	
-	this.cubemap         = spec.cubemap || null;
-	
-	this.fresnelBias     = spec.fresnelBias || 0.44;
-	
-	this.fresnelExponent = spec.fresnelExponent || 2.0;
+};
 
-	this.vertexShader = [
+GG.ReflectiveTechnique.prototype = new GG.BaseTechnique();
+GG.ReflectiveTechnique.prototype.constructor = GG.ReflectiveTechnique;
+
+GG.ReflectiveTechnique.ReflectivePass = function (spec) {
+	
+	spec.vertexShader = [
 		"attribute vec4 a_position;",
 		"attribute vec3 a_normal;",
 
@@ -41,13 +31,13 @@ GG.ReflectiveTechnique = function(spec) {
 		"}"
 	].join("\n");
 	
-	this.fragmentShader = [
+	spec.fragmentShader = [
 		"precision mediump float;",
 
 		"varying vec3 v_viewVector;",
 		"varying vec3 v_normal;",
 
-		"uniform vec4 u_baseColor;",
+		"uniform vec3 u_baseColor;",
 		"uniform float u_reflectance;",
 		"uniform vec3 u_eta;",
 
@@ -80,57 +70,30 @@ GG.ReflectiveTechnique = function(spec) {
 		"	float freshnelTerm = schlick_fresnel(-I, N, u_fresnelParams.x, u_fresnelParams.y);",
 		"	vec3 envColor = mix(transmColor, reflColor, freshnelTerm);",		
 		//"	envColor = mix(transmColor, reflColor, u_reflectance);",
-		"	gl_FragColor = vec4(mix(u_baseColor.rgb, envColor, u_reflectance), 1.0);",
+		"	gl_FragColor = vec4(mix(u_baseColor, envColor, u_reflectance), 1.0);",
 		"}"
 	].join("\n");
 	
-	this.program = null;
+	GG.RenderPass.call(this, spec);
 };
 
-GG.ReflectiveTechnique.prototype = new GG.BaseTechnique();
-GG.ReflectiveTechnique.prototype.constructor = GG.ReflectiveTechnique;
+GG.ReflectiveTechnique.ReflectivePass.prototype = new GG.RenderPass();
+GG.ReflectiveTechnique.ReflectivePass.prototype.constructor = GG.ReflectiveTechnique.ReflectivePass;
 
-GG.ReflectiveTechnique.prototype.initialize = function() {
-	GG.BaseTechnique.prototype.initialize();
-	this.program = this.createProgram(this.vertexShader, this.fragmentShader);
-	gl.useProgram(this.program);
-	this.program.attribPosition = gl.getAttribLocation(this.program, "a_position");
-	this.program.attribNormal = gl.getAttribLocation(this.program, "a_normal");
-	this.program.uniformBaseColor = gl.getUniformLocation(this.program, "u_baseColor");
-	this.program.uniformMV = gl.getUniformLocation(this.program, "u_matModelView");
-	this.program.uniformModel = gl.getUniformLocation(this.program, "u_matModel");
-	this.program.uniformViewInverse = gl.getUniformLocation(this.program, "u_matViewInverse");
-	this.program.uniformProjection = gl.getUniformLocation(this.program, "u_matProjection");
-	this.program.uniformCubemap = gl.getUniformLocation(this.program, "u_cubemap");
-	this.program.uniformReflectance = gl.getUniformLocation(this.program, "u_reflectance");
-	this.program.uniformEta = gl.getUniformLocation(this.program, "u_eta");
-	this.program.uniformFresnelParams = gl.getUniformLocation(this.program, "u_fresnelParams");
+GG.ReflectiveTechnique.ReflectivePass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	var mat = renderable.getMaterial();
+	gl.uniform1i(this.program.u_cubemap, GG.TEX_UNIT_ENV_MAP);
+
+	gl.uniform3fv(this.program.u_eta, [ 
+		mat.IOR[0] / mat.externalIOR[0],
+		mat.IOR[1] / mat.externalIOR[1],
+		mat.IOR[2] / mat.externalIOR[2] ]);
+	gl.uniform3fv(this.program.u_baseColor, mat.diffuse);
+	gl.uniform2fv(this.program.u_fresnelParams, [ mat.fresnelBias, mat.fresnelExponent ]);
+	gl.uniform1f(this.program.u_reflectance, mat.reflectance);
 };
 
-GG.ReflectiveTechnique.prototype.render = function(mesh, renderContext) {
-	// this could go to the renderer
-	gl.useProgram(this.program);				
-	
-	var MV = mat4.create();
-	mat4.multiply(this.renderer.getViewMatrix(), mesh.getModelMatrix(), MV);
-	gl.uniformMatrix4fv(this.program.uniformMV, false, MV);
-	gl.uniformMatrix4fv(this.program.uniformProjection, false, this.renderer.getProjectionMatrix());
-	gl.uniformMatrix4fv(this.program.uniformViewInverse, false, this.renderer.getInverseViewMatrix());
-	gl.uniformMatrix4fv(this.program.uniformModel, false, mesh.getModelMatrix());
-
-	gl.activeTexture(gl.TEXTURE0);
-	this.cubemap.bind();
-	gl.uniform1i(this.program.uniformCubemap, 0);
-
-	gl.uniform3fv(this.program.uniformEta, [ 
-		this.IOR[0] / this.externalIOR[0],
-		this.IOR[1] / this.externalIOR[1],
-		this.IOR[2] / this.externalIOR[2] ]);
-	gl.uniform4fv(this.program.uniformBaseColor, this.baseColor);
-	gl.uniform2fv(this.program.uniformFresnelParams, [ this.fresnelBias, this.fresnelExponent ]);
-	gl.uniform1f(this.program.uniformReflectance, this.reflectance);
- 
+GG.ReflectiveTechnique.ReflectivePass.prototype.__setCustomRenderState = function(renderable, ctx, program) {	
+	renderable.getMaterial().envMap.bind();	
  	gl.enable(gl.CULL_FACE);
-
-	this.renderer.renderMesh(mesh, this.program);
 };

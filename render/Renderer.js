@@ -4,7 +4,7 @@ GG.Renderer = function() {
 	this.view        = mat4.create();
 	this.inverseView = mat4.create();
 	this.MVP         = mat4.create();
-}
+};
 
 GG.Renderer.prototype.constructor = GG.Renderer;
 GG.Renderer.prototype.getCamera = function () {
@@ -40,7 +40,7 @@ GG.Renderer.prototype.prepareNextFrame = function () {
 	return this;
 };
 
-GG.Renderer.prototype.renderMesh = function (mesh, program) {		
+GG.Renderer.prototype.renderMesh = function (mesh, program, options) {		
 
 	var attribPosition = program[GG.GLSLProgram.BuiltInAttributes.attribPosition];
 	if (attribPosition != undefined) {
@@ -51,9 +51,10 @@ GG.Renderer.prototype.renderMesh = function (mesh, program) {
 
 	var attribNormal = program[GG.GLSLProgram.BuiltInAttributes.attribNormal];
 	if (attribNormal != undefined) {
-		gl.bindBuffer(gl.ARRAY_BUFFER, mesh.getNormalsBuffer());
+		var normalsBuffer = mesh.getMaterial().flatShade ? mesh.getFlatNormalsBuffer() : mesh.getNormalsBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
 		gl.enableVertexAttribArray(attribNormal);
-		gl.vertexAttribPointer(attribNormal, mesh.getNormalsBuffer().itemSize, mesh.getNormalsBuffer().itemType, false, 0, 0);
+		gl.vertexAttribPointer(attribNormal, normalsBuffer.itemSize, normalsBuffer.itemType, false, 0, 0);
 	}
 
 	var attribTexCoords = program[GG.GLSLProgram.BuiltInAttributes.attribTexCoords];
@@ -63,11 +64,16 @@ GG.Renderer.prototype.renderMesh = function (mesh, program) {
 		gl.vertexAttribPointer(attribTexCoords, mesh.getTexCoordsBuffer().itemSize, mesh.getTexCoordsBuffer().itemType, false, 0, 0);
 	}
 
+	options = options || {};
+	var mode = gl.TRIANGLES;
+	if ('mode' in options ) {
+		mode = options.mode;
+	}
 	if (mesh.getIndexBuffer() != undefined) {
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.getIndexBuffer());
-		gl.drawElements(gl.TRIANGLES, mesh.getIndexBuffer().numItems, mesh.getIndexBuffer().itemType, 0);
+		gl.drawElements(mode, mesh.getIndexBuffer().numItems, mesh.getIndexBuffer().itemType, 0);
 	} else {
-		gl.drawArrays(gl.TRIANGLES, 0, mesh.getPositionsBuffer().size);
+		gl.drawArrays(mode, 0, mesh.getPositionsBuffer().size);
 	}	
 };
 

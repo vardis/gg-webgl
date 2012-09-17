@@ -2,6 +2,7 @@ import sys
 
 GG_files = [
 	'GG_init.js',
+	'Naming.js',
 	'Clock.js',
 	'utils/AjaxUtils.js',
 	'utils/Loader.js',
@@ -18,6 +19,7 @@ GG_files = [
 	'textures/Texture.js',
 	'renderables/TriangleMesh.js',	
 	'renderables/StaticParticleSystem.js',
+	'cameras/Viewport.js',
 	'cameras/BaseCamera.js',
 	'cameras/PerspectiveCamera.js',
 	'cameras/OrthographicCamera.js',
@@ -25,6 +27,10 @@ GG_files = [
 	'render/RenderTarget.js',
 	'render/RenderContext.js',
 	'render/PingPongBuffer.js',
+	'render/PostProcessChain.js',
+	'render/screen_filters/GammaScreenFilter.js',
+	'render/screen_filters/VignetteScreenFilter.js',
+	'render/screen_filters/TVLinesScreenFilter.js',
 	'GLSLProgram.js',
 	'ProgramSource.js',
 	'materials/BaseMaterial.js',
@@ -34,11 +40,13 @@ GG_files = [
 	'techniques/RenderPasses/BlitPass.js',	
 	'techniques/RenderPasses/GaussianBlurPass.js',	
 	'techniques/BaseTechnique.js',
-	'techniques/ConstantLightingTechnique.js',
+	'techniques/ConstantColorTechnique.js',
 	'techniques/TexturedShadelessTechnique.js',
 	'techniques/CubemapTechnique.js',
 	'techniques/ReflectiveTechnique.js',
 	'techniques/PhongShadingTechnique.js',
+	'techniques/WireframeTechnique.js',
+	'techniques/DepthPrePassTechnique.js',
 	'techniques/particles/ParticlesTechnique.js',
 	'techniques/shadow_mapping/ShadowMapDepthPass.js',
 	'techniques/shadow_mapping/DepthMapDebugOutput.js',
@@ -51,7 +59,7 @@ GG_files = [
 	'interaction/MouseHandler.js',
 	'scene/Scene.js',
 	'scene/DefaultSceneRenderer.js',
-	'samples/scene_renderer.js'
+	'samples/SampleBase.js'
 ]
 
 def merge(files):

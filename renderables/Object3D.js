@@ -3,7 +3,7 @@ GG.Object3D = function(spec) {
 	this.pos      = [0.0, 0.0, 0.0];
 	this.rotation = [0.0, 0.0, 0.0];
 	this.scale    = [1.0, 1.0, 1.0];	
-	this.material = spec.material || null;
+	this.material = spec.material;
 }
 
 

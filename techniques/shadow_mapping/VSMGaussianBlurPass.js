@@ -1,7 +1,7 @@
 GG.VSMGaussianBlurPass = function (spec) {
 	spec              = spec || {};
-	this.filterSize   = spec.filterSize || 2;
-	this.isHorizontal = spec.horizontal || true;	
+	this.filterSize   = spec.filterSize != undefined ? spec.filterSize : 2;
+	this.isHorizontal = spec.horizontal != undefined ? spec.horizontal : true;	
 
 	var fs = [
 		"precision highp float;",

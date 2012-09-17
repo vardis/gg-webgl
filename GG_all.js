@@ -3,6 +3,7 @@ var GG = {
 	version : "1.0",
 	context : null,
 	PI : 3.14159265358979323846,
+	PI_OVER_2 : 3.14159265358979323846 / 2.0,
 
 	joinArrays : function(arrays) {
 		var joined = [];
@@ -21,26 +22,49 @@ var GG = {
 	},
 
 	init : function () {
-		GG.TEX_UNIT_DIFFUSE_MAP  = 0,
-		GG.TEX_UNIT_NORMAL_MAP   = 1,
-		GG.TEX_UNIT_SPECULAR_MAP = 2,
-		GG.TEX_UNIT_ALPHA_MAP    = 3,
-		GG.TEX_UNIT_GLOW_MAP     = 4,
-		GG.TEX_UNIT_SHADOW_MAP   = 5
+		GG.renderer = new GG.Renderer();
 	}
 	
 };
 
+GG.TEX_UNIT_DIFFUSE_MAP  = 0;
+GG.TEX_UNIT_NORMAL_MAP   = 1;
+GG.TEX_UNIT_SPECULAR_MAP = 2;
+GG.TEX_UNIT_ALPHA_MAP    = 3;
+GG.TEX_UNIT_GLOW_MAP     = 4;
+GG.TEX_UNIT_SHADOW_MAP   = 5;
+GG.TEX_UNIT_ENV_MAP      = 6;
 			
 var gl, canvas;
 			
 String.prototype.times = function(n) {
     return Array.prototype.join.call({length:n+1}, this);
 };
-			
+
 
 
 		
+/**
+ * Contains the naming conventions used throughout the framework.
+ */
+GG.Naming = {
+	UniformMaterial          : 'u_material',
+	UniformLight             : 'u_light',	
+	UniformModelMatrix       : 'u_matModel',
+	UniformNormalMatrix      : 'u_matNormals',
+	UniformModelViewMatrix   : 'u_matModelView',
+	UniformViewMatrix        : 'u_matView',
+	UniformInverseViewMatrix : 'u_matViewInverse',
+	UniformProjectionMatrix  : 'u_matProjection',
+	UniformTime0_X           : 'u_fTime0_X',
+	UniformTime0_1           : 'u_fTime0_1',
+	
+	AttributePosition        : 'a_position',
+	AttributeNormal          : 'a_normal',
+	AttributeColor           : 'a_color',
+	AttributeTexCoords       : 'a_texCoords',
+
+};
 GG.Clock = function() {
 	this.startTime   = new Date();
 	this.pauseTime   = null;
@@ -48,6 +72,7 @@ GG.Clock = function() {
 	this.lastDelta   = 0.0;
 	this.running     = true;
 	this.scaleFactor = 1.0;
+	this.normalized  = 0.0;
 };
 
 GG.Clock.prototype.constructor = GG.Clock;
@@ -56,6 +81,7 @@ GG.Clock.prototype.tick = function() {
 	if (this.running) {
 		var now = new Date();
 		this.lastDelta = this.scaleFactor * (now.getTime() - this.lastTick.getTime());
+		this.normalized = (this.normalized + this.lastDelta) % 1.0;
 		this.lastTick = now;
 	} else {
 		this.lastDelta = 0.0;
@@ -89,6 +115,10 @@ GG.Clock.prototype.setScaleFactor = function(s) {
 
 GG.Clock.prototype.deltaTime = function() {
 	return this.lastDelta;
+};
+
+GG.Clock.prototype.normalizedTime = function () {
+	return this.normalized;
 };
 
 GG.Clock.prototype.totalRunningTime = function() {
@@ -128,7 +158,13 @@ GG.AjaxUtils = function() {
 			    }
 				
 			};
-			request.send();
+
+			try {
+				request.send();	
+			} catch (e) {
+				errorCallback();
+			}
+			
 		},
 
 		/**
@@ -147,13 +183,13 @@ GG.AjaxUtils = function() {
 			});
 		},
 
-		getRequest : function (url, type, callback) {
+		getRequest : function (url, type, callback, errorCallback) {
 			var request = new XMLHttpRequest();
   			request.open("GET", url, true);
   			request.expectedType = type;
   			GG.AjaxUtils.asyncRequest(request, function(response) {								
 				callback(response, url);
-			});
+			}, errorCallback);
 		}
 	};
 }();
@@ -212,7 +248,16 @@ GG.Loader = {
 }
 GG.ShaderLib = new function (argument) {
 	
-	return lib = {
+	return {
+		screen_filter_vertex : [
+			"attribute vec4 a_position;",
+			"varying vec2 v_texCoords;",
+
+			"void main() {",
+			"	v_texCoords = 0.5*(a_position.xy + vec2(1.0));",
+			"	gl_Position = a_position;",
+			"}"].join('\n'),
+			
 		blit : {
 			vertex : [
 			"attribute vec4 a_position;",
@@ -236,34 +281,18 @@ GG.ShaderLib = new function (argument) {
 		},
 
 		phong : {
-			'pointLightIrradiance' : [
-			"void pointLightIrradiance(in vec3 normal, in vec3 view, in vec3 light, in LightInfo lightInfo, in Material_t mat, inout vec3 diffuse, inout vec3 specular) {",		
+			'lightIrradiance' : [
+			"void lightIrradiance(in vec3 normal, in vec3 view, in vec3 light, in LightInfo lightInfo, in Material_t mat, inout vec3 diffuse, inout vec3 specular) {",		
 			"	float df = clamp(dot(normal, light), 0.0, 1.0);",
+			"	if (lightInfo.type == 3.0) {",
+			"		float cosSpot = clamp(dot(normalize(u_matView*vec4(lightInfo.direction, 0.0)).xyz, -light), 0.0, 1.0);",
+			"		df *= pow(cosSpot, -lightInfo.attenuation) * smoothstep(lightInfo.cosCutOff, 1.0, cosSpot);",
+			"	}",
 			"	float sp = pow(max(0.0, dot(reflect(-light, normal), view)), mat.shininess);",
 			"	diffuse += df*lightInfo.diffuse;",
 			"	specular += step(0.00001, df)*sp*lightInfo.specular;",
 			"}"
-			].join('\n'),
-
-			'directionalLightIrradiance' : [
-			"void directionalLightIrradiance(in vec3 normal, in vec3 view, in vec3 light, in LightInfo lightInfo, in Material_t mat, inout vec3 diffuse, inout vec3 specular) {",		
-			"	float df = clamp(dot(normal, light), 0.0, 1.0);",
-			"	float sp = pow(max(0.0, dot(reflect(-light, normal), view)), mat.shininess);",
-			"	diffuse += df*lightInfo.diffuse;",
-			"	specular += step(0.00001, df)*sp*lightInfo.specular;",
-			"}"
-			].join('\n'),
-
-			'spotLightIrradiance' : [
-			"void spotLightIrradiance(in vec3 normal, in vec3 view, in vec3 light, in LightInfo lightInfo, in Material_t mat, inout vec3 diffuse, inout vec3 specular) {",		
-			"	float df = clamp(dot(normal, light), 0.0, 1.0);",
-			"	float cosSpot = clamp(dot(normalize(u_matView*vec4(lightInfo.direction, 0.0)).xyz, -light), 0.0, 1.0);",
-			"	df *= pow(cosSpot, -lightInfo.attenuation) * smoothstep(lightInfo.cosCutOff, 1.0, cosSpot);",
-			"	float sp = pow(max(0.0, dot(reflect(-light, normal), view)), mat.shininess);",
-			"	diffuse += df*lightInfo.diffuse;",
-			"	specular += step(0.00001, df)*sp*lightInfo.specular;",
-			"}"
-			].join('\n')
+			].join('\n')			
 		},
 
 		blocks : {
@@ -282,16 +311,16 @@ GG.ShaderLib = new function (argument) {
 			" ",
 			"vec4 libPackFloatToRGBA(float value) {",
 			"	float r = value;",
-			"	float g = fract(r*256.0);",
-			"	float b = fract(g*256.0);",
-			"	float a = fract(b*256.0);",
+			"	float g = fract(r*255.0);",
+			"	float b = fract(g*255.0);",
+			"	float a = fract(b*255.0);",
 			"	return vec4(r, g, b, a);",
 			"}"
 			].join('\n'),
 
 			'libUnpackRrgbaToFloat' : [
 				"float libUnpackRrgbaToFloat(vec4 enc) {",
-				"	const vec4 bitShifts = vec4(1.0, 1.0 / 256.0, 1.0 / (256.0 * 256.0), 1.0 / (256.0 * 256.0 * 256.0));",
+				"	const vec4 bitShifts = vec4(1.0, 1.0 / 255.0, 1.0 / (255.0 * 255.0), 1.0 / (255.0 * 255.0 * 255.0));",
 				"	return dot(enc, bitShifts);",
 				"}"
 			].join('\n'),
@@ -302,9 +331,10 @@ GG.ShaderLib = new function (argument) {
 				"	return dot(enc, bitShifts);",
 				"}"
 			].join('\n'),
-
+ 
 			'lightInfoStructure' : [
 			"struct LightInfo {",
+			"	float type;",
 			"	vec3 position;",
 			"	vec3 direction;",
 			"	vec3 diffuse;",
@@ -337,7 +367,42 @@ GG.MathUtils = function() {
 
 		radsToDeg : function(rads) {
 			return 180.0 * rads / this.PI;
+		},
+
+		clamp : function (val, min, max) {
+			if (val < min) return min;
+			else if (val > max) return max;
+			else return val;
+		},
+
+		mat4ToEuler : function (mat) {
+			var sp = -mat[6];
+			if ( sp <= -1.0 ) {
+				var p = -GG.PI_OVER_2;
+
+			} else if ( sp >= 1.0 ) {
+				p = GG.PI_OVER_2;
+
+			} else {
+				p = Math.asin( sp ) ;
+			}	
+
+			// Check for the Gimbal lock case , giving a slight tolerance
+			// for numerical imprecision
+			if ( Math.abs( sp ) > 0.9999) {
+				// We are looking straight up or down.
+				// Slam bank to zero and just set heading
+				b = 0.0;
+				h = Math.atan2(-mat[8], mat[0]) ;
+			} else {
+				// Compute heading from m13 and m33
+				h = Math.atan2(mat[2], mat[10]) ;
+				// Compute bank from m21 and m22
+				b = Math.atan2(mat[4], mat[5]) ;
+			}
+			return [h, p, b];
 		}
+
 	}
 }();
 
@@ -387,6 +452,9 @@ GG.ProgramUtils = function() {
 				var u = gl.getActiveUniform(program, idx);				
 				program[u.name] = gl.getUniformLocation(program, u.name);				
 			}
+
+			GG.ProgramUtils.getLightUniformsLocations(program, "u_light", 1);
+			GG.ProgramUtils.getMaterialUniformLocations(program, GG.Naming.UniformMaterial);
 		},
 
 		/**
@@ -397,17 +465,39 @@ GG.ProgramUtils = function() {
 		 */
 		injectBuiltInUniforms : function(program, renderContext, renderable) {
 			var predefined = {};
-			predefined[GG.GLSLProgram.UniformTime0_X] = function(p, uname) { 
-				gl.uniform1f(p[uname], renderContext.clock.totalRunningTime()); 
+			predefined[GG.Naming.UniformTime0_X] = function(p, uname) { 
+				gl.uniform1f(p[uname], GG.clock.totalRunningTime()); 
 			};
-			predefined[GG.GLSLProgram.UniformViewMatrix] = function(p, uname) { 
+			predefined[GG.Naming.UniformTime0_1] = function(p, uname) { 
+				gl.uniform1f(p[uname], GG.clock.normalizedTime()); 
+			};
+			predefined[GG.Naming.UniformViewMatrix] = function(p, uname) { 
 				gl.uniformMatrix4fv(p[uname], false, renderContext.camera.getViewMatrix()); 
 			};
-			predefined[GG.GLSLProgram.UniformProjectionMatrix] = function(p, uname) { 
+			predefined[GG.Naming.UniformInverseViewMatrix] = function(p, uname) { 
+				var inv = mat4.create();
+				mat4.inverse(renderContext.camera.getViewMatrix(), inv);
+				gl.uniformMatrix4fv(p[uname], false, inv); 
+			};
+			predefined[GG.Naming.UniformProjectionMatrix] = function(p, uname) { 
 				gl.uniformMatrix4fv(p[uname], false, renderContext.camera.getProjectionMatrix()); 
 			};
-			predefined[GG.GLSLProgram.UniformModelMatrix] = function(p, uname) { 
+			predefined[GG.Naming.UniformModelMatrix] = function(p, uname) { 
 				gl.uniformMatrix4fv(p[uname], false, renderable.getModelMatrix()); 
+			};
+			predefined[GG.Naming.UniformModelViewMatrix] = function(p, uname) { 
+				var mv = mat4.create();
+				mat4.multiply(renderContext.camera.getViewMatrix(), renderable.getModelMatrix(), mv);
+				gl.uniformMatrix4fv(p[uname], false, mv); 
+			};
+			predefined[GG.Naming.UniformNormalMatrix] = function(p, uname) { 
+				var mv = mat4.create();
+				mat4.multiply(renderContext.camera.getViewMatrix(), renderable.getModelMatrix(), mv);
+
+				var normal = mat4.create();
+				mat4.inverse(mv, normal);
+				mat4.transpose(normal);
+				gl.uniformMatrix3fv(p[uname], false, mat4.toMat3(normal));
 			};
 
 			for ( u in predefined) {
@@ -415,6 +505,8 @@ GG.ProgramUtils = function() {
 					predefined[u](program, u);
 				}				
 			}
+
+			//GG.ProgramUtils.setMaterialUniforms(program, GG.Naming.UniformMaterial, renderable.getMaterial());
 		},
 
 		getAttributeLocations : function(program) {
@@ -428,34 +520,40 @@ GG.ProgramUtils = function() {
 			
 		},
 
-		setLightsUniform : function (program, viewMat, uniformName, lights) {
+		setLightsUniform : function (program, uniformName, light) {
 			uniforms = {
+				lightType : ["type", 1],
 				position : ["position", 3],
 				direction : ["direction", 3],
 				diffuse : ["diffuse", 3],
 				specular : ["specular", 3],
 				attenuation : ["attenuation", 1],
 				cosCutOff : ["cosCutOff", 1]
-			}
-			for (var i = 0; i < lights.length; i++) {
-				var lightIndex =  "[" + i + "]";//lights.length > 1 ? "[" + i + "]" : "";
-				for (var k in uniforms) {
-					var field = uniformName + lightIndex + "." + uniforms[k][0] + lightIndex;			
-					var val = lights[i][k];
-					eval("gl.uniform" + (uniforms[k][1] > 1 ? "3fv" : "1f") + "(program[field], val)");
+			};
+			
+			for (var k in uniforms) {
+				var field = uniformName + "." + uniforms[k][0];			
+				var val = light[k];
+				if (uniforms[k][1] > 1) {
+					gl.uniform3fv(program[field], val);
+				} else {
+					gl.uniform1f(program[field], val);
 				}
-			}
+				//eval("gl.uniform" + (uniforms[k][1] > 1 ? "3fv" : "1f") + "(program[field], val)");
+			}			
 		},
 
+// Maybe this is not necessary anymore...
 		getLightUniformsLocations : function (program, uniformName, numLights) {
 			var uniforms = {
+				type : ["type", 1],
 				position : ["position", 3],
 				direction : ["direction", 3],
 				diffuse : ["diffuse", 3],
 				specular : ["specular", 3],
 				attenuation : ["attenuation", 1],
 				cosCutOff : ["cosCutOff", 1]
-			}
+			};
 			
 			for (var i = 0; i < numLights; i++) {				
 				var lightIndex = numLights > 1 ? "[" + i + "]" : "";
@@ -469,10 +567,17 @@ GG.ProgramUtils = function() {
 		},
 
 		setMaterialUniforms : function (program, uniformName, material) {
-			gl.uniform3fv(program[uniformName + '.ambient'], material.ambient);
-			gl.uniform3fv(program[uniformName + '.diffuse'], material.diffuse);
-			gl.uniform3fv(program[uniformName + '.specular'], material.specular);
-			gl.uniform1f(program[uniformName + '.shininess'], material.shininess);
+			var attributes = ['ambient', 'diffuse', 'specular'];
+			for (var i = attributes.length - 1; i >= 0; i--) {
+				var name = uniformName + '.' + attributes[i];
+				if (program[name]) {
+					gl.uniform3fv(program[name], material[attributes[i]]);	
+				}
+			}
+			var shininess = uniformName + '.shininess';
+			if (program[shininess]) {
+				gl.uniform1f(program[shininess], material.shininess);
+			}
 		},
 
 		getMaterialUniformLocations : function(program, uniformName) {
@@ -484,18 +589,39 @@ GG.ProgramUtils = function() {
 	}
 }();
 GG.Geometry = function (spec) {
-	spec           = spec           || {};
-	this.vertices  = spec.vertices  || null;
-	this.normals   = spec.normals   || null;
-	this.texCoords = spec.texCoords || null;
-	this.colors    = spec.colors    || null;
-	this.tangents  = spec.tangents  || null;
-	this.indices   = spec.indices   || null;
+	spec             = spec || {};
+	this.vertices    = spec.vertices;
+	this.normals     = spec.normals;
+	this.flatNormals = spec.flatNormals;
+	this.texCoords   = spec.texCoords;
+	this.colors      = spec.colors;
+	this.tangents    = spec.tangents;
+	this.indices     = spec.indices;
 };
 
 GG.Geometry.prototype.constructor = GG.Geometry;
 
 GG.Geometry.fromJSON = function (jsonObj) {	
+	if ('vertices' in jsonObj) {
+		spec = {};
+		spec.vertices  = new Float32Array(jsonObj.vertices);
+
+		if ('normals' in jsonObj) {
+			spec.normals   = new Float32Array(jsonObj.normals);		
+		}
+
+		if ('uvs' in jsonObj) {
+			spec.texCoords = new Float32Array(jsonObj.uvs);
+		}
+	
+		if ('faces' in jsonObj) {			
+			spec.indices = new Uint16Array(jsonObj.faces);
+		}
+		return new GG.Geometry(spec);
+	}
+};
+
+GG.Geometry.fromThreeJsJSON = function (jsonObj) {	
 	if ('vertices' in jsonObj) {
 		spec = {};
 		spec.vertices  = new Float32Array(jsonObj.vertices);
@@ -547,12 +673,46 @@ GG.Geometry.fromJSON = function (jsonObj) {
 	}
 };
 
+GG.Geometry.prototype.calculateFlatNormals = function() {
+	if (this.indices) {
+		// case of triangle lists only
+		this.flatNormals = new Float32Array(this.normals.length);
+
+		for (var i = 0; i < this.indices.length - 1; i += 3) {
+			var v1 = this.indices[i];
+			var v2 = this.indices[i+1];
+			var v3 = this.indices[i+2];
+
+			var n1 = this.normals.subarray(v1*3, v1*3+3);
+			var n2 = this.normals.subarray(v2*3, v2*3+3);
+			var n3 = this.normals.subarray(v3*3, v3*3+3);
+
+			var avg = [n1[0] + n2[0] + n3[0], n1[1] + n2[1] + n3[1], n1[2] + n2[2] + n3[2]];
+			avg[0] = avg[0] / 3.0;
+			avg[1] = avg[1] / 3.0;
+			avg[2] = avg[2] / 3.0;
+
+			this.flatNormals.set(avg, v1*3);
+			this.flatNormals.set(avg, v2*3);
+			this.flatNormals.set(avg, v3*3);
+		}
+		return this.flatNormals;	
+	} else {
+		return null;
+	}
+	
+};
+
 GG.Geometry.prototype.getVertices = function() {
 	return this.vertices;
 };
 
 GG.Geometry.prototype.getNormals = function() {
 	return this.normals;
+};
+
+GG.Geometry.prototype.getFlatNormals = function() {
+	return this.flatNormals;
 };
 
 GG.Geometry.prototype.getTexCoords = function() {
@@ -619,9 +779,9 @@ GG.PlaneGeometry = function(divisions) {
 GG.PlaneGeometry.prototype = new GG.Geometry();
 GG.PlaneGeometry.prototype.constructor = GG.PlaneGeometry;
 GG.SphereGeometry = function(radius, rings, segments) {
-	this.radius            = radius || 1.0;
-	this.rings             = rings || 16;
-	this.segments          = segments || 16;
+	this.radius            = radius != undefined ? radius : 1.0;
+	this.rings             = rings != undefined ? rings : 16;
+	this.segments          = segments != undefined ? segments : 16;
 	
 	this.vertices          = new Float32Array(3 * (this.rings + 1) * (this.segments + 1));
 	this.normals           = new Float32Array(3 * (this.rings + 1) * (this.segments + 1));
@@ -709,7 +869,7 @@ GG.SphereGeometry.prototype.getFaces = function() {
  *	mesh.attributes("normals").foreach(...)
  */
 GG.CubeGeometry = function(dimensions) {
-	dimensions = dimensions || [1.0, 1.0, 1.0]
+	dimensions = dimensions != undefined ? dimensions : [1.0, 1.0, 1.0]
 	var x      = dimensions[0], y = dimensions[1], z = dimensions[2];
 	
 	this.vertices  = new Float32Array(36*3);
@@ -976,7 +1136,7 @@ GG.Object3D = function(spec) {
 	this.pos      = [0.0, 0.0, 0.0];
 	this.rotation = [0.0, 0.0, 0.0];
 	this.scale    = [1.0, 1.0, 1.0];	
-	this.material = spec.material || null;
+	this.material = spec.material;
 }
 
 
@@ -1029,8 +1189,8 @@ GG.TextureCubemap = function(spec) {
 	];
 	this.images     = {};
 	
-	this.imagesSize = spec.size || 1024;
-	this.hdrTexures = spec.floatTextures || false;
+	this.imagesSize = spec.size != undefined ? spec.size : 1024;
+	this.hdrTexures = spec.floatTextures != undefined ? spec.floatTextures : false;
 	
 	this.gltex      = gl.createTexture();
 
@@ -1136,24 +1296,26 @@ GG.TextureCubemap.prototype.handleImageOnLoad = function(target, image) {
 };
 
 GG.TextureCubemap.prototype.bind = function() {
+	gl.activeTexture(GG.Texture.getGlUnitFromIndex(GG.TEX_UNIT_ENV_MAP));
 	gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.gltex);
 };
+
 
 GG.TextureCubemap.prototype.unbind = function() {
 	gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
 };
 GG.Texture = function (spec) {
 	spec             = spec || {};
-	this.texture     = spec.texture || null;
+	this.texture     = spec.texture;
 	this.textureType = gl.TEXTURE_2D;
-	this.format      = spec.format || gl.RGBA;
-	this.width       = spec.width || 512;
-	this.height      = spec.height || 512;
-	this.magFilter   = spec.magFilter || gl.NEAREST;
-	this.minFilter   = spec.minFilter || gl.NEAREST;
-	this.wrapS       = spec.wrapS || gl.CLAMP_TO_EDGE;
-	this.wrapT       = spec.wrapT || gl.CLAMP_TO_EDGE;
-	this.flipY       = spec.flipY || true;
+	this.format      = spec.format != undefined ? spec.format : gl.RGBA;
+	this.width       = spec.width != undefined ? spec.width : 512;
+	this.height      = spec.height != undefined ? spec.height : 512;
+	this.magFilter   = spec.magFilter != undefined ? spec.magFilter : gl.NEAREST;
+	this.minFilter   = spec.minFilter != undefined ? spec.minFilter : gl.NEAREST;
+	this.wrapS       = spec.wrapS != undefined ? spec.wrapS : gl.CLAMP_TO_EDGE;
+	this.wrapT       = spec.wrapT != undefined ? spec.wrapT : gl.CLAMP_TO_EDGE;
+	this.flipY       = spec.flipY != undefined ? spec.flipY : true;
 };
 
 GG.Texture.prototype.constructor = GG.Texture;
@@ -1173,6 +1335,11 @@ GG.Texture.prototype.setMagFilter = function(filterType) {
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterType);
 };
 
+GG.Texture.prototype.setWrapMode = function(wrapModeS, wrapModeT) {
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapModeS);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapModeT);
+};
+
 GG.Texture.prototype.handle = function() {
 	return this.tex;
 };
@@ -1185,7 +1352,7 @@ GG.Texture.createTexture = function (spec) {
 	var tex = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, tex);
 
-	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, spec.flipY || true);
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, spec.flipY != undefined ? spec.flipY : true);
 
 	// maps a format to the triple [internalFormat, format, type] as accepted by gl.TexImage2D
 	var formatDetails = {};
@@ -1195,15 +1362,15 @@ GG.Texture.createTexture = function (spec) {
 	formatDetails[gl.RGB5_A1] = [gl.RGBA, gl.RGBA, gl.UNSIGNED_SHORT_5_5_5_1];
 	formatDetails[gl.RGB565] = [gl.RGB, gl.RGB, gl.UNSIGNED_SHORT_5_6_5];
 
-	var colorFormat = spec.colorFormat || gl.RGBA;
+	var colorFormat = spec.colorFormat != undefined ? spec.colorFormat : gl.RGBA;
 	
-	var width = spec.width || 512;
-	var height = spec.height || 512;
+	var width = spec.width != undefined ? spec.width : 512;
+	var height = spec.height != undefined ? spec.height : 512;
 
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, spec.magFilter || gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, spec.minFilter || gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, spec.wrapS || gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, spec.wrapT || gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, spec.magFilter != undefined ? spec.magFilter : gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, spec.minFilter != undefined ? spec.minFilter : gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, spec.wrapS != undefined ? spec.wrapS : gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, spec.wrapT != undefined ? spec.wrapT : gl.CLAMP_TO_EDGE);
 
 	gl.texImage2D(gl.TEXTURE_2D, 0, formatDetails[colorFormat][0], width, height, 0, formatDetails[colorFormat][1], formatDetails[colorFormat][2], null);
 	gl.bindTexture(gl.TEXTURE_2D, null);
@@ -1212,6 +1379,11 @@ GG.Texture.createTexture = function (spec) {
 	copySpec.texture = tex;
 	return new GG.Texture(copySpec);
 };
+/**
+ * Each TriangleMesh is associated with a Geomtry that stores the actual vertices,
+ * normals, and the rest vertex attributes. 
+ * Only geometries of triangle lists are supported. 
+ */
 GG.TriangleMesh = function(geometry, material, spec) {
 	
 	this.geometry                     = geometry;
@@ -1246,9 +1418,10 @@ GG.TriangleMesh = function(geometry, material, spec) {
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.geometry.getIndices(), gl.STATIC_DRAW);
 	}
-}
 
-GG.TriangleMesh.prototype = new GG.Object3D();
+};
+
+GG.TriangleMesh.prototype             = new GG.Object3D();
 GG.TriangleMesh.prototype.constructor = GG.TriangleMesh;
 
 GG.TriangleMesh.prototype.getGeometry = function() {
@@ -1270,6 +1443,26 @@ GG.TriangleMesh.prototype.getTexCoordsBuffer = function() {
 GG.TriangleMesh.prototype.getIndexBuffer = function() {
 	return this.indexBuffer;
 };
+
+GG.TriangleMesh.prototype.getFlatNormalsBuffer = function() {
+	if (this.flatNormalsBuffer === undefined) {
+		var flatNormals = this.geometry.getFlatNormals();
+		if (flatNormals === undefined) {
+			flatNormals = this.geometry.calculateFlatNormals();
+		}
+		if (flatNormals) {
+			this.flatNormalsBuffer                = gl.createBuffer(1);
+			this.flatNormalsBuffer.size           = this.geometry.getFlatNormals().length / 3;
+			this.flatNormalsBuffer.itemSize       = 3;
+			this.flatNormalsBuffer.itemType       = gl.FLOAT;
+			gl.bindBuffer(gl.ARRAY_BUFFER, this.flatNormalsBuffer);			
+			gl.bufferData(gl.ARRAY_BUFFER, this.geometry.getFlatNormals(), gl.STATIC_DRAW);
+		} else {
+			return null;
+		}
+	}
+	return this.flatNormalsBuffer;
+};
 /**
  * Create a static particle system, i.e. the particles remain stationery
  * at their original positions.
@@ -1280,7 +1473,7 @@ GG.TriangleMesh.prototype.getIndexBuffer = function() {
  */
 GG.StaticParticleSystem = function(geometry, material, spec) {
 	spec                        = spec || {};
-	this.pointSize              = spec.pointSize || 1.0;
+	this.pointSize              = spec.pointSize != undefined ? spec.pointSize : 1.0;
 	
 	this.vertexBuffer           = gl.createBuffer(1);
 	this.vertexBuffer.size      = geometry.getVertices().length / 3;	
@@ -1320,17 +1513,62 @@ GG.StaticParticleSystem.prototype.getPointSize = function() {
 GG.StaticParticleSystem.prototype.setPointSize = function(sz) {
 	this.pointSize = sz;
 };
+/**
+ * A viewport is linked with a camera and defines the portion of the render surface that
+ * will be covered by the camera's display.
+ */
+GG.Viewport = function (spec) {
+	spec = spec || {};
+	this.x = spec.x != undefined ? spec.x : 0;
+	this.y = spec.y != undefined ? spec.y : 0;
+	this.width = spec.width != undefined ? spec.width : 320;
+	this.height = spec.height != undefined ? spec.height : 200;
+	this.clearColor = spec.clearColor != undefined ? spec.clearColor : [0, 0, 0];
+	this.zOrder = spec.zOrder != undefined ? spec.zOrder : 0;
+};
+
+
+GG.Viewport.prototype.getWidth = function() {
+    return this.width;
+};
+
+GG.Viewport.prototype.setWidth = function(width) {
+    this.width = width;
+    return this;
+};
+
+
+GG.Viewport.prototype.getHeight = function() {
+    return this.height;
+};
+
+GG.Viewport.prototype.setHeight = function(height) {
+    this.height = height;
+    return this;
+};
+
+
+GG.Viewport.prototype.getClearColor = function() {
+    return this.clearColor;
+};
+
+GG.Viewport.prototype.setClearColor = function(clearColor) {
+    this.clearColor = clearColor;
+    return this;
+};
+
 GG.BaseCamera = function (spec) {
 	spec             = spec || {};
-	this.position    = spec.position || [ 0.0, 0.0, 0.0];
-	this.offset		 = [0.0, 0.0, 0.0];
-	this.lookAt      = spec.lookAt || [ 0.0, 0.0, -1.0];
-	this.up          = spec.up || [ 0.0, 1.0, 0.0 ];
-	this.rotation    = spec.rotation || [ 0.0, 0.0, 0.0];
-	this.near        = spec.near || 0.1;
-	this.far         = spec.far || 100.0;
-	this.aspectRatio = spec.aspectRatio || 1.33;	
+	this.position    = spec.position != undefined ? spec.position : [ 0.0, 0.0, 0.0];
+	this.offset      = [0.0, 0.0, 0.0];
+	this.lookAt      = spec.lookAt != undefined ? spec.lookAt : [ 0.0, 0.0, -1.0];
+	this.up          = spec.up != undefined ? spec.up : [ 0.0, 1.0, 0.0 ];
+	this.rotation    = spec.rotation != undefined ? spec.rotation : [ 0.0, 0.0, 0.0];
+	this.near        = spec.near != undefined ? spec.near : 0.1;
+	this.far         = spec.far != undefined ? spec.far : 100.0;
+	this.aspectRatio = spec.aspectRatio != undefined ? spec.aspectRatio : 1.33;	
 	this.viewMatrix  = mat4.create();	
+	this.viewport    = new GG.Viewport();
 };
 
 GG.BaseCamera.FORWARD_VECTOR = [0.0, 0.0, 1.0, 0.0];
@@ -1338,10 +1576,11 @@ GG.BaseCamera.UP_VECTOR      = [0.0, 1.0, 0.0, 0.0];
 
 GG.BaseCamera.prototype.getViewMatrix = function() {
 	mat4.identity(this.viewMatrix); 	 
-	mat4.rotate(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[0]), [1, 0, 0]);
-	mat4.rotate(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[1]), [0, 1, 0]); 	
 	
-	
+	mat4.rotateX(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[0]));
+	mat4.rotateY(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[1])); 	
+	mat4.rotateZ(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[2])); 	
+	/*
 	var base = vec3.create([this.viewMatrix[0], this.viewMatrix[4], this.viewMatrix[8]]);
 	vec3.scale(base, this.offset[0], base);
 	vec3.add(this.position, base, this.position);
@@ -1353,8 +1592,9 @@ GG.BaseCamera.prototype.getViewMatrix = function() {
  	var base = vec3.create([this.viewMatrix[2], this.viewMatrix[6], this.viewMatrix[10]]);
 	vec3.scale(base, this.offset[2], base);
 	vec3.add(this.position, base, this.position);	
-
-	mat4.translate(this.viewMatrix, [-this.position[0], -this.position[1], -this.position[2]]);
+*/
+mat4.translate(this.viewMatrix, [-this.position[0], -this.position[1], -this.position[2]]);
+	
 /*
 	console.log('looking dir ' + this.lookAt[0] + ', ' + this.lookAt[1] + ', ' + this.lookAt[2]);
 	console.log('position ' + this.position[0] + ', ' + this.position[1] + ', ' + this.position[2]);
@@ -1364,6 +1604,7 @@ GG.BaseCamera.prototype.getViewMatrix = function() {
 	//mat4.lookAt(this.position, lt, this.up, this.viewMatrix);
 	this.offset = [0.0, 0.0, 0.0];
 	return this.viewMatrix;
+	//return mat4.inverse(this.viewMatrix);
 };
 
 GG.BaseCamera.prototype.getPosition = function() {
@@ -1383,9 +1624,24 @@ GG.BaseCamera.prototype.setRotation = function(r) {
 	return this;
 };
 
+
+GG.BaseCamera.prototype.getViewport = function() {
+    return this.viewport;
+};
+
+GG.BaseCamera.prototype.setViewport = function(viewport) {
+    this.viewport = viewport;
+    return this;
+};
+
+
+GG.BaseCamera.prototype.elevate = function (units) {
+	this.position[1] += units;
+};
+
 GG.BaseCamera.prototype.forward = function (units) {
-	this.offset[2] += units;
-	//this.position[2] += units;
+	//this.offset[2] += units;
+	this.position[2] += units;
 	/*
 	var dir = vec3.normalize(this.lookAt);
 	var offset = vec3.create();
@@ -1396,7 +1652,8 @@ GG.BaseCamera.prototype.forward = function (units) {
 };
 
 GG.BaseCamera.prototype.right = function (units) {
-	this.offset[0] += units;
+	//this.offset[0] += units;
+	this.position[0] += units;
 	/*
 	var up       = vec3.create();
 	var rightVec = vec3.create();
@@ -1410,6 +1667,10 @@ GG.BaseCamera.prototype.right = function (units) {
 	*/
 	//vec3.add(this.position, this.lookAt, this.lookAt);
 	//vec3.normalize(this.lookAt);
+};
+
+GG.BaseCamera.prototype.zoom = function (amount) {
+	// overridde in subclasses
 };
 
 GG.BaseCamera.constructor = GG.BaseCamera;
@@ -1441,13 +1702,16 @@ GG.PerspectiveCamera.prototype.setup = function(pos, lookAt, up, fov, aspectRati
 	return this;
 };
 
+GG.PerspectiveCamera.prototype.zoom = function (amount) {
+	this.fov = GG.MathUtils.clamp(this.fov + amount, 0.0, 180.0);
+};
 GG.OrthographicCamera = function (spec) {
 	spec                 = spec || {};
 	GG.BaseCamera.call(this, spec);
-	this.left            = spec.left || -1.0;
-	this.right           = spec.right || 1.0;
-	this.bottom          = spec.bottom || -1.0;
-	this.top             = spec.top || 1.0;
+	this.left            = spec.left != undefined ? spec.left : -1.0;
+	this.right           = spec.right != undefined ? spec.right : 1.0;
+	this.bottom          = spec.bottom != undefined ? spec.bottom : -1.0;
+	this.top             = spec.top != undefined ? spec.top : 1.0;
 	this.projectionMatix = mat4.create();	
 };
 
@@ -1464,14 +1728,19 @@ GG.OrthographicCamera.prototype.setup = function(pos, lookAt, up, left, right, b
 	this.position = pos;
 	this.lookAt   = lookAt;
 	this.up       = up;
-	this.near     = near;
-	this.far      = far;
-	this.left     = left;
-	this.right    = right;
-	this.bottom   = bottom;
-	this.top      = top;
+	this.near     = near != undefined ? near : this.near;
+	this.far      = far != undefined ? far : this.far;
+	this.left     = left != undefined ? left : this.left;
+	this.right    = right != undefined ? right : this.right;
+	this.bottom   = bottom != undefined ? bottom : this.bottom;
+	this.top      = top != undefined ? top : this.top;
 	mat4.lookAt(pos, lookAt, up, this.viewMatrix);
 	mat4.ortho(left, right, bottom, top, near, far, this.projectionMatix);
+
+	var headPitchBank = GG.MathUtils.mat4ToEuler(this.viewMatrix);
+	this.rotation[0] = GG.MathUtils.radsToDeg(headPitchBank[1]);
+	this.rotation[1] = GG.MathUtils.radsToDeg(headPitchBank[0]);
+	this.rotation[2] = GG.MathUtils.radsToDeg(headPitchBank[2]);
 	return this;
 };
 
@@ -1481,14 +1750,14 @@ GG.LT_SPOT = 3;
 
 GG.Light = function(spec) {
 	spec              = spec || {};
-	this.lightName    = spec.name || 'light';
-	this.lightType    = spec.type || GG.LT_POINT;
-	this.position     = spec.position || [0.0, 0.0, 0.0];
-	this.direction    = spec.direction || [0.0, 0.0, -1.0];
-	this.diffuse      = spec.diffuse || [1.0, 1.0, 1.0];
-	this.specular     = spec.specular || [1.0, 1.0, 1.0];
-	this.attenuation  = spec.attenuation || 5.0;
-	this.cosCutOff    = spec.cosCutOff || 0.5;
+	this.lightName    = spec.name != undefined ? spec.name : 'light';
+	this.lightType    = spec.type != undefined ? spec.type : GG.LT_POINT;
+	this.position     = spec.position != undefined ? spec.position : [0.0, 0.0, 0.0];
+	this.direction    = spec.direction != undefined ? spec.direction : [0.0, 0.0, -1.0];
+	this.diffuse      = spec.diffuse != undefined ? spec.diffuse : [1.0, 1.0, 1.0];
+	this.specular     = spec.specular != undefined ? spec.specular : [1.0, 1.0, 1.0];
+	this.attenuation  = spec.attenuation != undefined ? spec.attenuation : 5.0;
+	this.cosCutOff    = spec.cosCutOff != undefined ? spec.cosCutOff : 0.5;
 	this.shadowCamera = new GG.PerspectiveCamera();
 };
 
@@ -1531,17 +1800,17 @@ GG.Light.prototype.getShadowCamera = function () {
  */
 GG.RenderTarget = function(spec) {
 	spec                  = spec || {};	
-	this.width            = spec.width || 320;
-	this.height           = spec.height || 200;
+	this.width            = spec.width != undefined ? spec.width : 320;
+	this.height           = spec.height != undefined ? spec.height : 200;
 	this.colorFormat      = spec.colorFormat;
 	this.depthFormat      = spec.depthFormat;
 	this.stencilFormat    = spec.stencilFormat;
-	this.useColor         = spec.useColor || true;
-	this.useDepth         = spec.useDepth || true;
-	this.useStencil       = spec.useStencil || false;
+	this.useColor         = spec.useColor != undefined ? spec.useColor : true;
+	this.useDepth         = spec.useDepth != undefined ? spec.useDepth : true;
+	this.useStencil       = spec.useStencil != undefined ? spec.useStencil : false;
 	
-	this.clearColor       = spec.clearColor || [0.0, 0.0, 0.0, 1.0];
-	this.clearDepth       = spec.clearDepth || 1.0;
+	this.clearColor       = spec.clearColor != undefined ? spec.clearColor : [0.0, 0.0, 0.0, 1.0];
+	this.clearDepth       = spec.clearDepth != undefined ? spec.clearDepth : 1.0;
 	
 	this.colorAttachments = [];
 	if (this.useColor && spec.colorAttachment0 != undefined) {
@@ -1571,9 +1840,9 @@ GG.RenderTarget.prototype.destroy = function () {
 };
 
 GG.RenderTarget.prototype.initialize = function () {
-	this.colorFormat = this.colorFormat || gl.RGBA;
-	this.depthFormat = this.depthFormat || gl.DEPTH_COMPONENT16;
-	this.stencilFormat = this.stencilFormat || gl.STENCIL_INDEX8;
+	this.colorFormat = this.colorFormat != undefined ? this.colorFormat : gl.RGBA;
+	this.depthFormat = this.depthFormat != undefined ? this.depthFormat : gl.DEPTH_COMPONENT16;
+	this.stencilFormat = this.stencilFormat != undefined ? this.stencilFormat : gl.STENCIL_INDEX8;
 
 	this.spec = {
 		width : this.width,
@@ -1683,7 +1952,7 @@ GG.RenderTarget.prototype.getColorAttachment = function(i) {
 	return this.colorAttachments[i];
 };
 
-GG.RenderTarget.prototype.getDeptAttachment = function() {
+GG.RenderTarget.prototype.getDepthAttachment = function() {
 	return this.depthAttachment;
 };
 
@@ -1697,11 +1966,12 @@ GG.RenderTarget.prototype.getStencilAttachment = function() {
  */
 GG.RenderContext = function(spec) {
 	spec              = spec || {};	
-	this.renderer     = spec.renderer || GG.renderer;
-	this.clock        = spec.clock || GG.clock;
-	this.camera       = spec.camera || null;
-	this.renderTarget = spec.renderTarget || null;
-	this.scene        = spec.scene || null;
+	this.renderer     = spec.renderer != undefined ? spec.renderer : GG.renderer;
+	this.clock        = spec.clock != undefined ? spec.clock : GG.clock;
+	this.camera       = spec.camera;
+	this.renderTarget = spec.renderTarget;
+	this.scene        = spec.scene;
+	this.light        = spec.light;
 };
 GG.PingPongBuffer = function (spec) {
 	spec = spec || {};
@@ -1710,7 +1980,7 @@ GG.PingPongBuffer = function (spec) {
 		var textures = [ GG.Texture.createTexture(spec), GG.Texture.createTexture(spec) ];	
 		spec.colorAttachments = textures;
 	}		
-	this.textureUnit = spec.textureUnit || GG.TEX_UNIT_DIFFUSE_MAP;
+	this.textureUnit = spec.textureUnit != undefined ? spec.textureUnit : GG.TEX_UNIT_DIFFUSE_MAP;
 	this.spec        = GG.cloneDictionary(spec);		
 };
 
@@ -1760,10 +2030,206 @@ GG.PingPongBuffer.prototype.sourceTexture = function() {
 GG.PingPongBuffer.prototype.targetTexture = function() {
 	return this.fbos[this.writeFBO].getColorAttachment(0);	
 };
+/**
+ * Manages a chain of post processing, screen filters. 
+ *
+ * A Texture or RenderTarget is required to provide the input, while the output
+ * can be either a RenderTarget or null which corresponds to the WebGL BACK buffer.
+ *
+ * PostProcessChain will generate a GLSL program according to the contents
+ * of the filter chain. The benefit is that all processing happens in a single
+ * pass rather than doing one pass per filter.
+ *
+ * E.g.:
+ * var postProcess = new GG.PostProcessChain();
+ * postProcess.input(highResRT).output(null)
+ * 	.filter(myScreenFilter).vignette({ radius : 0.1 }).gamma(2.2);
+ */ 	               
+GG.PostProcessChain = function (spec) {
+	this.filterChain = [];
+	this.screenPass  = new GG.ScreenPass();
+	this.program     = null;
+	this.src         = null;
+	this.dest        = null;
+	this.needsUpdate = true;
+
+	this.availableFilters = {
+		'gamma'    : GG.GammaScreenFilter,
+		'vignette' : GG.VignetteScreenFilter,
+		'tvLines'  : GG.TVLinesScreenFilter
+	};
+
+	for (filterName in this.availableFilters) {
+		var that = this;
+		this[filterName] = function (fname) {
+			return function (spec) {
+				that.filterChain.push(new that.availableFilters[fname](spec));
+				that.needsUpdate = true;
+				return that;
+			}
+		}(filterName);
+	}
+		
+};
+
+GG.PostProcessChain.prototype.constructor = GG.PostProcessChain;
+
+GG.PostProcessChain.prototype.source = function (src) {
+	this.src = src;
+	return this;
+};
+
+GG.PostProcessChain.prototype.destination = function (dest) {
+	this.dest = dest;
+	return this;
+};
+
+GG.PostProcessChain.prototype.process = function () {
+	if (this.needsUpdate) {
+		this.screenPass.destroy();
+
+		var programSource = new GG.ProgramSource();
+		programSource.asFragmentShader().floatPrecision('highp')
+			.uniform('sampler2D', 'u_sourceTexture')
+			.varying('vec2', 'v_texCoords')
+			.addMainInitBlock('vec4 color = texture2D(u_sourceTexture, v_texCoords);');
+
+		for (var i = 0; i < this.filterChain.length; i++) {
+			this.filterChain[i].inject(programSource);
+		};
+
+		programSource.addMainBlock("gl_FragColor = vec4(color.rgb, 1.0);");
+		
+		this.screenPass = new GG.ScreenPass({
+			vertexShader   : GG.ShaderLib.screen_filter_vertex,
+			fragmentShader : programSource.toString()			
+		});
+
+		this.needsUpdate = false;
+	}
+
+	var sourceTexture = this.src;
+	if (this.src instanceof GG.RenderTarget) {
+		sourceTexture = this.src.getColorAttachment(0);
+	}
+	this.screenPass.setSourceTexture(sourceTexture);
+
+	try {
+		if (this.dest instanceof GG.RenderTarget) {
+			this.dest.activate();
+		} else {
+			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+			gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+		}
+
+		// call initialize now in order to get the gpu program
+		this.screenPass.initialize();
+		gl.useProgram(this.screenPass.program);
+		
+		for (var i = 0; i < this.filterChain.length; i++) {
+			this.filterChain[i].setUniforms(this.screenPass.program);
+		};
+		this.screenPass.render();
+	} finally {
+		if (this.dest instanceof GG.RenderTarget) {
+			this.dest.deactivate();
+		}
+	}
+};
+
+GG.PostProcessChain.prototype.filter = function (screenFilter) {
+	// body...
+	return this;
+};
+
+
+GG.GammaScreenFilter = function (spec) {
+	spec = spec || {};
+	if (typeof spec == "number") {
+		this.gamma = spec;
+	} else {
+		this.gamma = spec.gamma != undefined ? spec.gamma : 2.2;
+	}	
+	console.log(this.gamma);
+};
+
+GG.GammaScreenFilter.prototype.constructor = GG.GammaScreenFilter;
+
+GG.GammaScreenFilter.prototype.inject = function (programSource) {
+	programSource.uniform('float', 'u_gamma')
+		.addMainBlock("color.rgb = pow(color.rgb, vec3(u_gamma));");
+};
+
+GG.GammaScreenFilter.prototype.setUniforms = function (program) {
+	gl.uniform1f(program.u_gamma, 1.0 / this.gamma);
+};
+GG.VignetteScreenFilter = function (spec) {
+	spec                     = spec || {};
+	this.u_vignetteContrast  = spec.u_vignetteContrast != undefined ? spec.u_vignetteContrast : 2.5;
+	this.u_vignetteSpread    = spec.u_vignetteSpread != undefined ? spec.u_vignetteSpread : 5.0;
+	
+	// controls the ratio of the elliptical surface that will be black when the
+	// gradient is formed
+	this.u_vignetteDarkRatio = spec.u_vignetteDarkRatio != undefined ? spec.u_vignetteDarkRatio : 1.0;
+	
+	this.u_vignetteColor     = spec.u_vignetteColor != undefined ? spec.u_vignetteColor : [0.02, 0.02, 0.02];
+};
+
+GG.VignetteScreenFilter.prototype.constructor = GG.VignetteScreenFilter;
+
+GG.VignetteScreenFilter.prototype.inject = function (programSource) {
+	programSource.uniform('float', 'u_vignetteContrast')
+		.uniform('float', 'u_vignetteSpread')
+		.uniform('float', 'u_vignetteDarkRatio')
+		.uniform('vec3', 'u_vignetteColor')
+		.addMainBlock([	
+		// creates a gradient white-to-black starting from the center
+   		"float f = clamp(1.0 - u_vignetteDarkRatio*sqrt(dot(v_texCoords-vec2(0.5), v_texCoords-vec2(0.5))), 0.0, 1.0);",
+   
+	   // reverses the gradient
+	   "float invF = 1.0 - f;",
+	   
+	   // u_vignetteSpreads the black regions towards the corners
+	   // because invF is smaller than 1.0 and by raising it to a power
+	   // we get even smaller values. Points near the borders of the image
+	   // are decreasing slower as their are closer to 1.0 (being white).
+	   "float p1 = pow(invF, u_vignetteContrast);",
+   
+	   // reverses the colors
+	   "float p2 = pow(1.0 - p1, u_vignetteSpread);",
+   
+	   // p2 varies between 0.0 and 1.0 and it can be used to
+	   // interpolate between the original image color and the
+	   // shadow color
+	   "vec3 vignetterFactor = mix(u_vignetteColor, vec3(1.0), p2);",
+	   "color = vec4(vignetterFactor, 1.0) * color;"
+	].join('\n'));
+};
+
+GG.VignetteScreenFilter.prototype.setUniforms = function (program) {
+	gl.uniform1f(program.u_vignetteContrast, this.u_vignetteContrast);
+	gl.uniform1f(program.u_vignetteSpread, this.u_vignetteSpread);
+	gl.uniform1f(program.u_vignetteDarkRatio, this.u_vignetteDarkRatio);
+	gl.uniform3fv(program.u_vignetteColor, this.u_vignetteColor);
+};
+GG.TVLinesScreenFilter = function () {
+	// body...
+};
+
+GG.TVLinesScreenFilter.prototype.constructor = GG.TVLinesScreenFilter;
+
+GG.TVLinesScreenFilter.prototype.inject = function (programSource) {
+	programSource.uniform('float', 'u_fTime0_1')
+		.addMainBlock("color = color*0.9 + 0.041*cos(-10.0*u_fTime0_1+v_texCoords.y*1000.0);");
+};
+
+GG.TVLinesScreenFilter.prototype.setUniforms = function (program) {
+
+};
 GG.GLSLProgram = function (spec) {
 	spec                = spec || {};
-	this.vertexShader   = spec.vertexShader || '';
-	this.fragmentShader = spec.fragmentShader || '';
+	this.vertexShader   = spec.vertexShader != undefined ? spec.vertexShader : '';
+	this.fragmentShader = spec.fragmentShader != undefined ? spec.fragmentShader : '';
 	this.compiled       = false;
 	this.gpuProgram     = null;
 	this.hashKey        = 0;
@@ -1795,26 +2261,19 @@ GG.GLSLProgram.prototype.unbind = function() {
 };
 
 GG.GLSLProgram.BuiltInAttributes = {
-	attribPosition : 'a_position',
-	attribNormal : 'a_normal',
-	attribTexCoords : 'a_texCoords',
-	attribColor : 'a_color'
+	attribPosition  : GG.Naming.AttributePosition,
+	attribNormal    : GG.Naming.AttributeNormal,
+	attribTexCoords : GG.Naming.AttributeTexCoords,
+	attribColor     : GG.Naming.AttributeColor
 };
 
-GG.GLSLProgram.UniformModelMatrix = 'u_matModel';
-GG.GLSLProgram.UniformNormalMatrix = 'u_matNormals';
-GG.GLSLProgram.UniformModelViewMatrix = 'u_matModelView';
-GG.GLSLProgram.UniformViewMatrix = 'u_matView';
-GG.GLSLProgram.UniformProjectionMatrix = 'u_matProjection';
-GG.GLSLProgram.UniformTime0_X = 'fTime0_X';
-
 GG.GLSLProgram.BuiltInUniforms = [
-	GG.GLSLProgram.UniformModelMatrix,
-	GG.GLSLProgram.UniformNormalMatrix,
-	GG.GLSLProgram.UniformViewMatrix,
-	GG.GLSLProgram.UniformModelViewMatrix,
-	GG.GLSLProgram.UniformProjectionMatrix,
-	GG.GLSLProgram.UniformTime0_X
+	GG.Naming.UniformModelMatrix,
+	GG.Naming.UniformNormalMatrix,
+	GG.Naming.UniformViewMatrix,
+	GG.Naming.UniformModelViewMatrix,
+	GG.Naming.UniformProjectionMatrix,
+	GG.Naming.UniformTime0_X
 ];
 
 
@@ -1897,6 +2356,12 @@ GG.ProgramSource.prototype.hasUniform = function(name) {
 	return name in this.uniforms;
 };
 
+GG.ProgramSource.prototype.uniformLight = function() {
+	this.addTypeDecl(GG.ShaderLib.blocks['lightInfoStructure'], 'LightInfo');	
+	this.uniform('LightInfo', "u_light");
+	return this;
+};
+
 GG.ProgramSource.prototype.uniformPointLights = function() {
 	this.addTypeDecl(GG.ShaderLib.blocks['lightInfoStructure'], 'LightInfo');	
 	this.uniform('LightInfo', "u_pointLights[2]");
@@ -1917,14 +2382,14 @@ GG.ProgramSource.prototype.uniformDirectionalLights = function() {
 
 GG.ProgramSource.prototype.uniformMaterial = function(uniformName) {
 	this.addTypeDecl(GG.ShaderLib.blocks['materialInfoStructure'], 'MaterialStruct');	
-	var name = uniformName || 'u_material';
+	var name = uniformName != undefined ? uniformName : 'u_material';
 	this.uniform('Material_t', name);
 	return this;
 };
 
 GG.ProgramSource.prototype.addDecl = function(block, name) {
 	this.declarations.push({
-		'name' : name || 'decl_' + this.declarations.length,
+		'name' : name != undefined ? name : 'decl_' + this.declarations.length,
 		'code' : block,
 		'order' : this.declarations.length
 	});
@@ -1938,7 +2403,7 @@ GG.ProgramSource.prototype.addTypeDecl = function(block, name) {
 
 GG.ProgramSource.prototype.addMainInitBlock = function(block, name) {
 	this.mainInit.push({
-		'name' : name || 'block_' + this.mainInit.length,
+		'name' : name != undefined ? name : 'block_' + this.mainInit.length,
 		'code' : block,
 		'order' : this.mainInit.length
 	});
@@ -1947,7 +2412,7 @@ GG.ProgramSource.prototype.addMainInitBlock = function(block, name) {
 
 GG.ProgramSource.prototype.addMainBlock = function(block, name) {
 	this.mainBlocks.push({
-		'name' : name || 'block_' + this.mainBlocks.length,
+		'name' : name != undefined ? name : 'block_' + this.mainBlocks.length,
 		'code' : block,
 		'order' : this.mainBlocks.length
 	});
@@ -1956,7 +2421,7 @@ GG.ProgramSource.prototype.addMainBlock = function(block, name) {
 
 GG.ProgramSource.prototype.perPointLightBlock = function (block) {
 	this.pointLightBlocks.push({
-		'name' : name || 'block_' + this.pointLightBlocks.length,
+		'name' : name != undefined ? name : 'block_' + this.pointLightBlocks.length,
 		'code' : block,
 		'order' : this.pointLightBlocks.length
 	});
@@ -1964,7 +2429,7 @@ GG.ProgramSource.prototype.perPointLightBlock = function (block) {
 
 GG.ProgramSource.prototype.perDirectionalLightBlock = function (block) {
 	this.directionalLightBlocks.push({
-		'name' : name || 'block_' + this.directionalLightBlocks.length,
+		'name' : name != undefined ? name : 'block_' + this.directionalLightBlocks.length,
 		'code' : block,
 		'order' : this.directionalLightBlocks.length
 	});
@@ -1972,7 +2437,7 @@ GG.ProgramSource.prototype.perDirectionalLightBlock = function (block) {
 
 GG.ProgramSource.prototype.perSpotLightBlock = function (block) {
 	this.spotLightBlocks.push({
-		'name' : name || 'block_' + this.spotLightBlocks.length,
+		'name' : name != undefined ? name : 'block_' + this.spotLightBlocks.length,
 		'code' : block,
 		'order' : this.spotLightBlocks.length
 	});
@@ -1984,7 +2449,7 @@ GG.ProgramSource.prototype.position = function() {
 };
 
 GG.ProgramSource.prototype.normal = function() {
-	this.attribute('vec3', GG.GLSLProgram.BuiltInAttributes.attribNormal);
+	this.attribute('vec3', GG.Naming.AttributeNormal);
 	return this;
 };
 
@@ -1999,27 +2464,27 @@ GG.ProgramSource.prototype.color = function() {
 };
 
 GG.ProgramSource.prototype.uniformModelMatrix = function() {
-	this.uniform('mat4', GG.GLSLProgram.UniformModelMatrix);
+	this.uniform('mat4', GG.Naming.UniformModelMatrix);
 	return this;
 };
 
 GG.ProgramSource.prototype.uniformViewMatrix = function() {
-	this.uniform('mat4', GG.GLSLProgram.UniformViewMatrix);
+	this.uniform('mat4', GG.Naming.UniformViewMatrix);
 	return this;
 };
 
 GG.ProgramSource.prototype.uniformModelViewMatrix = function() {
-	this.uniform('mat4', GG.GLSLProgram.UniformModelViewMatrix);
+	this.uniform('mat4', GG.Naming.UniformModelViewMatrix);
 	return this;
 };
 
 GG.ProgramSource.prototype.uniformProjectionMatrix = function() {
-	this.uniform('mat4', GG.GLSLProgram.UniformProjectionMatrix);
+	this.uniform('mat4', GG.Naming.UniformProjectionMatrix);
 	return this;
 };
 
 GG.ProgramSource.prototype.uniformNormalsMatrix = function() {
-	this.uniform('mat3', GG.GLSLProgram.UniformNormalMatrix);
+	this.uniform('mat3', GG.Naming.UniformNormalMatrix);
 	return this;
 };
 
@@ -2178,31 +2643,44 @@ GG.BaseMaterial = function(spec) {
 	
 	this.technique   = spec.technique;
 	
-	this.ambient     = spec.ambient || [0.1, 0.1, 0.1];
-	this.diffuse     = spec.diffuse || [1.0, 1.0, 1.0];
-	this.specular    = spec.specular || [1.0, 1.0, 1.0];
-	this.shininess   = spec.shininess || 10.0;
+	this.ambient     = spec.ambient != undefined ? spec.ambient : [0.1, 0.1, 0.1];
+	this.diffuse     = spec.diffuse != undefined ? spec.diffuse : [1.0, 1.0, 1.0];
+	this.specular    = spec.specular != undefined ? spec.specular : [1.0, 1.0, 1.0];
+	this.shininess   = spec.shininess != undefined ? spec.shininess : 10.0;
 	
-	this.diffuseMap  = spec.diffuseMap || null;
-	this.specularMap = spec.specularMap || null;
-	this.opacityMap  = spec.opacityMap || null;
-	this.lightMap    = spec.lightMap || null;
-	this.glowMap     = spec.glowMap || null;
+	this.diffuseMap  = spec.diffuseMap;
+	this.specularMap = spec.specularMap;
+	this.opacityMap  = spec.opacityMap;
+	this.lightMap    = spec.lightMap;
+	this.glowMap     = spec.glowMap;
 	
-	this.flatShade   = spec.flatShade || false;
-	this.phongShade  = spec.phongShade || true;	
-	this.shadeless   = spec.shadeless || false;
+	this.flatShade   = spec.flatShade != undefined ? spec.flatShade : false;
+	this.phongShade  = spec.phongShade != undefined ? spec.phongShade : true;	
+	this.shadeless   = spec.shadeless != undefined ? spec.shadeless : false;
+	this.wireframe   = spec.wireframe != undefined ? spec.wireframe : false;
+	this.wireOffset  = spec.wireOffset != undefined ? spec.wireOffset : 0.001;
+	this.wireWidth   = spec.wireOffset != undefined ? spec.wireOffset : 1.0;
+
+	// environment map to be sampled for reflections
+	this.envMap          = spec.envMap != undefined ? spec.envMap : null;
+	// amount of reflectance
+	this.reflectance     = spec.reflectance != undefined ? spec.reflectance : 0.80;
+
+	// index of refraction 
+	this.IOR             = spec.IOR != undefined ? spec.IOR : [ 1.0, 1.0, 1.0 ];
+
+	// index of refraction of the environment surounding the object 
+	this.externalIOR     = spec.externalIOR != undefined ? spec.externalIOR : [ 1.330, 1.31, 1.230 ];
+
+	this.fresnelBias     = spec.fresnelBias != undefined ? spec.fresnelBias : 0.44;
+	this.fresnelExponent = spec.fresnelExponent != undefined ? spec.fresnelExponent : 2.0;
 };
 
 GG.BaseMaterial.prototype = new GG.BaseMaterial();
 GG.BaseMaterial.prototype.constructor = GG.BaseMaterial;
 
-GG.BaseMaterial.prototype.getTechnique = function() {
-	if (this.technique == null) {
-		return this.pickTechnique();
-	} else {
-		return this.technique;
-	}	
+GG.BaseMaterial.prototype.getTechnique = function() {	
+	return this.pickTechnique();
 };
 
 GG.BaseMaterial.prototype.setTechnique = function(technique) {
@@ -2211,23 +2689,24 @@ GG.BaseMaterial.prototype.setTechnique = function(technique) {
 };
 
 GG.BaseMaterial.prototype.pickTechnique = function() {
+	if (this.wireframe) {
+		if (this.wireframeTechnique == null) {
+			this.wireframeTechnique = new GG.WireframeTechnique();
+		}
+		return this.wireframeTechnique;
+	}
 	if (this.shadeless) {
 		if (this.shadelessTechnique == null) {
-			this.shadelessTechnique = new GG.ConstantLightingTechnique();
+			this.shadelessTechnique = new GG.ConstantColorTechnique();
 		}
 		return this.shadelessTechnique;
 	}
-	if (this.flatShade) {
-		if (this.flatShadeTechniqe == null) {
-			this.flatShadeTechniqe = new GG.ConstantLightingTechnique();
-		}
-		return this.flatShadeTechniqe;
-	} else {
-		if (this.phongShadeTechnique == null) {
-			this.phongShadeTechnique = new GG.PhongShadeTechnique();
-		}
-		return this.phongShadeTechnique;
+	
+	if (this.phongShadeTechnique == null) {
+		this.phongShadeTechnique = new GG.PhongShadingTechnique();
 	}
+	return this.phongShadeTechnique;
+	
 };
 
 GG.PhongMaterial = function (spec) {
@@ -2270,14 +2749,13 @@ GG.PhongMaterial.prototype.constructor = GG.PhongMaterial;
  */
 GG.RenderPass = function (spec) {
 	spec                = spec || {}	
-	this.vertexShader   = spec.vertexShader || null;
-	this.fragmentShader = spec.fragmentShader || null;
-	this.renderableType = spec.renderableType || GG.RenderPass.MESH;
-	this.callback       = spec.callback || this;
+	this.vertexShader   = spec.vertexShader;
+	this.fragmentShader = spec.fragmentShader;
+	this.renderableType = spec.renderableType != undefined ? spec.renderableType : GG.RenderPass.MESH;
+	this.callback       = spec.callback != undefined ? spec.callback : this;
 	this.attributeNames = spec.attributeNames || [];
 	this.program        = null;
-	this.adaptsToScene  = spec.adaptsToScene || false;
-	this.usesLighting   = spec.usesLighting || true;
+	this.usesLighting   = spec.usesLighting != undefined ? spec.usesLighting : true;
 };
 
 GG.RenderPass.prototype.constructor = GG.RenderPass;
@@ -2289,18 +2767,15 @@ GG.RenderPass.prototype.initialize = function() {
 	if (!this.program) {
 		this.program = GG.ProgramUtils.createProgram(this.vertexShader, this.fragmentShader);
 	}
-	this.initializeAttributes();
-	this.initializeUniforms();
-};
-
-GG.RenderPass.prototype.initializeAttributes = function() {
-	GG.ProgramUtils.getAttributeLocations(this.program);
-};
-
-GG.RenderPass.prototype.initializeUniforms = function() {
+	GG.ProgramUtils.getAttributeLocations(this.program);	
 	GG.ProgramUtils.getUniformsLocations(this.program);	
-	//this.__locateCustomUniforms(this.program);	
 };
+
+
+GG.RenderPass.prototype.destroy = function() {
+	if (this.program) gl.deleteProgram(this.program);
+};
+
 
 GG.RenderPass.prototype.render = function(renderable, renderContext) {
 	if (this.program == null) {
@@ -2321,16 +2796,15 @@ GG.RenderPass.prototype.render = function(renderable, renderContext) {
 	this.__setCustomUniforms(renderable, renderContext, this.program);		
 
 	if (renderable && this.renderableType == GG.RenderPass.MESH) {
-		renderContext.renderer.renderMesh(renderable, this.program);
+		var options = {
+			mode : this.getRenderPrimitive(renderable)
+		};
+		renderContext.renderer.renderMesh(renderable, this.program, options);
 	} else {
 		this.callback.__renderGeometry(renderable);
 	}
 	
 	gl.useProgram(null);
-};
-
-GG.RenderPass.prototype.isAdaptableToScene = function() {
-	return this.adaptsToScene;
 };
 
 GG.RenderPass.prototype.usesSceneLighting = function() {
@@ -2351,11 +2825,17 @@ GG.RenderPass.prototype.setProgram = function(program) {
 };
 
 // no-op default implementations
-GG.RenderPass.prototype.__locateCustomUniforms = function(program) {};
 GG.RenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__setCustomAttributes = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__renderGeometry = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {};
+
+/**
+ * Subclasses can override this method in order to render lines or points, fans, strips, etc.
+ */
+GG.RenderPass.prototype.getRenderPrimitive = function(renderable) {
+	return gl.TRIANGLES;
+};
 
 /*
 pass = new RenderPass({
@@ -2395,7 +2875,7 @@ GG.ScreenPass = function(spec) {
 
 	GG.RenderPass.call(this, spec);
 
-	this.sourceTexture = spec.sourceTexture || null;
+	this.sourceTexture = spec.sourceTexture;
 	this.screenQuad = null;
 };
 
@@ -2425,6 +2905,12 @@ GG.ScreenPass.prototype.setSourceTexture = function(texture) {
 	this.sourceTexture = texture;
 };
 
+GG.ScreenPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
+	gl.disable(gl.CULL_FACE);
+	gl.disable(gl.DEPTH_TEST);
+};
+
+
 
 
 GG.BlitPass = function (sourceTexture) {
@@ -2441,8 +2927,8 @@ GG.BlitPass.prototype = new GG.ScreenPass();
 GG.BlitPass.prototype.constructor = GG.BlitPass;
 GG.GaussianBlurPass = function (spec) {
 	spec              = spec || {};
-	this.filterSize   = spec.filterSize || 2;
-	this.isHorizontal = spec.horizontal || true;	
+	this.filterSize   = spec.filterSize != undefined ? spec.filterSize : 2;
+	this.isHorizontal = spec.horizontal != undefined ? spec.horizontal : true;	
 
 	var fs = [
 		"precision highp float;",
@@ -2499,9 +2985,9 @@ GG.GaussianBlurPass.prototype.__setCustomUniforms = function(renderable, renderC
 
 GG.BaseTechnique = function(spec) {	
 	spec          = spec || {};	
-	this.textures = spec.textures != undefined ? spec.textures : [];
-	this.renderer = GG.renderer;	
+	this.textures = spec.textures != undefined ? spec.textures : [];	
 	this.passes   = spec.passes || [];
+	this.program  = null;
 }
 
 GG.BaseTechnique.prototype.constructor = GG.BaseTechnique;
@@ -2518,59 +3004,46 @@ GG.BaseTechnique.prototype.initialize = function() {
 };
 
 GG.BaseTechnique.prototype.destroy = function() {
-
+	if (this.passes) {
+		for (var i = this.passes.length - 1; i >= 0; i--) {
+			this.passes[i].destroy();
+		};
+	}	
 };
 
 GG.BaseTechnique.prototype.renderPasses = function() {
 	return [].concat(this.passes);
 };
 
-GG.BaseTechnique.prototype.render = function(mesh, ctx) {	
+GG.BaseTechnique.prototype.render = function(renderable, ctx) {	
 	this.passes.forEach(function(pass) {
-		pass.render(mesh, ctx);
+		pass.render(renderable, ctx);
 	});
 };
 
-GG.BaseTechnique.prototype.createProgram = function(vs, fs) {
-	shaderProgram = gl.createProgram();
-	vertexShader = gl.createShader(gl.VERTEX_SHADER);
-	gl.shaderSource(vertexShader, vs);
-	gl.compileShader(vertexShader);
-	if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-		alert(gl.getShaderInfoLog(vertexShader));
-		return null;
-	}
-	
-	fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-	gl.shaderSource(fragmentShader, fs);
-	gl.compileShader(fragmentShader);
-	if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
-		alert(gl.getShaderInfoLog(fragmentShader));
-		return null;
-	}
-	gl.attachShader(shaderProgram, vertexShader);
-	gl.attachShader(shaderProgram, fragmentShader);
-	gl.linkProgram(shaderProgram);
 
-	if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-		console.log(gl.getProgramInfoLog(shaderProgram));
-	  shaderProgram = null;
-	}
-	return shaderProgram;
-};
-GG.ConstantLightingTechnique = function(spec) {		
-	spec = spec || {};
-	spec.passes = [ new GG.FlatShadePass() ];
+GG.ConstantColorTechnique = function(spec) {		
+	spec        = spec || {};
+	spec.passes = [ new GG.ConstantColorPass() ];
 	
 	GG.BaseTechnique.call(this, spec);
 }
 
-GG.ConstantLightingTechnique.prototype = new GG.BaseTechnique();
-GG.ConstantLightingTechnique.prototype.constructor = GG.ConstantLightingTechnique;
+GG.ConstantColorTechnique.prototype = new GG.BaseTechnique();
+GG.ConstantColorTechnique.prototype.constructor = GG.ConstantColorTechnique;
 
-GG.FlatShadePass = function(spec) {
+
+GG.ConstantColorTechnique.prototype.getTexture = function() {
+    return this.passes[0].texture;
+};
+
+GG.ConstantColorTechnique.prototype.setTexture = function(texture) {
+    this.passes[0].texture = texture;
+    return this;
+};
+
+GG.ConstantColorPass = function(spec) {
 	spec = spec || {};
-	spec.adaptsToScene = false;
 
 	spec.vertexShader = [
 		"attribute vec4 a_position;",
@@ -2593,21 +3066,10 @@ GG.FlatShadePass = function(spec) {
 	GG.RenderPass.call(this, spec);
 };
 
-GG.FlatShadePass.prototype = new GG.RenderPass();
-GG.FlatShadePass.prototype.constructor = GG.FlatShadePass;
+GG.ConstantColorPass.prototype = new GG.RenderPass();
+GG.ConstantColorPass.prototype.constructor = GG.ConstantColorPass;
 
-GG.FlatShadePass.prototype.destroy = function() {
-	GG.BaseTechnique.prototype.destroy();
-	gl.deleteProgram(this.program);
-};
-
-GG.FlatShadePass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
-	var viewMat = ctx.camera.getViewMatrix();
-
-	var MV = mat4.create();
-	mat4.multiply(viewMat, renderable.getModelMatrix(), MV);
-	gl.uniformMatrix4fv(program.u_matModelView, false, MV);
-
+GG.ConstantColorPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
 	gl.uniform3fv(program.u_color, renderable.getMaterial().diffuse);		
 };
 
@@ -2620,78 +3082,75 @@ GG.FlatShadePass.prototype.__setCustomUniforms = function(renderable, ctx, progr
  */
 GG.TexturedShadelessTechnique = function(texture, spec) {
 	spec = spec || {};
+	spec.passes = [new GG.PhongPass( { 'texture' : texture })];
 	GG.BaseTechnique.call(this, spec);	
-
-	this.texture = texture;
-
-	this.vertexShader = [
-		"attribute vec4 a_position;",
-		"attribute vec2 a_texCoords;",
-		"varying vec2 v_texCoords;",
-		"uniform mat4 u_matModelView;",
-		"uniform mat4 u_matProjection;",
-		"void main() {",
-		"	v_texCoords = a_texCoords;",
-		"	gl_Position = u_matProjection*u_matModelView*a_position;",
-		"}"
-	].join("\n");
-	
-	this.fragmentShader = [
-		"precision mediump float;",
-		"varying vec2 v_texCoords;",
-		"uniform sampler2D u_texture;",
-		"void main() {",
-		"	gl_FragColor = texture2D(u_texture, v_texCoords);",
-		"}"
-	].join("\n");
-	
-	this.program = null;
-}
+};
 
 GG.TexturedShadelessTechnique.prototype = new GG.BaseTechnique();
 GG.TexturedShadelessTechnique.prototype.constructor = GG.TexturedShadelessTechnique;
 
-GG.TexturedShadelessTechnique.prototype.initialize = function() {
-	GG.BaseTechnique.prototype.initialize();
-	this.program = this.createProgram(this.vertexShader, this.fragmentShader);
-	gl.useProgram(this.program);
-	this.program.attribPosition = gl.getAttribLocation(this.program, "a_position");
-	this.program.attribTexCoords = gl.getAttribLocation(this.program, "a_texCoords");
-	this.program.uniformMV = gl.getUniformLocation(this.program, "u_matModelView");
-	this.program.uniformProjection = gl.getUniformLocation(this.program, "u_matProjection");
-	this.program.samplerUniform = gl.getUniformLocation(this.program, "u_texture");
-};
+GG.TexturedShadelessPass = function (spec) {	
+	spec = spec || {};
+	GG.RenderPass.call(this, spec);
 
-GG.TexturedShadelessTechnique.prototype.destroy = function() {
-	GG.BaseTechnique.prototype.destroy();
-	gl.deleteProgram(this.program);
-};
+	this.texture = spec.texture;
 
-GG.TexturedShadelessTechnique.prototype.render = function(mesh, renderContext) {
-	// this could go to the renderer
-	gl.useProgram(this.program);			
+	var pg = new GG.ProgramSource();
+	pg.position()
+		.texCoords()
+		.uniformModelViewMatrix()
+		.uniformProjectionMatrix()
+		.varying('vec2', 'v_texCoords')
+		.addMainBlock([
+			"	v_texCoords = a_texCoords;",
+			"	gl_Position = u_matProjection*u_matModelView*a_position;",
+			].join('\n')
+		);
+
+	this.vertexShader = pg.toString();
 	
-	var MV = mat4.create();
-	mat4.multiply(this.renderer.getViewMatrix(), mesh.getModelMatrix(), MV);
-	gl.uniformMatrix4fv(this.program.uniformMV, false, MV);
-	gl.uniformMatrix4fv(this.program.uniformProjection, false, this.renderer.getProjectionMatrix());
+	pg = new GG.ProgramSource();
+	pg.asFragmentShader()
+		.varying('vec2', 'v_texCoords')
+		.uniform('sampler2D', 'u_texture')
+		.addMainBlock("gl_FragColor = texture2D(u_texture, v_texCoords);");
 
+	this.fragmentShader = pg.toString();	
+};
+
+
+GG.TexturedShadelessPass.prototype = new GG.RenderPass();
+GG.TexturedShadelessPass.prototype.constructor = GG.TexturedShadelessPass;
+
+GG.TexturedShadelessPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
 	this.texture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAP);
     gl.uniform1i(this.program.samplerUniform.handle(), 0);
-
-	this.renderer.renderMesh(mesh, this.program);
 };
 GG.CubemapTechnique = function(spec) {
 	spec = spec || {};
+	spec.passes = [ new GG.CubemapSkyPass(spec) ];
 	GG.BaseTechnique.call(this, spec);
+};
 
+GG.CubemapTechnique.prototype = new GG.BaseTechnique();
+GG.CubemapTechnique.prototype.constructor = GG.CubemapTechnique;
+
+GG.CubemapTechnique.prototype.getCubemap = function() {
+	return this.passes[0].cubemapTexture;
+};
+
+GG.CubemapTechnique.prototype.setCubemap = function(cubemap) {
+	this.passes[0].cubemapTexture = cubemap;
+};
+
+GG.CubemapSkyPass = function (spec) {
+	spec                = spec || {};	
 	this.cubemapTexture = spec.cubemap;
-
-	this.vertexShader = [
+	spec.vertexShader   = [
 		"attribute vec4 a_position;",
 		"varying vec3 v_texCoords;",
 		"uniform mat4 u_matModelView;",
-		"uniform mat4 u_inverseView;",
+		"uniform mat4 u_matViewInverse;",
 		"uniform mat4 u_matProjection;",
 		"void main() {",
 		// to be applied on the result of matModelView*vec4(skyPos, 1.0)
@@ -2703,15 +3162,15 @@ GG.CubemapTechnique = function(spec) {
 		// since the view transform contains an inverse wCameraPos translation
 	    // we cancel the camera translation by adding the same translation
 	    // prior to multiplying with the modelviewprojection matrix
-		"	vec4 wCameraPos = u_inverseView * vec4(0.0, 0.0, 0.0, 1.0);",
+		"	vec4 wCameraPos = u_matViewInverse * vec4(0.0, 0.0, 0.0, 1.0);",
 		"	vec3 skyPos = a_position.xyz + wCameraPos.xyz;",
 		"	vec3 ecSkyPos = SkyScale * vec3(u_matModelView * vec4(skyPos, 1.0));",
 		"	gl_Position = u_matProjection * vec4(ecSkyPos, 1.0);",
 		"}"
 	].join("\n");
 	
-	this.fragmentShader = [
-		"precision mediump float;",	
+	spec.fragmentShader = [
+		"precision highp float;",	
 		"varying vec3 v_texCoords;",	
 		"uniform samplerCube u_cubemap;",
 		"void main() {",
@@ -2719,78 +3178,33 @@ GG.CubemapTechnique = function(spec) {
 		"}"
 	].join("\n");
 	
-	this.program = null;
+	GG.RenderPass.call(this, spec);
 };
 
-GG.CubemapTechnique.prototype = new GG.BaseTechnique();
-GG.CubemapTechnique.prototype.constructor = GG.CubemapTechnique;
+GG.CubemapSkyPass.prototype = new GG.RenderPass();
+GG.CubemapSkyPass.prototype.constructor = GG.CubemapSkyPass;
 
-GG.CubemapTechnique.prototype.getCubemap = function() {
-	return this.cubemapTexture;
+GG.CubemapSkyPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	gl.uniform1i(this.program.u_cubemap, GG.TEX_UNIT_ENV_MAP);				
 };
 
-GG.CubemapTechnique.prototype.setCubemap = function(cubemap) {
-	this.cubemapTexture = cubemap;
-};
-
-GG.CubemapTechnique.prototype.initialize = function() {
-	GG.BaseTechnique.prototype.initialize();
-	this.program = this.createProgram(this.vertexShader, this.fragmentShader);
-	gl.useProgram(this.program);
-	this.program.attribPosition = gl.getAttribLocation(this.program, "a_position");
-	this.program.uniformCubemap = gl.getUniformLocation(this.program, "u_cubemap");
-	this.program.uniformMV = gl.getUniformLocation(this.program, "u_matModelView");
-	this.program.uniformInverseView = gl.getUniformLocation(this.program, "u_inverseView");
-	this.program.uniformProjection = gl.getUniformLocation(this.program, "u_matProjection");
-};
-
-GG.CubemapTechnique.prototype.destroy = function() {
-	GG.BaseTechnique.prototype.destroy();
-	gl.deleteProgram(this.program);
-};
-
-GG.CubemapTechnique.prototype.render = function(mesh) {
-	// this could go to the renderer
-	gl.useProgram(this.program);			
-
-	gl.activeTexture(gl.TEXTURE0);
-	this.cubemapTexture.bind();
-	gl.uniform1i(this.program.uniformCubemap, 0);		
-	
-	gl.uniformMatrix4fv(this.program.uniformInverseView, false, this.renderer.getInverseViewMatrix());
-	gl.uniformMatrix4fv(this.program.uniformMV, false, this.renderer.getViewMatrix());
-	gl.uniformMatrix4fv(this.program.uniformProjection, false, this.renderer.getProjectionMatrix());
-
+GG.CubemapSkyPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {		
+	this.cubemapTexture.bind();	
 	gl.disable(gl.CULL_FACE);
-
-	this.renderer.renderMesh(mesh, this.program);
-
-	this.cubemapTexture.unbind();
-	gl.useProgram(null);
 };
-GG.ReflectiveTechnique = function(spec) {
-
-	spec = spec || {};
+GG.ReflectiveTechnique = function(spec) {	
+	spec        = spec || {};
+	spec.passes = [ new GG.ReflectiveTechnique.ReflectivePass(spec)];
 	GG.BaseTechnique.call(this, spec);
 
-	// amount of reflectance
-	this.reflectance     = 0.80;
-	
-	this.baseColor       = spec.baseColor || [ 0.30, 0.30, 0.30, 1.0 ];
-	
-	// index of refraction of the object being rendered
-	this.IOR             = spec.IOR || [ 1.0, 1.0, 1.0 ];
-	
-	// index of refraction of the environment surounding the object 
-	this.externalIOR     = spec.externalIOR || [ 1.330, 1.31, 1.230 ];
-	
-	this.cubemap         = spec.cubemap || null;
-	
-	this.fresnelBias     = spec.fresnelBias || 0.44;
-	
-	this.fresnelExponent = spec.fresnelExponent || 2.0;
+};
 
-	this.vertexShader = [
+GG.ReflectiveTechnique.prototype = new GG.BaseTechnique();
+GG.ReflectiveTechnique.prototype.constructor = GG.ReflectiveTechnique;
+
+GG.ReflectiveTechnique.ReflectivePass = function (spec) {
+	
+	spec.vertexShader = [
 		"attribute vec4 a_position;",
 		"attribute vec3 a_normal;",
 
@@ -2811,13 +3225,13 @@ GG.ReflectiveTechnique = function(spec) {
 		"}"
 	].join("\n");
 	
-	this.fragmentShader = [
+	spec.fragmentShader = [
 		"precision mediump float;",
 
 		"varying vec3 v_viewVector;",
 		"varying vec3 v_normal;",
 
-		"uniform vec4 u_baseColor;",
+		"uniform vec3 u_baseColor;",
 		"uniform float u_reflectance;",
 		"uniform vec3 u_eta;",
 
@@ -2850,59 +3264,32 @@ GG.ReflectiveTechnique = function(spec) {
 		"	float freshnelTerm = schlick_fresnel(-I, N, u_fresnelParams.x, u_fresnelParams.y);",
 		"	vec3 envColor = mix(transmColor, reflColor, freshnelTerm);",		
 		//"	envColor = mix(transmColor, reflColor, u_reflectance);",
-		"	gl_FragColor = vec4(mix(u_baseColor.rgb, envColor, u_reflectance), 1.0);",
+		"	gl_FragColor = vec4(mix(u_baseColor, envColor, u_reflectance), 1.0);",
 		"}"
 	].join("\n");
 	
-	this.program = null;
+	GG.RenderPass.call(this, spec);
 };
 
-GG.ReflectiveTechnique.prototype = new GG.BaseTechnique();
-GG.ReflectiveTechnique.prototype.constructor = GG.ReflectiveTechnique;
+GG.ReflectiveTechnique.ReflectivePass.prototype = new GG.RenderPass();
+GG.ReflectiveTechnique.ReflectivePass.prototype.constructor = GG.ReflectiveTechnique.ReflectivePass;
 
-GG.ReflectiveTechnique.prototype.initialize = function() {
-	GG.BaseTechnique.prototype.initialize();
-	this.program = this.createProgram(this.vertexShader, this.fragmentShader);
-	gl.useProgram(this.program);
-	this.program.attribPosition = gl.getAttribLocation(this.program, "a_position");
-	this.program.attribNormal = gl.getAttribLocation(this.program, "a_normal");
-	this.program.uniformBaseColor = gl.getUniformLocation(this.program, "u_baseColor");
-	this.program.uniformMV = gl.getUniformLocation(this.program, "u_matModelView");
-	this.program.uniformModel = gl.getUniformLocation(this.program, "u_matModel");
-	this.program.uniformViewInverse = gl.getUniformLocation(this.program, "u_matViewInverse");
-	this.program.uniformProjection = gl.getUniformLocation(this.program, "u_matProjection");
-	this.program.uniformCubemap = gl.getUniformLocation(this.program, "u_cubemap");
-	this.program.uniformReflectance = gl.getUniformLocation(this.program, "u_reflectance");
-	this.program.uniformEta = gl.getUniformLocation(this.program, "u_eta");
-	this.program.uniformFresnelParams = gl.getUniformLocation(this.program, "u_fresnelParams");
+GG.ReflectiveTechnique.ReflectivePass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	var mat = renderable.getMaterial();
+	gl.uniform1i(this.program.u_cubemap, GG.TEX_UNIT_ENV_MAP);
+
+	gl.uniform3fv(this.program.u_eta, [ 
+		mat.IOR[0] / mat.externalIOR[0],
+		mat.IOR[1] / mat.externalIOR[1],
+		mat.IOR[2] / mat.externalIOR[2] ]);
+	gl.uniform3fv(this.program.u_baseColor, mat.diffuse);
+	gl.uniform2fv(this.program.u_fresnelParams, [ mat.fresnelBias, mat.fresnelExponent ]);
+	gl.uniform1f(this.program.u_reflectance, mat.reflectance);
 };
 
-GG.ReflectiveTechnique.prototype.render = function(mesh, renderContext) {
-	// this could go to the renderer
-	gl.useProgram(this.program);				
-	
-	var MV = mat4.create();
-	mat4.multiply(this.renderer.getViewMatrix(), mesh.getModelMatrix(), MV);
-	gl.uniformMatrix4fv(this.program.uniformMV, false, MV);
-	gl.uniformMatrix4fv(this.program.uniformProjection, false, this.renderer.getProjectionMatrix());
-	gl.uniformMatrix4fv(this.program.uniformViewInverse, false, this.renderer.getInverseViewMatrix());
-	gl.uniformMatrix4fv(this.program.uniformModel, false, mesh.getModelMatrix());
-
-	gl.activeTexture(gl.TEXTURE0);
-	this.cubemap.bind();
-	gl.uniform1i(this.program.uniformCubemap, 0);
-
-	gl.uniform3fv(this.program.uniformEta, [ 
-		this.IOR[0] / this.externalIOR[0],
-		this.IOR[1] / this.externalIOR[1],
-		this.IOR[2] / this.externalIOR[2] ]);
-	gl.uniform4fv(this.program.uniformBaseColor, this.baseColor);
-	gl.uniform2fv(this.program.uniformFresnelParams, [ this.fresnelBias, this.fresnelExponent ]);
-	gl.uniform1f(this.program.uniformReflectance, this.reflectance);
- 
+GG.ReflectiveTechnique.ReflectivePass.prototype.__setCustomRenderState = function(renderable, ctx, program) {	
+	renderable.getMaterial().envMap.bind();	
  	gl.enable(gl.CULL_FACE);
-
-	this.renderer.renderMesh(mesh, this.program);
 };
 
 GG.PhongShadingTechnique = function(spec) {
@@ -2914,37 +3301,17 @@ GG.PhongShadingTechnique = function(spec) {
 GG.PhongShadingTechnique.prototype = new GG.BaseTechnique();
 GG.PhongShadingTechnique.prototype.constructor = GG.PhongShadingTechnique;
 
-GG.PhongPass = function(spec) {
-	spec = spec || {};
-	spec.adaptsToScene = true;
-
+GG.PhongPass = function(spec) {	
 	GG.RenderPass.call(this, spec);
-
 	this.createProgram();
 };
 
 GG.PhongPass.prototype = new GG.RenderPass();
 GG.PhongPass.prototype.constructor = GG.PhongPass;
 
-GG.PhongPass.prototype.__locateCustomUniforms = function(program) {
-	GG.ProgramUtils.getMaterialUniformLocations(program, 'u_material');	
-};
-
 GG.PhongPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
-	var viewMat = ctx.camera.getViewMatrix();
-
-	var MV = mat4.create();
-	mat4.multiply(viewMat, renderable.getModelMatrix(), MV);
-	gl.uniformMatrix4fv(program.u_matModelView, false, MV);
-
-	var NM = mat4.create();
-	mat4.inverse(MV, NM);
-	mat4.transpose(NM);
-	gl.uniformMatrix3fv(program.u_matNormals, false, mat4.toMat3(NM));
-
-	GG.ProgramUtils.setMaterialUniforms(program, 'u_material', renderable.material);
-	GG.ProgramUtils.setLightsUniform(program, viewMat, 'u_pointLights', ctx.scene.listPointLights());
-	GG.ProgramUtils.setLightsUniform(program, viewMat, 'u_directionalLights', ctx.scene.listDirectionalLights());
+	GG.ProgramUtils.setMaterialUniforms(program, GG.Naming.UniformMaterial, renderable.material);
+	GG.ProgramUtils.setLightsUniform(program, GG.Naming.UniformLight, ctx.light);
 };
 
 GG.PhongPass.prototype.createProgram = function() {
@@ -2960,53 +3327,33 @@ GG.PhongPass.prototype.createProgram = function() {
 		.addMainBlock([
 			"	vec4 viewPos = u_matModelView*a_position;",
 			"	gl_Position = u_matProjection*viewPos;",
+			"	gl_Position.z -= 0.0001;",
 			"	v_normal = u_matNormals * a_normal;",
 			"	v_viewVector = -viewPos.xyz; //(u_matInverseView * vec4(0.0, 0.0, 0.0, 1.0) - viewPos).xyz;",		
 			"	v_viewPos = viewPos;"
 			].join('\n'));
-	this.vertexShader = pg;
+	this.vertexShader = pg.toString();
 
-	var pg = new GG.ProgramSource();
+	pg = new GG.ProgramSource();
 	pg.asFragmentShader()
 		.varying('vec3', 'v_normal')
 		.varying('vec4', 'v_viewPos')
 		.varying('vec3', 'v_viewVector')
 		.uniformViewMatrix()
+		.uniformLight()
 		.uniformMaterial()
-		.addDecl(GG.ShaderLib.phong.pointLightIrradiance)
-		.addDecl(GG.ShaderLib.phong.directionalLightIrradiance)
-		.addDecl(GG.ShaderLib.phong.spotLightIrradiance)
-		.addMainInitBlock([
+		.addDecl(GG.ShaderLib.phong.lightIrradiance)
+		.addMainBlock([
 			"	vec3 N = normalize(v_normal);",
 			"	vec3 V = normalize(v_viewVector);",		
 			"	vec3 diffuse = vec3(0.0);",
 			"	vec3 specular = vec3(0.0);",
-			"	vec3 L;"
+			"	vec3 L = normalize(u_matView*vec4(u_light.position, 1.0) - v_viewPos).xyz;",
+			"	lightIrradiance(N, V, L, u_light, u_material, diffuse, specular);",
+			"	gl_FragColor = vec4(u_material.ambient + u_material.diffuse*diffuse + u_material.specular*specular, 1.0);"			
 		].join('\n'));
 		
-	pg.perPointLightBlock([		
-		"	L = normalize(u_matView*vec4(u_pointLights[INDEX].position, 1.0) - v_viewPos).xyz;",
-		"	pointLightIrradiance(N, V, L, u_pointLights[INDEX], u_material, diffuse, specular);"
-		].join("\n")
-	);
-	
-	pg.perDirectionalLightBlock([		
-		"	L = normalize(u_matView*vec4(u_directionalLights[INDEX].direction, 0.0)).xyz;",
-		"	directionalLightIrradiance(N, V, L, u_directionalLights[INDEX], u_material, diffuse, specular);",
-		].join("\n")
-	);
-
-	pg.perSpotLightBlock([		
-		"	L = normalize(u_matView*vec4(u_spotLights[INDEX].direction, 0.0)).xyz;",
-		"	spotLightIrradiance(N, V, L, u_spotLights[INDEX], u_material, diffuse, specular);",
-		].join("\n")
-	);
-
-	pg.addMainBlock([
-		"	gl_FragColor = vec4(u_material.ambient + u_material.diffuse*diffuse + u_material.specular*specular, 1.0);",
-		"	gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(0.5));"
-		].join('\n'));
-	this.fragmentShader = pg;	
+	this.fragmentShader = pg.toString();	
 };
 
 GG.PhongPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
@@ -3015,6 +3362,100 @@ GG.PhongPass.prototype.__setCustomRenderState = function(renderable, ctx, progra
 	gl.frontFace(gl.CW);
 	gl.enable(gl.CULL_FACE);
 	*/
+};
+GG.WireframeTechnique = function (spec) {
+	spec              = spec || {};
+	spec.passes = [ new GG.WireframeTechnique.WireframePass(spec) ];
+	GG.BaseTechnique.call(this, spec);	
+};
+
+GG.WireframeTechnique.prototype             = new GG.BaseTechnique();
+GG.WireframeTechnique.prototype.constructor = GG.WireframeTechnique;
+
+GG.WireframeTechnique.WireframePass = function (spec) {
+	spec             = spec || {};
+	spec.vertexShader = [
+		"precision highp float;",
+		"attribute vec4 a_position;",
+		"uniform mat4 u_matModelView;",
+		"uniform mat4 u_matProjection;",
+		"uniform float u_depthOffest;",
+		"void main() {",
+		"	vec4 viewPos = u_matModelView * a_position;",
+		"	viewPos.z += u_depthOffest;",
+		"	gl_Position = u_matProjection * viewPos;",
+		"}"
+	].join('\n');
+
+	spec.fragmentShader = [		
+		"precision highp float;",
+		"uniform vec3 u_wireColor;",
+		"void main() {",
+		"	gl_FragColor = vec4(u_wireColor, 1.0);",
+		"}"
+	].join('\n');
+
+	GG.RenderPass.call(this, spec);
+};
+
+GG.WireframeTechnique.WireframePass.prototype             = new GG.RenderPass();
+GG.WireframeTechnique.WireframePass.prototype.constructor = GG.WireframeTechnique.WireframePass;
+
+GG.WireframeTechnique.WireframePass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	gl.uniform3fv(program.u_wireColor, renderable.material.diffuse);
+	gl.uniform1f(program.u_depthOffest, renderable.material.wireOffset);
+};
+
+GG.WireframeTechnique.WireframePass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
+	gl.lineWidth(renderable.material.wireWidth);
+};
+
+
+GG.WireframeTechnique.WireframePass.prototype.getRenderPrimitive = function(renderable) {
+	return gl.LINES;
+};
+GG.DepthPrePassTechnique = function (spec) {
+	spec        = spec || {};
+	spec.passes = [ new GG.DepthPrePassTechnique.Pass(spec) ];
+	GG.BaseTechnique.call(this, spec);
+};
+
+GG.DepthPrePassTechnique.prototype             = new GG.BaseTechnique();
+GG.DepthPrePassTechnique.prototype.constructor = GG.DepthPrePassTechnique;
+
+GG.DepthPrePassTechnique.Pass = function (spec) {
+	spec             = spec || {};
+	spec.vertexShader = [
+		"precision highp float;",
+		"attribute vec4 a_position;",
+		"uniform mat4 u_matModelView;",
+		"uniform mat4 u_matProjection;",		
+		"void main() {",	
+		"	gl_Position = u_matProjection * u_matModelView * a_position;",
+		"}"
+	].join('\n');
+
+	spec.fragmentShader = [		
+		"precision mediump float;",
+		"void main() {",
+		"	gl_FragColor = vec4(1.0);",
+		"}"
+	].join('\n');
+
+	GG.RenderPass.call(this, spec);
+};
+
+GG.DepthPrePassTechnique.Pass.prototype             = new GG.RenderPass();
+GG.DepthPrePassTechnique.Pass.prototype.constructor = GG.DepthPrePassTechnique.Pass;
+
+GG.DepthPrePassTechnique.Pass.prototype.getRenderPrimitive = function(renderable) {
+	if (renderable.material == null) {
+		console.log('error');
+	}
+	var t = renderable.material.getTechnique();
+
+	//TODO: Handle renderables with multiple render passes
+	return t.passes[0].getRenderPrimitive(renderable);
 };
 /**
  * Simple particles rendering using points for each particle.
@@ -3028,8 +3469,8 @@ GG.ParticlesTechnique = function(spec) {
 	spec = spec || {};
 	GG.BaseTechnique.call(this, spec);
 
-	this.texture = spec.texture || null;
-	this.distanceAttenuation = spec.attenuation || 1.0;
+	this.texture = spec.texture;
+	this.distanceAttenuation = spec.attenuation != undefined ? spec.attenuation : 1.0;
 
 	// stores compiled programs for different configurations of the techniques
 	// and the particle system that is to be rendered
@@ -3175,12 +3616,13 @@ GG.ParticlesTechnique.prototype.getSuitableProgram = function(ps) {
 
 GG.ShadowMapDepthPass = function (spec) {
 	spec               = spec || {};
-	this.vsmMode       = spec.vsmMode || false;
-	this.camera        = spec.camera || null;
-	this.nearPlaneDist = spec.nearPlaneDist || 1.0;
-	this.farPlaneDist  = spec.farPlaneDist || 100.0;
+	this.vsmMode       = spec.vsmMode != undefined ? spec.vsmMode : false;
+	this.camera        = spec.camera;
+	this.nearPlaneDist = spec.nearPlaneDist != undefined ? spec.nearPlaneDist : 1.0;
+	this.farPlaneDist  = spec.farPlaneDist != undefined ? spec.farPlaneDist : 100.0;
 
 	spec.vertexShader = [
+			"precision highp float;",
 			"attribute vec4 a_position;",
 			"varying vec4 v_viewPosition;",
 			"uniform mat4 u_matModel;",
@@ -3219,8 +3661,6 @@ GG.ShadowMapDepthPass = function (spec) {
 			"}"
 
 		].join('\n');
-
-	spec.renderableType = GG.RenderPass.MESH;
 	
 	GG.RenderPass.call(this, spec);
 };
@@ -3233,6 +3673,17 @@ GG.ShadowMapDepthPass.prototype.setCamera = function(camera) {
 	this.camera = camera;
 };
 
+GG.ShadowMapDepthPass.prototype.__setCustomRenderState = function (renderable, ctx, program) {
+	gl.disable(gl.BLEND);
+
+	gl.enable(gl.DEPTH_TEST);
+	gl.depthFunc(gl.LEQUAL);
+
+	gl.enable(gl.CULL_FACE);
+	gl.cullFace(gl.FRONT);
+	gl.frontFace(gl.CCW);
+};
+
 GG.ShadowMapDepthPass.prototype.__setCustomUniforms = function (renderable) {
 	gl.uniform1i(this.program.u_useVSM, this.vsmMode);
 
@@ -3240,18 +3691,14 @@ GG.ShadowMapDepthPass.prototype.__setCustomUniforms = function (renderable) {
 		var invertedRange = 1.0 / (this.camera.far - this.camera.near);
 		gl.uniform1f(this.program.u_invertedDepthRange, invertedRange);
 	
-		gl.uniformMatrix4fv(this.program.u_matLightView, false, this.camera.getViewMatrix());
+		gl.uniformMatrix4fv(this.program.u_matLightView, false, this.camera.viewMatrix); //getViewMatrix());
 		gl.uniformMatrix4fv(this.program.u_matLightProjection, false, this.camera.getProjectionMatrix());
 	}
-}
-
-GG.ShadowMapDepthPass.prototype.__renderGeometry = function (renderable) {
-
-}
+};
 GG.DepthMapDebugOutput = function (spec) {
 	spec = spec || {};
-	this.minDepth = spec.minDepth || 1.0;
-	this.maxDepth = spec.maxDepth || 100.0;
+	this.minDepth = spec.minDepth != undefined ? spec.minDepth : 1.0;
+	this.maxDepth = spec.maxDepth != undefined ? spec.maxDepth : 100.0;
 
 	var vs = [
 		"precision highp float;",
@@ -3259,7 +3706,7 @@ GG.DepthMapDebugOutput = function (spec) {
 		"varying vec2 v_texCoords;",
 		"void main() { ",
 		"	v_texCoords = 0.5*a_position.xy + vec2(0.5);",
-		"	v_texCoords.y = 1.0 - v_texCoords.y;",
+		"	//v_texCoords.y = 1.0 - v_texCoords.y;",
 		" 	gl_Position = a_position;",
 		" }"
 	].join('\n');
@@ -3297,82 +3744,110 @@ GG.DepthMapDebugOutput.prototype.__setCustomUniforms = function(renderable, rend
 };
 
 GG.ShadowMapSimple = function (spec) {
+	spec           = spec || {};
+	this.shadowMap = null;
+	this.options   = null;
 
-};
-
-GG.ShadowMapSimple.prototype.constructor = GG.ShadowMapSimple;
-
-GG.ShadowMapSimple.prototype.adaptProgram = function(vertexProgram, fragmentProgram) {
-	vertexProgram.varying('vec4', 'v_posLightPerspective')
-		.varying('vec4', 'v_lightViewPos')
+	var pg = new GG.ProgramSource()
+		.floatPrecision('highp')
+		.position()
+		.varying('vec4', 'v_posLightPerspective')
+		.varying('vec4', 'v_posLightSpace')
 		.uniform('mat4', 'u_matModel')
+		.uniform('mat4', 'u_matView')
+		.uniform('mat4', 'u_matProjection')
 		.uniform('mat4', 'u_matLightView')
 		.uniform('mat4', 'u_matLightProjection')
 		.addMainBlock([
-			"v_lightViewPos = u_matLightView * u_matModel * a_position;",
-			"mat4 scaleBias = mat4(0.5, 0.0, 0.0, 0.0,0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 0.5, 1.0);",
-			"v_posLightPerspective = scaleBias * u_matLightProjection * v_lightViewPos;"
-			].join('\n'));
+			"v_posLightSpace = u_matLightView * u_matModel * a_position;",
+			"mat4 scaleBias = mat4(0.5, 0.0, 0.0, 0.0,0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.5, 0.5, 0.5, 1.0);",
+			"v_posLightPerspective = scaleBias * u_matLightProjection * v_posLightSpace;",
+			"vec4 test = a_position;",
+			"test.z += 0.051;",
+			"gl_Position = u_matProjection * u_matView * u_matModel * test;",
 
-	fragmentProgram
+			].join('\n'));
+	spec['vertexShader'] = pg.toString();
+
+	pg = new GG.ProgramSource()
+		.asFragmentShader()
 		.floatPrecision('highp')				
 		.uniform('float', 'u_depthOffset')		
 		.uniform('float', 'u_lightSpaceDepthRange')	
+		.uniform('sampler2D', 'u_shadowMap')
+		.uniform('float', 'u_shadowFactor')
 		.varying('vec4', 'v_posLightPerspective')
-		.varying('vec4', 'v_lightViewPos')
+		.varying('vec4', 'v_posLightSpace')
 		.addDecl(GG.ShaderLib.blocks['libUnpackRrgbaToFloat'])
-		.perDirectionalLightBlock([
-			"	vec2 lightUV = v_posLightPerspective.xy / v_posLightPerspective.w;",
-			"	if (!(lightUV.s < 0.0 || lightUV.t < 0.0 || lightUV.s > 1.0 || lightUV.t > 1.0)) {", 
-			"		float lightDistance = length(v_lightViewPos.xyz);",
+		.addMainBlock([
+			"	vec3 shadowMapUV = v_posLightPerspective.xyz / v_posLightPerspective.w;",
+			"	if (shadowMapUV.z <= 1.0 && v_posLightPerspective.w > 0.0 && !(shadowMapUV.s < 0.0 || shadowMapUV.t < 0.0 || shadowMapUV.s > 1.0 || shadowMapUV.t > 1.0)) {", 
+			"		float lightDistance = length(v_posLightSpace.xyz);",
 			// normalize the distance
 			"		lightDistance *= 1.0 / u_lightSpaceDepthRange;",
 			"		lightDistance -= u_depthOffset;",
 
-			"		float depth = libUnpackRrgbaToFloat(texture2D(u_depthMap, lightUV));",
-			"		diffuse *= (depth > lightDistance) ? 1.0 : u_shadowFactor;",
-			"	}"
+			"		float depth = libUnpackRrgbaToFloat(texture2D(u_shadowMap, shadowMapUV.st));",
+			"		gl_FragColor = (depth > lightDistance) ? vec4(1.0) : vec4(vec3(u_shadowFactor), 1.0);",
+			"	} else { gl_FragColor = vec4(1.0); }"
 		].join('\n'));
+	spec['fragmentShader'] = pg.toString();
 
+	GG.RenderPass.call(this, spec);
 };
 
-GG.ShadowMapSimple.prototype.setUniforms = function(program, ctx, options) {
-	//var pcfSize = options.pcfSize || 4;	
-	//gl.uniform1i(program.u_filterSize, pcfSize);
+GG.ShadowMapSimple.prototype             = new GG.RenderPass();
+GG.ShadowMapSimple.prototype.constructor = GG.ShadowMapSimple;
 
-	//var texStep = 1.0 / options.shadowMapWidth;
-	//gl.uniform1f(program.u_texStep, texStep);
-
-	var cam = ctx.scene.listDirectionalLights()[0].getShadowCamera();
+GG.ShadowMapSimple.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	var cam = ctx.light.getShadowCamera();
 	gl.uniform1f(program.u_lightSpaceDepthRange, cam.far - cam.near);
-	gl.uniformMatrix4fv(program.u_matLightView, false, cam.getViewMatrix());
+
+	//TODO: Fix camera.getViewMatrix to be aligned with camera.setup
+	gl.uniformMatrix4fv(program.u_matLightView, false, cam.viewMatrix); //getViewMatrix());
 	gl.uniformMatrix4fv(program.u_matLightProjection, false, cam.getProjectionMatrix());
-	gl.uniform1f(program.u_depthOffset, options.depthOffset);
+	gl.uniform1f(program.u_depthOffset, this.options.depthOffset);
+
+	this.shadowMap.bindAtUnit(GG.TEX_UNIT_SHADOW_MAP);
+	gl.uniform1i(program['u_shadowMap'], GG.TEX_UNIT_SHADOW_MAP);
+	gl.uniform1f(program.u_shadowFactor, this.options.shadowFactor);
 };
 
-GG.ShadowMapSimple.prototype.postShadowMapConstruct = function(shadowMapTexture) {
+GG.ShadowMapSimple.prototype.setShadowMap = function(sm) {
+	this.shadowMap = sm;
+};
 
+GG.ShadowMapSimple.prototype.setOptions = function(opts) {
+	this.options = opts;
 };
 GG.ShadowMapPCF = function (spec) {
-	
-};
+	spec           = spec || {};
+	this.shadowMap = null;
+	this.options   = null;	
 
-GG.ShadowMapPCF.prototype.constructor = GG.ShadowMapPCF;
-
-GG.ShadowMapPCF.prototype.adaptProgram = function(vertexProgram, fragmentProgram) {
-	vertexProgram.varying('vec4', 'v_posLightPerspective')
+	var pg = new GG.ProgramSource()
+		.floatPrecision('highp')
+		.position()
+		.varying('vec4', 'v_posLightPerspective')
 		.varying('vec4', 'v_lightViewPos')
 		.uniform('mat4', 'u_matModel')
+		.uniform('mat4', 'u_matView')
+		.uniform('mat4', 'u_matProjection')
 		.uniform('mat4', 'u_matLightView')
 		.uniform('mat4', 'u_matLightProjection')
 		.addMainBlock([
 			"v_lightViewPos = u_matLightView * u_matModel * a_position;",
 			"mat4 scaleBias = mat4(0.5, 0.0, 0.0, 0.0,0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 0.5, 1.0);",
-			"v_posLightPerspective = scaleBias * u_matLightProjection * v_lightViewPos;"
+			"v_posLightPerspective = scaleBias * u_matLightProjection * v_lightViewPos;",
+			"gl_Position = u_matProjection * u_matView * u_matModel * a_position;"
 			].join('\n'));
+	spec['vertexShader'] = pg.toString();
 
-	fragmentProgram
-		.floatPrecision('highp')		
+	pg = new GG.ProgramSource()
+		.asFragmentShader()
+		.floatPrecision('highp')	
+		.uniform('sampler2D', 'u_shadowMap')
+		.uniform('float', 'u_shadowFactor')	
 		.uniform('vec2', 'u_texStep')
 		.uniform('float', 'u_depthOffset')
 		.uniform('float', 'u_filterSize')	
@@ -3380,58 +3855,75 @@ GG.ShadowMapPCF.prototype.adaptProgram = function(vertexProgram, fragmentProgram
 		.varying('vec4', 'v_posLightPerspective')
 		.varying('vec4', 'v_lightViewPos')
 		.addDecl(GG.ShaderLib.blocks['libUnpackRrgbaToFloat'])
-		.perDirectionalLightBlock([
+		.addMainBlock([
+			"float average = 0.0;",
 			"vec2 lightUV = v_posLightPerspective.xy / v_posLightPerspective.w;",
 			"if (!(lightUV.s < 0.0 || lightUV.t < 0.0 || lightUV.s > 1.0 || lightUV.t > 1.0)) {", 
-			"float lightDistance = length(v_lightViewPos.xyz);",
+			"	float lightDistance = length(v_lightViewPos.xyz);",
 			// normalize the distance
-			"lightDistance *= 1.0 / u_lightSpaceDepthRange;",
-			"lightDistance -= u_depthOffset;",
+			"	lightDistance *= 1.0 / u_lightSpaceDepthRange;",
+			"	lightDistance -= u_depthOffset;",
 			
-			"float passed = 0.0;",
-			"float samples = 0.0;",
-			"for (float y = -2.0; y <= 2.0; y++) {",
+			"	float passed = 0.0;",
+			"	float samples = 0.0;",
+			"	for (float y = -2.0; y <= 2.0; y++) {",
 			"		if (abs(y) > u_filterSize) continue;",
-			"	for (float x = -2.0; x <= 2.0; x++) {",
-			"		if (abs(x) > u_filterSize) continue;",
+			"		for (float x = -2.0; x <= 2.0; x++) {",
+			"			if (abs(x) > u_filterSize) continue;",
 
-			"		vec2 sampleUV = lightUV + vec2(x*u_texStep.x, y*u_texStep.y);",
-			"		if (!(sampleUV.s < 0.0 || sampleUV.t < 0.0 || sampleUV.s > 1.0 || sampleUV.t > 1.0)) {", 
-			"			float depth = libUnpackRrgbaToFloat(texture2D(u_depthMap, sampleUV));",
-			"			passed += (depth > lightDistance) ? 1.0 : 0.0;",
-			"			samples++;",
-			"		}",
+			"			vec2 sampleUV = lightUV + vec2(x*u_texStep.x, y*u_texStep.y);",
+			"			if (!(sampleUV.s < 0.0 || sampleUV.t < 0.0 || sampleUV.s > 1.0 || sampleUV.t > 1.0)) {", 
+			"				float depth = libUnpackRrgbaToFloat(texture2D(u_shadowMap, sampleUV));",
+			"				passed += (depth > lightDistance) ? 1.0 : 0.0;",
+			"				samples++;",
+			"			}",
 			
+			"		}",
 			"	}",
+			"	average = passed / samples;",
 			"}",
-			"diffuse *= vec3(passed / (samples));",
-			"}"
+			"gl_FragColor = vec4(vec3(average), 1.0);"
 			
 		].join('\n'));
+	spec['fragmentShader'] = pg.toString();
 
+	GG.RenderPass.call(this, spec);
 };
 
-GG.ShadowMapPCF.prototype.setUniforms = function(program, ctx, options) {
-	var pcfSize = options.pcfSize || 4;	
+GG.ShadowMapPCF.prototype             = new GG.RenderPass();
+GG.ShadowMapPCF.prototype.constructor = GG.ShadowMapPCF;
+
+
+GG.ShadowMapPCF.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	var pcfSize = this.options.pcfSize != undefined ? this.options.pcfSize : 4;	
 	gl.uniform1f(program.u_filterSize, pcfSize);
 
-	texStep = [ 1.0 / options.shadowMapWidth, 1.0 / options.shadowMapHeight ];
+	texStep = [ 1.0 / this.options.shadowMapWidth, 1.0 / this.options.shadowMapHeight ];
 	gl.uniform2fv(program.u_texStep, texStep);
 
 	var cam = ctx.scene.listDirectionalLights()[0].getShadowCamera();
 	gl.uniform1f(program.u_lightSpaceDepthRange, cam.far - cam.near);
 	gl.uniformMatrix4fv(program.u_matLightView, false, cam.getViewMatrix());
 	gl.uniformMatrix4fv(program.u_matLightProjection, false, cam.getProjectionMatrix());
-	gl.uniform1f(program.u_depthOffset, options.depthOffset);
+	gl.uniform1f(program.u_depthOffset, this.options.depthOffset);
+
+	this.shadowMap.bindAtUnit(GG.TEX_UNIT_SHADOW_MAP);
+	gl.uniform1i(program['u_shadowMap'], GG.TEX_UNIT_SHADOW_MAP);
+	gl.uniform1f(program.u_shadowFactor, this.options.shadowFactor);
 };
 
-GG.ShadowMapPCF.prototype.postShadowMapConstruct = function(shadowMapTexture) {
-
+GG.ShadowMapPCF.prototype.setShadowMap = function(sm) {
+	this.shadowMap = sm;
 };
+
+GG.ShadowMapPCF.prototype.setOptions = function(opts) {
+	this.options = opts;
+};
+
 GG.VSMGaussianBlurPass = function (spec) {
 	spec              = spec || {};
-	this.filterSize   = spec.filterSize || 2;
-	this.isHorizontal = spec.horizontal || true;	
+	this.filterSize   = spec.filterSize != undefined ? spec.filterSize : 2;
+	this.isHorizontal = spec.horizontal != undefined ? spec.horizontal : true;	
 
 	var fs = [
 		"precision highp float;",
@@ -3498,26 +3990,35 @@ GG.VSMGaussianBlurPass.prototype.__setCustomUniforms = function(renderable, rend
 };
 
 GG.ShadowMapVSM = function (spec) {
-	this.rt = null;
-	this.blurPass = null;
-};
+	spec           = spec || {};
+	this.shadowMap = null;
+	this.options   = null;	
+	this.rt        = null;
+	this.blurPass  = null;
 
-GG.ShadowMapVSM.prototype.constructor = GG.ShadowMapVSM;
-
-GG.ShadowMapVSM.prototype.adaptProgram = function(vertexProgram, fragmentProgram) {
-	vertexProgram.varying('vec4', 'v_posLightPerspective')
+	var pg = new GG.ProgramSource()
+		.floatPrecision('highp')
+		.position()
+		.varying('vec4', 'v_posLightPerspective')
 		.varying('vec4', 'v_lightViewPos')
 		.uniform('mat4', 'u_matModel')
+		.uniform('mat4', 'u_matView')
+		.uniform('mat4', 'u_matProjection')
 		.uniform('mat4', 'u_matLightView')
 		.uniform('mat4', 'u_matLightProjection')
 		.addMainBlock([
 			"v_lightViewPos = u_matLightView * u_matModel * a_position;",
 			"mat4 scaleBias = mat4(0.5, 0.0, 0.0, 0.0,0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 0.5, 1.0);",
-			"v_posLightPerspective = scaleBias * u_matLightProjection * v_lightViewPos;"
+			"v_posLightPerspective = scaleBias * u_matLightProjection * v_lightViewPos;",
+			"gl_Position = u_matProjection * u_matView * u_matModel * a_position;"
 			].join('\n'));
+	spec['vertexShader'] = pg.toString();
 
-	fragmentProgram
-		.floatPrecision('highp')				
+	pg = new GG.ProgramSource()
+		.asFragmentShader()
+		.floatPrecision('highp')
+		.uniform('sampler2D', 'u_shadowMap')
+		.uniform('float', 'u_shadowFactor')				
 		.uniform('float', 'u_depthOffset')		
 		.uniform('float', 'u_lightSpaceDepthRange')	
 		.varying('vec4', 'v_posLightPerspective')
@@ -3545,55 +4046,58 @@ GG.ShadowMapVSM.prototype.adaptProgram = function(vertexProgram, fragmentProgram
     		"	return max(smoothstep(u_shadowFactor, 1.0, p), depth <= M1 ? 1.0 : 0.0); ",
     		"}"
 			].join('\n'))
-		.perDirectionalLightBlock([
+		.addMainBlock([
 			"vec2 lightUV = v_posLightPerspective.xy / v_posLightPerspective.w;",
 			"if (!(lightUV.s < 0.0 || lightUV.t < 0.0 || lightUV.s > 1.0 || lightUV.t > 1.0)) {", 
 			"	float lightDistance = length(v_lightViewPos.xyz);",
 			// normalize the distance
 			"	lightDistance *= 1.0 / u_lightSpaceDepthRange;",
 			"	lightDistance -= u_depthOffset;",
-			"	vec4 moments = texture2D(u_depthMap, lightUV);",
+			"	vec4 moments = texture2D(u_shadowMap, lightUV);",
 			// 1st moment of distribution is the expected value (the average of depth values around the fragment)
 			"	float M1 = libUnpackVec2ToFloat(moments.xy);",
 			// the 2nd moment of distribution is the squared expected value
 			"	float M2 = libUnpackVec2ToFloat(moments.zw);",
 			"	float sf = ChebychevInequality(M1, M2, lightDistance);",
-			"	diffuse *= sf;",
-			"	specular *= sf;",
+			"	gl_FragColor = sf;",			
 			"}"
 		].join('\n'));
+	spec['fragmentShader'] = pg.toString();
+
+	GG.RenderPass.call(this, spec);
 };
 
-GG.ShadowMapVSM.prototype.setUniforms = function(program, ctx, options) {
-	var filterSize = options.filterSize || 4;	
-	gl.uniform1f(program.u_filterSize, filterSize);
+GG.ShadowMapVSM.prototype             = new GG.RenderPass();
+GG.ShadowMapVSM.prototype.constructor = GG.ShadowMapVSM;
 
-	texStep = [ 1.0 / options.shadowMapWidth, 1.0 / options.shadowMapHeight ];
-	gl.uniform2fv(program.u_texStep, texStep);
-
-	var cam = ctx.scene.listDirectionalLights()[0].getShadowCamera();
+GG.ShadowMapVSM.prototype.__setCustomUniforms = function(renderable, ctx, program) {	
+	var cam = ctx.light.getShadowCamera();
 	gl.uniform1f(program.u_lightSpaceDepthRange, cam.far - cam.near);
 	gl.uniformMatrix4fv(program.u_matLightView, false, cam.getViewMatrix());
 	gl.uniformMatrix4fv(program.u_matLightProjection, false, cam.getProjectionMatrix());
-	gl.uniform1f(program.u_depthOffset, options.depthOffset);
+	gl.uniform1f(program.u_depthOffset, this.options.depthOffset);
+
+	this.shadowMap.bindAtUnit(GG.TEX_UNIT_SHADOW_MAP);
+	gl.uniform1i(program['u_shadowMap'], GG.TEX_UNIT_SHADOW_MAP);
+	gl.uniform1f(program.u_shadowFactor, this.options.shadowFactor);
 };
 
 /**
  * Called right after the shadow map is built with the purpose of applying a blur step.
  */
-GG.ShadowMapVSM.prototype.postShadowMapConstruct = function(shadowMapTexture, options) {
-	shadowMapTexture.setMinFilter(gl.LINEAR);
-	shadowMapTexture.setMagFilter(gl.LINEAR);
+GG.ShadowMapVSM.prototype.postShadowMapConstruct = function() {
+	this.shadowMap.setMinFilter(gl.LINEAR);
+	this.shadowMap.setMagFilter(gl.LINEAR);
 
-	if (this.rt == null || this.rt.sourceTexture().width != options.shadowMapWidth) {
+	if (this.rt == null || this.rt.sourceTexture().width != this.options.shadowMapWidth) {
 		console.log('Creating a new ping pong buffer');
 		if (this.rt != null) {
 			this.rt.destroy();
 		}
 		spec = {
-			width : options.shadowMapWidth,
-			height : options.shadowMapHeight,
-			colorAttachments : shadowMapTexture
+			width : this.options.shadowMapWidth,
+			height : this.options.shadowMapHeight,
+			colorAttachments : this.shadowMap
 		};
 		this.rt = new GG.PingPongBuffer(spec);
 		this.rt.initialize();	
@@ -3601,19 +4105,19 @@ GG.ShadowMapVSM.prototype.postShadowMapConstruct = function(shadowMapTexture, op
 	
 	if (this.blurPass == null) {
 		this.blurPass = new GG.VSMGaussianBlurPass({
-			filterSize : options.vsmBlurringSize || 4			
+			filterSize : this.options.vsmBlurringSize != undefined ? this.options.vsmBlurringSize : 4			
 		});
 		this.blurPass.initialize();
 	}	
 
-	// render at 1st color attachment reading from shadowMapTexture
+	// render at 1st color attachment reading from this.shadowMap
 	try {
 		this.rt.activate();
 		this.blurPass.setHorizontal();
 		this.blurPass.setSourceTexture(this.rt.sourceTexture());
 		this.blurPass.render();
 
-		// render to shadowMapTexture	
+		// render to this.shadowMap	
 		this.rt.swap();
 		this.blurPass.setVertical();
 		this.blurPass.setSourceTexture(this.rt.sourceTexture());
@@ -3621,6 +4125,14 @@ GG.ShadowMapVSM.prototype.postShadowMapConstruct = function(shadowMapTexture, op
 	} finally {
 		this.rt.deactivate();	
 	}
+};
+
+GG.ShadowMapVSM.prototype.setShadowMap = function(sm) {
+	this.shadowMap = sm;
+};
+
+GG.ShadowMapVSM.prototype.setOptions = function(opts) {
+	this.options = opts;
 };
 GG.SHADOW_MAPPING = 1;
 GG.SHADOW_MAPPING_PCF = 2;
@@ -3646,19 +4158,30 @@ GG.SHADOW_MAPPING_ESM = 4;
  */
 GG.ShadowMapTechnique = function (spec) {
 	this.options = GG.cloneDictionary(spec || {});
-	this.shadowType = this.options.shadowType || GG.SHADOW_MAPPING;
+	this.shadowType = this.options.shadowType != undefined ? this.options.shadowType : GG.SHADOW_MAPPING;
 	
-	this.options.shadowMapWidth  = this.options.shadowMapWidth || 800;
-	this.options.shadowMapHeight = this.options.shadowMapHeight || 600;
-	this.options.depthOffset     = this.options.depthOffset || 0.04;
-	this.options.shadowFactor    = this.options.shadowFactor || 0.5;
+	this.options.shadowMapWidth  = this.options.shadowMapWidth != undefined ? this.options.shadowMapWidth : 800;
+	this.options.shadowMapHeight = this.options.shadowMapHeight != undefined ? this.options.shadowMapHeight : 600;
+	this.options.depthOffset     = this.options.depthOffset != undefined ? this.options.depthOffset : 0.01;
+	this.options.shadowFactor    = this.options.shadowFactor != undefined ? this.options.shadowFactor : 0.5;
+
+	var shadowMap = new GG.Texture({
+		width : this.options.shadowMapWidth,
+		height : this.options.shadowMapHeight,
+		flipY : false
+	});
 
 	this.depthPassFBO = new GG.RenderTarget({
 		width : this.options.shadowMapWidth,
 		height : this.options.shadowMapHeight,
-		clearColor : [1.0, 1.0, 1.0, 1.0]
+		// this might not work...
+		//useColor : false,
+		clearColor : [1.0, 1.0, 1.0, 1.0],
+		colorAttachment : shadowMap
 	});
 	this.depthPassFBO.initialize();
+	this.depthPassFBO.getColorAttachment(0).setWrapMode(gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE);
+
 	this.depthPass = new GG.ShadowMapDepthPass();
 	
 	this.delegates = {};
@@ -3667,31 +4190,24 @@ GG.ShadowMapTechnique = function (spec) {
 	this.delegates[GG.SHADOW_MAPPING_VSM] = new GG.ShadowMapVSM();	
 };
 
-/*
-GG.ShadowMapTechnique.prototype.initialize = function() {
-	GG.BaseTechnique.prototype.initialize();
-	for (var k in this.delegates) {
-		this.delegates[k].initialize();
-	}
-};
-*/
-
 GG.ShadowMapTechnique.prototype.getShadowMapTexture = function() {
-	return this.depthPassFBO.getColorAttachment(0)
+	return this.depthPassFBO.getColorAttachment(0);
 };
 
 /**
- * Called right before the main scene rendering pass.
- * In this case, it serves as an opportunity to build the shadow map.
+ * Creates the shadow map by rendering the depth of the objects as seen
+ * by the light. The shadow projection is parameterized through the shadow
+ * camera of the active light.
  */
-GG.ShadowMapTechnique.prototype.scenePrePass = function(scene, context) {
-	var that = this;
-	this.depthPass.setCamera(context.scene.listDirectionalLights()[0].getShadowCamera());	
+GG.ShadowMapTechnique.prototype.buildShadowMap = function(objects, context) {
+	
+	this.depthPass.setCamera(context.light.getShadowCamera());	
 	this.depthPass.vsmMode = (this.shadowType == GG.SHADOW_MAPPING_VSM);
 	
 	try {
+		var that = this;
 		this.depthPassFBO.activate();		
-		scene.perObject(function (renderable) {
+		objects.forEach(function (renderable) {
 			that.depthPass.render(renderable, context);
 		});
 
@@ -3701,35 +4217,18 @@ GG.ShadowMapTechnique.prototype.scenePrePass = function(scene, context) {
 
 	// notify the active delegate that the shadow map is constructed
 	var delegate = this.switchDelegate();
-	delegate.postShadowMapConstruct(this.depthPassFBO.getColorAttachment(0), this.options);
+	delegate.setShadowMap(this.depthPassFBO.getColorAttachment(0));
+	delegate.setOptions(this.options);
+
+	if (delegate.postShadowMapConstruct) {
+		delegate.postShadowMapConstruct();
+	}
 };
 
-/**
- * Adds shadow map support to the input vertex and fragment programs.
- * Common factors are adapted in this method, while specific techniques
- * set their own additional code in their adaptProgram methods.
- */
-GG.ShadowMapTechnique.prototype.adaptProgram = function(vertexProgram, fragmentProgram) {
-	// common uniforms
-	fragmentProgram
-		.uniform('sampler2D', 'u_depthMap')
-		.uniform('float', 'u_shadowFactor');
 
+GG.ShadowMapTechnique.prototype.render = function(renderable, context) {
 	var delegate = this.switchDelegate();
-	delegate.adaptProgram(vertexProgram, fragmentProgram);	
-};
-
-/**
- * Called right before rendering using the current technique with the purpose
- * of preparing the uniform objects of the program.
- */
-GG.ShadowMapTechnique.prototype.setUniforms = function(program, context) {
-	this.depthPassFBO.getColorAttachment(0).bindAtUnit(GG.TEX_UNIT_SHADOW_MAP);
-	gl.uniform1i(program['u_depthMap'], GG.TEX_UNIT_SHADOW_MAP);
-	gl.uniform1f(program.u_shadowFactor, this.options.shadowFactor);
-	
-	var delegate = this.switchDelegate();
-	delegate.setUniforms(program, context, this.options);
+	delegate.render(renderable, context);
 };
 
 GG.ShadowMapTechnique.prototype.switchDelegate = function() {
@@ -3745,7 +4244,7 @@ GG.Renderer = function() {
 	this.view        = mat4.create();
 	this.inverseView = mat4.create();
 	this.MVP         = mat4.create();
-}
+};
 
 GG.Renderer.prototype.constructor = GG.Renderer;
 GG.Renderer.prototype.getCamera = function () {
@@ -3781,7 +4280,7 @@ GG.Renderer.prototype.prepareNextFrame = function () {
 	return this;
 };
 
-GG.Renderer.prototype.renderMesh = function (mesh, program) {		
+GG.Renderer.prototype.renderMesh = function (mesh, program, options) {		
 
 	var attribPosition = program[GG.GLSLProgram.BuiltInAttributes.attribPosition];
 	if (attribPosition != undefined) {
@@ -3792,9 +4291,10 @@ GG.Renderer.prototype.renderMesh = function (mesh, program) {
 
 	var attribNormal = program[GG.GLSLProgram.BuiltInAttributes.attribNormal];
 	if (attribNormal != undefined) {
-		gl.bindBuffer(gl.ARRAY_BUFFER, mesh.getNormalsBuffer());
+		var normalsBuffer = mesh.getMaterial().flatShade ? mesh.getFlatNormalsBuffer() : mesh.getNormalsBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
 		gl.enableVertexAttribArray(attribNormal);
-		gl.vertexAttribPointer(attribNormal, mesh.getNormalsBuffer().itemSize, mesh.getNormalsBuffer().itemType, false, 0, 0);
+		gl.vertexAttribPointer(attribNormal, normalsBuffer.itemSize, normalsBuffer.itemType, false, 0, 0);
 	}
 
 	var attribTexCoords = program[GG.GLSLProgram.BuiltInAttributes.attribTexCoords];
@@ -3804,11 +4304,16 @@ GG.Renderer.prototype.renderMesh = function (mesh, program) {
 		gl.vertexAttribPointer(attribTexCoords, mesh.getTexCoordsBuffer().itemSize, mesh.getTexCoordsBuffer().itemType, false, 0, 0);
 	}
 
+	options = options || {};
+	var mode = gl.TRIANGLES;
+	if ('mode' in options ) {
+		mode = options.mode;
+	}
 	if (mesh.getIndexBuffer() != undefined) {
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.getIndexBuffer());
-		gl.drawElements(gl.TRIANGLES, mesh.getIndexBuffer().numItems, mesh.getIndexBuffer().itemType, 0);
+		gl.drawElements(mode, mesh.getIndexBuffer().numItems, mesh.getIndexBuffer().itemType, 0);
 	} else {
-		gl.drawArrays(gl.TRIANGLES, 0, mesh.getPositionsBuffer().size);
+		gl.drawArrays(mode, 0, mesh.getPositionsBuffer().size);
 	}	
 };
 
@@ -3839,11 +4344,11 @@ GG.MouseHandler = function() {
 		that.mouseDown  = true;
 		that.lastMouseX = event.clientX;
 		that.lastMouseY = event.clientY;
-	}
+	};
 
 	this.handleMouseUp = function (event) {
 		that.mouseDown = false;
-	}
+	};
 
 	this.handleKeyDown = function (event) {
 		switch (event.keyCode) {
@@ -3865,11 +4370,19 @@ GG.MouseHandler = function() {
 			case 40: 	// down
 			that.camera.forward(0.2);
 			console.log("backwards");
+			break;		
+
+			case 33: 	// page up
+			that.camera.elevate(0.2);
 			break;
 
-			default: break;
+			case 34: 	// page down
+			that.camera.elevate(-0.2);
+			break;
+
+			default: console.log('key is: ' + event.keyCode); break;
 		}
-	}
+	};
 
 	this.handleMouseMove = function (event) {
 		if (!that.mouseDown) {
@@ -3881,28 +4394,37 @@ GG.MouseHandler = function() {
 		var deltaX = newX - that.lastMouseX;
 		that.rotY  += deltaX;
 		
-		/*
-		var newRotationMatrix = mat4.create();
-		mat4.identity(newRotationMatrix);
-		mat4.rotate(newRotationMatrix, degToRad(deltaX / 10), [0, 1, 0]);
-*/
 		var deltaY = newY - that.lastMouseY;
 		that.rotX  += deltaY;
 
 		that.camera.setRotation([that.rotX, that.rotY, 0.0]);
-		/*
-		mat4.rotate(newRotationMatrix, degToRad(deltaY / 10), [1, 0, 0]);
-		mat4.multiply(newRotationMatrix, moonRotationMatrix, moonRotationMatrix);
-*/
+		
 		that.lastMouseX = newX
 		that.lastMouseY = newY;
-	}
+	};
+
+	this.handleMouseWheel = function (event) {
+		var delta = event.wheelDeltaY * 0.01;
+		that.camera.zoom(delta);
+	};
 	
 	GG.canvas.onmousedown = this.handleMouseDown;
+	GG.canvas.onmousewheel = this.handleMouseWheel;
     document.onmouseup = this.handleMouseUp;
     document.onmousemove = this.handleMouseMove;
     document.onkeydown = this.handleKeyDown;
     document.onkeyup = this.handleKeyUp;
+
+    // http://www.sitepoint.com/html5-javascript-mouse-wheel/
+    if (GG.canvas.addEventListener) {
+		// IE9, Chrome, Safari, Opera
+		GG.canvas.addEventListener("mousewheel", this.handleMouseWheel, false);
+		// Firefox
+		GG.canvas.addEventListener("DOMMouseScroll", this.handleMouseWheel, false);
+	} else {
+		// IE 6/7/8
+		GG.canvas.attachEvent("onmousewheel", this.handleMouseWheel);
+	}
 };
 
 
@@ -3933,6 +4455,10 @@ GG.Scene = function(name) {
 GG.Scene.prototype.addObject = function(object) {
 	this.objects.push(object);
 	return this;
+};
+
+GG.Scene.prototype.listObjects = function () {
+	return this.objects;
 };
 
 GG.Scene.prototype.perObject = function(fn) {
@@ -4013,11 +4539,18 @@ GG.Scene.prototype.constructor = GG.Scene;
 
 
 GG.DefaultSceneRenderer = function (spec) {
-	this.scene = spec.scene || null;
-	this.camera = spec.camera || null;
-	this.programCache = {};
+	spec                 = spec || {};
+	this.scene           = spec.scene;
+	this.camera          = spec.camera;
+	this.programCache    = {};
 	this.shadowTechnique = new GG.ShadowMapTechnique({ shadowType : GG.SHADOW_MAPPING });
-	this.dbg = new GG.DepthMapDebugOutput();
+	this.dbg             = new GG.DepthMapDebugOutput();	
+	/*
+	this.backgroundQueue = new GG.RenderQueue({ name : 'background', priority : 0 });
+	this.defaultQueue    = new GG.RenderQueue({ name : 'default', priority : 1 });
+	this.overlayQueue    = new GG.RenderQueue({ name : 'overlay', priority : 2 });
+*/
+	this.depthPrePassTechnique = new GG.DepthPrePassTechnique();
 };
 
 GG.DefaultSceneRenderer.prototype.setScene = function(sc) {
@@ -4038,218 +4571,176 @@ GG.DefaultSceneRenderer.prototype.getCamera = function() {
 	return this.camera;
 };
 
+GG.DefaultSceneRenderer.prototype.findVisibleObjects = function(scene, camera) {
+	return scene.listObjects();
+};
+
+GG.DefaultSceneRenderer.prototype.findShadowCasters = function(scene, camera) {
+	return scene.listObjects();
+};
+
+GG.DefaultSceneRenderer.prototype.findEffectiveLights = function(scene, camera) {
+	return scene.listLights();
+};
+
+GG.DefaultSceneRenderer.prototype.findShadowCastingLights = function(lights) {
+	return lights.filter(function (light) {
+		return light.lightType != GG.LT_POINT;
+	});
+};
+
+/**
+ * Bind render target, if any
+ * Clear the color and depth buffers
+ * Render a pre-pass depth pass
+ * Find the objects visible for the current camera
+ * Find the lights close enough to affect the scene
+ * For each light
+ *   Find the objects that are affected by it
+ *   Render shadow map for light, if shadows are enabled
+ *   Render the list of objects 
+ * Unbind render target, if any
+ */
 GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {
-	var sceneLights = this.scene.listLights();
-	var ctx = new GG.RenderContext();
-	ctx.camera = this.camera;
-	ctx.scene = this.scene;
-	ctx.lights = sceneLights;
-	ctx.renderTarget = renderTarget;
+	
+	var ctx            = new GG.RenderContext();
+	ctx.camera         = this.camera;
+	ctx.scene          = this.scene;
+	ctx.renderTarget   = renderTarget;
+	
+	var visibleObjects = this.findVisibleObjects(this.scene, this.camera);
+	var shadowCasters  = this.findShadowCasters(this.scene);
 
-	var depthPass = this.depthPass;
-	var that = this;
+	// TODO: Create an ambient light set to the ambient light of the scene
+	var effectiveLights = this.findEffectiveLights(this.scene, this.camera);
+	
+	var vp = this.camera.getViewport();
 
-	var enableShadows = this.scene.hasShadows() && this.shadowTechnique;
-	if (enableShadows) {
-		this.shadowTechnique.scenePrePass(this.scene, ctx);
-	}
-
+var sl;
 	try {
-		if (renderTarget) renderTarget.activate();	
-		
-		this.scene.perObject(function (renderable) {
-			
-			var technique = renderable.getMaterial().getTechnique();
-			technique.renderPasses().forEach(function(pass) {
-				if (pass.isAdaptableToScene()) {
-					var hash = that.computeHashForPass(pass);
-					var gpuProgram = that.programCache[hash];
-					if (!gpuProgram) {
-						var vsSource = pass.getVertexShaderSource();
-						var fsSource = pass.getFragmentShaderSource();
-						if (pass.usesSceneLighting()) {
-							that.adaptProgramToSceneLighting(vsSource, fsSource);
-						}
-						if (enableShadows) {
-							that.shadowTechnique.adaptProgram(vsSource, fsSource);
-						}
-						gpuProgram = GG.ProgramUtils.createProgram(vsSource.toString(), fsSource.toString());		
-						that.programCache[hash]	= gpuProgram;
-
-						that.locateSceneUniforms(pass, gpuProgram);
-
-						pass.setProgram(gpuProgram);
-						pass.initialize();
-					} else {
-						pass.setProgram(gpuProgram);
-					}
-					// set scene uniforms here...
-					gl.useProgram(gpuProgram);
-					if (enableShadows) {
-						that.shadowTechnique.setUniforms(gpuProgram, ctx);
-					}
-				}
-			});
-			if (technique) {
-				technique.render(renderable, ctx);
-			}					
-		});
-
-		if (enableShadows) {
-			gl.viewport(0, 0, 320, 200);
-			var cam = this.scene.listDirectionalLights()[0].getShadowCamera();
-			
-			this.dbg.sourceTexture = this.shadowTechnique.getShadowMapTexture();
-			this.dbg.minDepth = cam.near;
-			this.dbg.maxDepth = cam.far;
-			this.dbg.render();
-
+		if (renderTarget) {
+			renderTarget.activate();	
+		} else {
+			//this.renderer.setViewport(this.camera.getViewport());			
+			gl.viewport(0, 0, vp.getWidth(), vp.getHeight());
+			gl.clearColor(vp.getClearColor()[0], vp.getClearColor()[1], vp.getClearColor[2], 1.0);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		}
 		
+		gl.enable(gl.DEPTH_TEST);
+		gl.depthFunc(gl.LEQUAL);
+
+		// fills the depth buffer only in order to skip processing for invisible fragments
+		this.renderDepthPrePass(visibleObjects, ctx);
+
+		// additively blend the individual light passes
+		gl.enable(gl.BLEND);
+		gl.blendEquation(gl.FUNC_ADD);
+		gl.blendFunc(gl.ONE, gl.ONE);
+
+
+		gl.cullFace(gl.BACK);
+		gl.frontFace(gl.CCW);
+		gl.enable(gl.CULL_FACE);
+
+		for (var i = effectiveLights.length - 1; i >= 0; i--) {		
+			var light = effectiveLights[i];
+			ctx.light = light;
+			for (var j = visibleObjects.length - 1; j >= 0; j--) {
+				var renderable = visibleObjects[j];						
+				var technique = renderable.getMaterial().getTechnique();
+				technique.render(renderable, ctx);				
+			}
+		}
+
+		var shadowLights = this.findShadowCastingLights(effectiveLights);
+		var enableShadows = this.scene.hasShadows() && this.shadowTechnique && shadowLights.length > 0;
+		if (enableShadows) {
+			
+			// applies the shadows on top of the scene
+			for (var i = shadowLights.length - 1; i >= 0; i--) {	
+				var light = shadowLights[i];
+				ctx.light = light;	
+				this.shadowTechnique.buildShadowMap(shadowCasters, ctx);
+
+				sl = light;
+				
+				//TODO: re-set the render state here, it is compromised by the shadow technique
+				gl.viewport(0, 0, vp.getWidth(), vp.getHeight());
+
+				// emulates a multiplicative blending mode
+				gl.enable(gl.BLEND);
+				//gl.disable(gl.BLEND);
+				gl.blendEquation(gl.FUNC_ADD);
+				gl.blendFunc(gl.DST_COLOR, gl.ZERO);	
+				//gl.blendFunc(gl.ONE, gl.ONE);
+
+				gl.enable(gl.CULL_FACE);
+				gl.cullFace(gl.BACK);
+				gl.frontFace(gl.CCW);
+
+				for (var j = visibleObjects.length - 1; j >= 0; j--) {		
+					this.shadowTechnique.render(visibleObjects[j], ctx);		
+				}				
+			}
+			
+			
+		}
 	} finally {
+		gl.disable(gl.BLEND);
 		if (renderTarget) renderTarget.deactivate();
 	}
+
+	if (enableShadows) {
+		gl.viewport(0, 0, 320, 200);
+		var cam = sl.getShadowCamera();
+		
+		this.dbg.sourceTexture = this.shadowTechnique.getShadowMapTexture();
+		this.dbg.minDepth = cam.near;
+		this.dbg.maxDepth = cam.far;
+		this.dbg.render();
+	}
+	
 };
 
-
-GG.DefaultSceneRenderer.prototype.locateSceneUniforms = function(pass, program) {
-	if (pass.usesSceneLighting()) {
-		GG.ProgramUtils.getLightUniformsLocations(program, 'u_pointLights', 4);
-		GG.ProgramUtils.getLightUniformsLocations(program, 'u_directionalLights', 4);
-		GG.ProgramUtils.getLightUniformsLocations(program, 'u_spotLights', 4);
+GG.DefaultSceneRenderer.prototype.renderDepthPrePass = function (visibleObjects, ctx) {
+	try {		
+    	gl.colorMask(false, false, false, false);
+    	for (var i = visibleObjects.length - 1; i >= 0; i--) {		
+			this.depthPrePassTechnique.render(visibleObjects[i], ctx);		
+		}
+	} finally {		
+    	gl.colorMask(true, true, true, true);
 	}
+	
 };
 
-GG.DefaultSceneRenderer.prototype.adaptProgramToSceneLighting = function(vertexSource, fragmentSource) {	
-	if (!fragmentSource.hasUniform('u_pointLights')) {
-		fragmentSource.uniformPointLights();
-	}
-	if (!fragmentSource.hasUniform('u_directionalLights')) {
-		fragmentSource.uniformDirectionalLights();
-	}
-	if (!fragmentSource.hasUniform('u_spotLights')) {
-		fragmentSource.uniformSpotLights();
-	}	
+GG.SampleBase = function (spec) {
+	spec = spec || {};
+	this.context = spec.context != undefined ? spec.context : "experimental-webgl";
+	this.canvas = null;
 };
 
-GG.DefaultSceneRenderer.prototype.computeHashForPass = function(pass) {
-	var h = pass.Prototype;
-	if (pass.usesSceneLighting()) {
-		h += this.scene.numPointLights() 
-		+ '_' + this.scene.numSpotLights() 
-		+ '_' + this.scene.numDirectionalLights() 
-		+ '_' + this.scene.shadowsEnabled 
-	}
-	h += '_' + this.scene.fogEnabled;
-	return h;
-};
+GG.SampleBase.prototype.constructor = GG.SampleBase;
 
-/*
-adapt program to scene := 
-	adapt lights 
-	adapt shadows 
-	adapt fog 
-	if program supports lighting, then create scene lights uniforms
-	if scene uses fog, then extend program with fog uniforms and code block
-	if scene uses shadows, then add shadow uniforms and blocks
-
-adapt lights :=
-	if program has source:
-		check for predetermined names in the uniforms
-		if not present then:
-			add uniforms
-	else abort
-
-adapth shadows :=
-*/
-var renderer;
-var cubeMesh;
-var planeMesh;
-var sphereMesh;
-
-var y_rot = 0.0;
-
-var mouseHandler;
-
-var redLight, greenLight;
-var phongMat;
-
-var lightModel;
-
-var highResFBO;
-
-var sceneRenderer;
-
-function tick() {
-
-	GG.clock.tick();	
-
-	renderer.prepareNextFrame();	
-	drawScene();
-
-	redLight.position[0]   = 20.0*Math.cos(y_rot);
-	redLight.position[1]   = 4.2;		
-	redLight.position[2]   = 20.0*Math.sin(y_rot);
-	
-	lightModel.setPosition(redLight.position);
-	
-	redLight.direction[0]  = -Math.cos(y_rot);
-	redLight.direction[1]  = -0.2;		
-	redLight.direction[2]  = -Math.sin(y_rot);		
-
-	//redLight.position = [2.0, 5.0, 4.0];
-
-	var lightDir = [-Math.cos(0.5*y_rot), 0.0, -Math.sin(0.5*y_rot)];
-	redLight.shadowCamera.setup(redLight.position, [0.0,0.0,0.0], [0.0, 1.0, 0.0], -17.0, 17.0, -17.0, 17.0, 1.0, 70.0);
-
-/*
-	greenLight.position[0] = 15.0*Math.cos(0.5*y_rot);
-	greenLight.position[1] = 10.0
-	greenLight.position[2] = 15.0*Math.sin(0.5*y_rot);		
-	*/
-	//cubeMesh.setScale([0.8, 0.8, 0.8]);
-	cubeMesh.setPosition([0.0, 1.0, -6.0]);
-	cubeMesh.setRotation([0.5, y_rot, 0.2]);
-
-	planeMesh.setScale([100.0, 100.0, 1.0]);
-	planeMesh.setPosition([0.0, -1.0, 0.0]);
-	planeMesh.setRotation([-1.0, 0.0, 0.0]);
-
-	//sphereMesh.setScale([0.8, 0.8, 0.8]);
-	//sphereMesh.setPosition([-1.0, -1.0, -12.0]);
-
-sphereMesh.setPosition([0.0, 0.0, 0.0]);
-
-	y_rot += GG.clock.deltaTime() * 0.001;
-	
-	requestAnimFrame(tick);
-}
-
-var blitPass;
-
-function drawScene() {
-	
-	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-	gl.clearColor(0.0, 0.0, 0.0, 1.0);				
-	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-	sceneRenderer.render();	
-}
-			
-function webGLStart(sampleName)  {
+GG.SampleBase.prototype.start = function()  {
 	try {
-		canvas = document.getElementById("c");		
+		this.canvas = document.getElementById("c");		
 		
-		gl = canvas.getContext("experimental-webgl");
+		gl = this.canvas.getContext(this.context);
 		GG.context = gl;
-		GG.canvas = canvas;
+		GG.canvas = this.canvas;
 		GG.init();
-		GG.clock = new GG.Clock();
+		GG.clock = new GG.Clock();		
 		
+		gl.viewportWidth  = this.canvas.width;
+		gl.viewportHeight = this.canvas.height;
+
 		/**
 		 * Provides requestAnimationFrame in a cross browser way.
 		 */
 		window.requestAnimFrame = (function() {
+
 		  return window.requestAnimationFrame ||
 				 window.webkitRequestAnimationFrame ||
 				 window.mozRequestAnimationFrame ||
@@ -4260,73 +4751,31 @@ function webGLStart(sampleName)  {
 				 };
 		})();
 
-		var mouseHandler = new GG.MouseHandler();
-		
-		gl.viewportWidth = canvas.width;
-		gl.viewportHeight = canvas.height;
-		gl.clearColor(0.0, 0.0, 0.0, 1.0);				
+		window.sample = this;
 
-		gl.enable(gl.DEPTH_TEST);
-		gl.depthFunc(gl.LEQUAL);
-		
-		camera = new GG.PerspectiveCamera();
-		camera.setPosition([0.0, 0.0, 2.8]);
-		mouseHandler.setCamera(camera);
-		
-		renderer = new GG.Renderer();
-		renderer.setCamera(camera);
-		GG.renderer = renderer;
+		this.initialize();
 
-		cubeMesh            = new GG.TriangleMesh(new GG.CubeGeometry());
-		planeMesh           = new GG.TriangleMesh(new GG.PlaneGeometry(16));
-		sphereMesh          = new GG.TriangleMesh(new GG.SphereGeometry());
-		lightModel          = new GG.TriangleMesh(new GG.SphereGeometry());
-		
-		phongMat            = new GG.PhongMaterial();
-		phongMat.ambient    = [0.0, 0.0, 0.0];
-		phongMat.shininess  = 20.0;
-		
-		sphereMesh.material = phongMat;
-		cubeMesh.material   = phongMat;
-		planeMesh.material  = phongMat;
+		this.tick();
 
-		lightModel.material = new GG.BaseMaterial({shadeless : true});
-
-		redLight = new GG.Light({ 
-			name : 'red', 
-			type : GG.LT_DIRECTIONAL, 
-			position : [0.0, 2.0, 4.0], 
-			direction : [-0.0, -0.2, -1.0],
-			diffuse : [1.0, 0.0, 0.0],
-			cosCutOff : 0.9
-		});
-		var shadowCamera = new GG.OrthographicCamera();
-		shadowCamera.setup(redLight.position, [0.0, -0.3, -4.0], [0.0, 1.0, 0.0], -7.0, 7.0, -7.0, 7.0, 1.0, 50.0);
-		redLight.shadowCamera = shadowCamera;
-
-		greenLight = new GG.Light({ 
-			name : 'green', 
-			type : GG.LT_POINT, 
-			position : [10.0, 0.0, -2.0], 
-			diffuse : [0.0, 1.0, 0.0]
-		});
-
-		testScene = new GG.Scene();
-		testScene.addObject(planeMesh)
-			.addObject(cubeMesh)
-			.addObject(sphereMesh)
-			.addObject(lightModel)
-			.addLight(redLight)
-			.addLight(greenLight)
-			.shadows(true);
-
-		
-		sceneRenderer = new GG.DefaultSceneRenderer({ scene : testScene, camera : camera });
-
-
-		tick();
-		
 	} catch (e) {
 		alert("error " + e);
 	}
-}
+};
+
+GG.SampleBase.prototype.initialize = function () {
+	// define in subclass
+};
+
+GG.SampleBase.prototype.update = function () {
+	// define in subclass
+};
+
+GG.SampleBase.prototype.tick = function () {
+	GG.clock.tick();	
+	
+	window.sample.update();
+	window.sample.draw();
+	requestAnimFrame(window.sample.tick);
+};
+			
+

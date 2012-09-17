@@ -209,12 +209,12 @@ function webGLStart(sampleName)  {
 		//mesh.setScale([10.5, 10.5, 10.5]);
 		
 		
-		flatShadingTechnique = new GG.ConstantLightingTechnique({ renderer : renderer, color : [ 0.0, 0.0, 1.0, 1.0 ]});	
+		flatShadingTechnique = new GG.ConstantColorTechnique({ renderer : renderer, color : [ 0.0, 0.0, 1.0, 1.0 ]});	
 		flatShadingTechnique.initialize();	
 		/*
 		rt = new GG.RenderTarget();
 
-		technique = new GG.ConstantLightingTechnique({ renderer : renderer, color : [ 0.0, 0.0, 1.0, 1.0 ]});
+		technique = new GG.ConstantColorTechnique({ renderer : renderer, color : [ 0.0, 0.0, 1.0, 1.0 ]});
 		technique.initialize();
 
 		texturedTechnique = new GG.TexturedShadelessTechnique(rt.getColorAttachment(0), { renderer : renderer });

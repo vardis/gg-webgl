@@ -77,6 +77,12 @@ GG.ProgramSource.prototype.hasUniform = function(name) {
 	return name in this.uniforms;
 };
 
+GG.ProgramSource.prototype.uniformLight = function() {
+	this.addTypeDecl(GG.ShaderLib.blocks['lightInfoStructure'], 'LightInfo');	
+	this.uniform('LightInfo', "u_light");
+	return this;
+};
+
 GG.ProgramSource.prototype.uniformPointLights = function() {
 	this.addTypeDecl(GG.ShaderLib.blocks['lightInfoStructure'], 'LightInfo');	
 	this.uniform('LightInfo', "u_pointLights[2]");
@@ -97,14 +103,14 @@ GG.ProgramSource.prototype.uniformDirectionalLights = function() {
 
 GG.ProgramSource.prototype.uniformMaterial = function(uniformName) {
 	this.addTypeDecl(GG.ShaderLib.blocks['materialInfoStructure'], 'MaterialStruct');	
-	var name = uniformName || 'u_material';
+	var name = uniformName != undefined ? uniformName : 'u_material';
 	this.uniform('Material_t', name);
 	return this;
 };
 
 GG.ProgramSource.prototype.addDecl = function(block, name) {
 	this.declarations.push({
-		'name' : name || 'decl_' + this.declarations.length,
+		'name' : name != undefined ? name : 'decl_' + this.declarations.length,
 		'code' : block,
 		'order' : this.declarations.length
 	});
@@ -118,7 +124,7 @@ GG.ProgramSource.prototype.addTypeDecl = function(block, name) {
 
 GG.ProgramSource.prototype.addMainInitBlock = function(block, name) {
 	this.mainInit.push({
-		'name' : name || 'block_' + this.mainInit.length,
+		'name' : name != undefined ? name : 'block_' + this.mainInit.length,
 		'code' : block,
 		'order' : this.mainInit.length
 	});
@@ -127,7 +133,7 @@ GG.ProgramSource.prototype.addMainInitBlock = function(block, name) {
 
 GG.ProgramSource.prototype.addMainBlock = function(block, name) {
 	this.mainBlocks.push({
-		'name' : name || 'block_' + this.mainBlocks.length,
+		'name' : name != undefined ? name : 'block_' + this.mainBlocks.length,
 		'code' : block,
 		'order' : this.mainBlocks.length
 	});
@@ -136,7 +142,7 @@ GG.ProgramSource.prototype.addMainBlock = function(block, name) {
 
 GG.ProgramSource.prototype.perPointLightBlock = function (block) {
 	this.pointLightBlocks.push({
-		'name' : name || 'block_' + this.pointLightBlocks.length,
+		'name' : name != undefined ? name : 'block_' + this.pointLightBlocks.length,
 		'code' : block,
 		'order' : this.pointLightBlocks.length
 	});
@@ -144,7 +150,7 @@ GG.ProgramSource.prototype.perPointLightBlock = function (block) {
 
 GG.ProgramSource.prototype.perDirectionalLightBlock = function (block) {
 	this.directionalLightBlocks.push({
-		'name' : name || 'block_' + this.directionalLightBlocks.length,
+		'name' : name != undefined ? name : 'block_' + this.directionalLightBlocks.length,
 		'code' : block,
 		'order' : this.directionalLightBlocks.length
 	});
@@ -152,7 +158,7 @@ GG.ProgramSource.prototype.perDirectionalLightBlock = function (block) {
 
 GG.ProgramSource.prototype.perSpotLightBlock = function (block) {
 	this.spotLightBlocks.push({
-		'name' : name || 'block_' + this.spotLightBlocks.length,
+		'name' : name != undefined ? name : 'block_' + this.spotLightBlocks.length,
 		'code' : block,
 		'order' : this.spotLightBlocks.length
 	});
@@ -164,7 +170,7 @@ GG.ProgramSource.prototype.position = function() {
 };
 
 GG.ProgramSource.prototype.normal = function() {
-	this.attribute('vec3', GG.GLSLProgram.BuiltInAttributes.attribNormal);
+	this.attribute('vec3', GG.Naming.AttributeNormal);
 	return this;
 };
 
@@ -179,27 +185,27 @@ GG.ProgramSource.prototype.color = function() {
 };
 
 GG.ProgramSource.prototype.uniformModelMatrix = function() {
-	this.uniform('mat4', GG.GLSLProgram.UniformModelMatrix);
+	this.uniform('mat4', GG.Naming.UniformModelMatrix);
 	return this;
 };
 
 GG.ProgramSource.prototype.uniformViewMatrix = function() {
-	this.uniform('mat4', GG.GLSLProgram.UniformViewMatrix);
+	this.uniform('mat4', GG.Naming.UniformViewMatrix);
 	return this;
 };
 
 GG.ProgramSource.prototype.uniformModelViewMatrix = function() {
-	this.uniform('mat4', GG.GLSLProgram.UniformModelViewMatrix);
+	this.uniform('mat4', GG.Naming.UniformModelViewMatrix);
 	return this;
 };
 
 GG.ProgramSource.prototype.uniformProjectionMatrix = function() {
-	this.uniform('mat4', GG.GLSLProgram.UniformProjectionMatrix);
+	this.uniform('mat4', GG.Naming.UniformProjectionMatrix);
 	return this;
 };
 
 GG.ProgramSource.prototype.uniformNormalsMatrix = function() {
-	this.uniform('mat3', GG.GLSLProgram.UniformNormalMatrix);
+	this.uniform('mat3', GG.Naming.UniformNormalMatrix);
 	return this;
 };
 

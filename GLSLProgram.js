@@ -1,7 +1,7 @@
 GG.GLSLProgram = function (spec) {
 	spec                = spec || {};
-	this.vertexShader   = spec.vertexShader || '';
-	this.fragmentShader = spec.fragmentShader || '';
+	this.vertexShader   = spec.vertexShader != undefined ? spec.vertexShader : '';
+	this.fragmentShader = spec.fragmentShader != undefined ? spec.fragmentShader : '';
 	this.compiled       = false;
 	this.gpuProgram     = null;
 	this.hashKey        = 0;
@@ -33,25 +33,18 @@ GG.GLSLProgram.prototype.unbind = function() {
 };
 
 GG.GLSLProgram.BuiltInAttributes = {
-	attribPosition : 'a_position',
-	attribNormal : 'a_normal',
-	attribTexCoords : 'a_texCoords',
-	attribColor : 'a_color'
+	attribPosition  : GG.Naming.AttributePosition,
+	attribNormal    : GG.Naming.AttributeNormal,
+	attribTexCoords : GG.Naming.AttributeTexCoords,
+	attribColor     : GG.Naming.AttributeColor
 };
 
-GG.GLSLProgram.UniformModelMatrix = 'u_matModel';
-GG.GLSLProgram.UniformNormalMatrix = 'u_matNormals';
-GG.GLSLProgram.UniformModelViewMatrix = 'u_matModelView';
-GG.GLSLProgram.UniformViewMatrix = 'u_matView';
-GG.GLSLProgram.UniformProjectionMatrix = 'u_matProjection';
-GG.GLSLProgram.UniformTime0_X = 'fTime0_X';
-
 GG.GLSLProgram.BuiltInUniforms = [
-	GG.GLSLProgram.UniformModelMatrix,
-	GG.GLSLProgram.UniformNormalMatrix,
-	GG.GLSLProgram.UniformViewMatrix,
-	GG.GLSLProgram.UniformModelViewMatrix,
-	GG.GLSLProgram.UniformProjectionMatrix,
-	GG.GLSLProgram.UniformTime0_X
+	GG.Naming.UniformModelMatrix,
+	GG.Naming.UniformNormalMatrix,
+	GG.Naming.UniformViewMatrix,
+	GG.Naming.UniformModelViewMatrix,
+	GG.Naming.UniformProjectionMatrix,
+	GG.Naming.UniformTime0_X
 ];
 

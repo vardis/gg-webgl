@@ -1,7 +1,7 @@
 GG.DepthMapDebugOutput = function (spec) {
 	spec = spec || {};
-	this.minDepth = spec.minDepth || 1.0;
-	this.maxDepth = spec.maxDepth || 100.0;
+	this.minDepth = spec.minDepth != undefined ? spec.minDepth : 1.0;
+	this.maxDepth = spec.maxDepth != undefined ? spec.maxDepth : 100.0;
 
 	var vs = [
 		"precision highp float;",
@@ -9,7 +9,7 @@ GG.DepthMapDebugOutput = function (spec) {
 		"varying vec2 v_texCoords;",
 		"void main() { ",
 		"	v_texCoords = 0.5*a_position.xy + vec2(0.5);",
-		"	v_texCoords.y = 1.0 - v_texCoords.y;",
+		"	//v_texCoords.y = 1.0 - v_texCoords.y;",
 		" 	gl_Position = a_position;",
 		" }"
 	].join('\n');

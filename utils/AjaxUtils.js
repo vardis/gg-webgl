@@ -28,7 +28,13 @@ GG.AjaxUtils = function() {
 			    }
 				
 			};
-			request.send();
+
+			try {
+				request.send();	
+			} catch (e) {
+				errorCallback();
+			}
+			
 		},
 
 		/**
@@ -47,13 +53,13 @@ GG.AjaxUtils = function() {
 			});
 		},
 
-		getRequest : function (url, type, callback) {
+		getRequest : function (url, type, callback, errorCallback) {
 			var request = new XMLHttpRequest();
   			request.open("GET", url, true);
   			request.expectedType = type;
   			GG.AjaxUtils.asyncRequest(request, function(response) {								
 				callback(response, url);
-			});
+			}, errorCallback);
 		}
 	};
 }();

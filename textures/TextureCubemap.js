@@ -20,8 +20,8 @@ GG.TextureCubemap = function(spec) {
 	];
 	this.images     = {};
 	
-	this.imagesSize = spec.size || 1024;
-	this.hdrTexures = spec.floatTextures || false;
+	this.imagesSize = spec.size != undefined ? spec.size : 1024;
+	this.hdrTexures = spec.floatTextures != undefined ? spec.floatTextures : false;
 	
 	this.gltex      = gl.createTexture();
 
@@ -127,8 +127,10 @@ GG.TextureCubemap.prototype.handleImageOnLoad = function(target, image) {
 };
 
 GG.TextureCubemap.prototype.bind = function() {
+	gl.activeTexture(GG.Texture.getGlUnitFromIndex(GG.TEX_UNIT_ENV_MAP));
 	gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.gltex);
 };
+
 
 GG.TextureCubemap.prototype.unbind = function() {
 	gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);

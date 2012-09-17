@@ -22,19 +22,30 @@ GG.SHADOW_MAPPING_ESM = 4;
  */
 GG.ShadowMapTechnique = function (spec) {
 	this.options = GG.cloneDictionary(spec || {});
-	this.shadowType = this.options.shadowType || GG.SHADOW_MAPPING;
+	this.shadowType = this.options.shadowType != undefined ? this.options.shadowType : GG.SHADOW_MAPPING;
 	
-	this.options.shadowMapWidth  = this.options.shadowMapWidth || 800;
-	this.options.shadowMapHeight = this.options.shadowMapHeight || 600;
-	this.options.depthOffset     = this.options.depthOffset || 0.04;
-	this.options.shadowFactor    = this.options.shadowFactor || 0.5;
+	this.options.shadowMapWidth  = this.options.shadowMapWidth != undefined ? this.options.shadowMapWidth : 800;
+	this.options.shadowMapHeight = this.options.shadowMapHeight != undefined ? this.options.shadowMapHeight : 600;
+	this.options.depthOffset     = this.options.depthOffset != undefined ? this.options.depthOffset : 0.01;
+	this.options.shadowFactor    = this.options.shadowFactor != undefined ? this.options.shadowFactor : 0.5;
+
+	var shadowMap = new GG.Texture({
+		width : this.options.shadowMapWidth,
+		height : this.options.shadowMapHeight,
+		flipY : false
+	});
 
 	this.depthPassFBO = new GG.RenderTarget({
 		width : this.options.shadowMapWidth,
 		height : this.options.shadowMapHeight,
-		clearColor : [1.0, 1.0, 1.0, 1.0]
+		// this might not work...
+		//useColor : false,
+		clearColor : [1.0, 1.0, 1.0, 1.0],
+		colorAttachment : shadowMap
 	});
 	this.depthPassFBO.initialize();
+	this.depthPassFBO.getColorAttachment(0).setWrapMode(gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE);
+
 	this.depthPass = new GG.ShadowMapDepthPass();
 	
 	this.delegates = {};
@@ -43,31 +54,24 @@ GG.ShadowMapTechnique = function (spec) {
 	this.delegates[GG.SHADOW_MAPPING_VSM] = new GG.ShadowMapVSM();	
 };
 
-/*
-GG.ShadowMapTechnique.prototype.initialize = function() {
-	GG.BaseTechnique.prototype.initialize();
-	for (var k in this.delegates) {
-		this.delegates[k].initialize();
-	}
-};
-*/
-
 GG.ShadowMapTechnique.prototype.getShadowMapTexture = function() {
-	return this.depthPassFBO.getColorAttachment(0)
+	return this.depthPassFBO.getColorAttachment(0);
 };
 
 /**
- * Called right before the main scene rendering pass.
- * In this case, it serves as an opportunity to build the shadow map.
+ * Creates the shadow map by rendering the depth of the objects as seen
+ * by the light. The shadow projection is parameterized through the shadow
+ * camera of the active light.
  */
-GG.ShadowMapTechnique.prototype.scenePrePass = function(scene, context) {
-	var that = this;
-	this.depthPass.setCamera(context.scene.listDirectionalLights()[0].getShadowCamera());	
+GG.ShadowMapTechnique.prototype.buildShadowMap = function(objects, context) {
+	
+	this.depthPass.setCamera(context.light.getShadowCamera());	
 	this.depthPass.vsmMode = (this.shadowType == GG.SHADOW_MAPPING_VSM);
 	
 	try {
+		var that = this;
 		this.depthPassFBO.activate();		
-		scene.perObject(function (renderable) {
+		objects.forEach(function (renderable) {
 			that.depthPass.render(renderable, context);
 		});
 
@@ -77,35 +81,18 @@ GG.ShadowMapTechnique.prototype.scenePrePass = function(scene, context) {
 
 	// notify the active delegate that the shadow map is constructed
 	var delegate = this.switchDelegate();
-	delegate.postShadowMapConstruct(this.depthPassFBO.getColorAttachment(0), this.options);
+	delegate.setShadowMap(this.depthPassFBO.getColorAttachment(0));
+	delegate.setOptions(this.options);
+
+	if (delegate.postShadowMapConstruct) {
+		delegate.postShadowMapConstruct();
+	}
 };
 
-/**
- * Adds shadow map support to the input vertex and fragment programs.
- * Common factors are adapted in this method, while specific techniques
- * set their own additional code in their adaptProgram methods.
- */
-GG.ShadowMapTechnique.prototype.adaptProgram = function(vertexProgram, fragmentProgram) {
-	// common uniforms
-	fragmentProgram
-		.uniform('sampler2D', 'u_depthMap')
-		.uniform('float', 'u_shadowFactor');
 
+GG.ShadowMapTechnique.prototype.render = function(renderable, context) {
 	var delegate = this.switchDelegate();
-	delegate.adaptProgram(vertexProgram, fragmentProgram);	
-};
-
-/**
- * Called right before rendering using the current technique with the purpose
- * of preparing the uniform objects of the program.
- */
-GG.ShadowMapTechnique.prototype.setUniforms = function(program, context) {
-	this.depthPassFBO.getColorAttachment(0).bindAtUnit(GG.TEX_UNIT_SHADOW_MAP);
-	gl.uniform1i(program['u_depthMap'], GG.TEX_UNIT_SHADOW_MAP);
-	gl.uniform1f(program.u_shadowFactor, this.options.shadowFactor);
-	
-	var delegate = this.switchDelegate();
-	delegate.setUniforms(program, context, this.options);
+	delegate.render(renderable, context);
 };
 
 GG.ShadowMapTechnique.prototype.switchDelegate = function() {

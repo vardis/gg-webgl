@@ -66,7 +66,7 @@
     // auto-detects and returns the best type of array to use within glMatrix, falling
     // back to Array if typed arrays are unsupported
     _global.determineMatrixArrayType = function() {
-        return setMatrixArrayType((typeof Float32Array !== 'undefined') ? Float32Array : Array);
+        return setMatrixArrayType((typeof Float32Array != 'undefined') ? Float32Array : Array);
     };
 
     determineMatrixArrayType();
@@ -1084,7 +1084,7 @@ mat4.rotate = function (mat, angle, axis, dest) {
         b20, b21, b22;
 
     if (!len) { return null; }
-    if (len !== 1) {
+    if (len != 1) {
         len = 1 / len;
         x *= len;
         y *= len;
@@ -1106,7 +1106,7 @@ mat4.rotate = function (mat, angle, axis, dest) {
 
     if (!dest) {
         dest = mat;
-    } else if (mat !== dest) { // If the source and destination differ, copy the unchanged last row
+    } else if (mat != dest) { // If the source and destination differ, copy the unchanged last row
         dest[12] = mat[12];
         dest[13] = mat[13];
         dest[14] = mat[14];
@@ -1154,7 +1154,7 @@ mat4.rotateX = function (mat, angle, dest) {
 
     if (!dest) {
         dest = mat;
-    } else if (mat !== dest) { // If the source and destination differ, copy the unchanged rows
+    } else if (mat != dest) { // If the source and destination differ, copy the unchanged rows
         dest[0] = mat[0];
         dest[1] = mat[1];
         dest[2] = mat[2];
@@ -1202,7 +1202,7 @@ mat4.rotateY = function (mat, angle, dest) {
 
     if (!dest) {
         dest = mat;
-    } else if (mat !== dest) { // If the source and destination differ, copy the unchanged rows
+    } else if (mat != dest) { // If the source and destination differ, copy the unchanged rows
         dest[4] = mat[4];
         dest[5] = mat[5];
         dest[6] = mat[6];
@@ -1250,7 +1250,7 @@ mat4.rotateZ = function (mat, angle, dest) {
 
     if (!dest) {
         dest = mat;
-    } else if (mat !== dest) { // If the source and destination differ, copy the unchanged last row
+    } else if (mat != dest) { // If the source and destination differ, copy the unchanged last row
         dest[8] = mat[8];
         dest[9] = mat[9];
         dest[10] = mat[10];
@@ -1864,7 +1864,7 @@ quat4.slerp = function (quat, quat2, slerp, dest) {
         ratioB;
 
     if (Math.abs(cosHalfTheta) >= 1.0) {
-        if (dest !== quat) {
+        if (dest != quat) {
             dest[0] = quat[0];
             dest[1] = quat[1];
             dest[2] = quat[2];

@@ -25,3 +25,7 @@ GG.PerspectiveCamera.prototype.setup = function(pos, lookAt, up, fov, aspectRati
 	mat4.lookAt(pos, lookAt, up, this.viewMatrix);
 	return this;
 };
+
+GG.PerspectiveCamera.prototype.zoom = function (amount) {
+	this.fov = GG.MathUtils.clamp(this.fov + amount, 0.0, 180.0);
+};

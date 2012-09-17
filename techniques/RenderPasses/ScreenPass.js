@@ -7,7 +7,7 @@ GG.ScreenPass = function(spec) {
 
 	GG.RenderPass.call(this, spec);
 
-	this.sourceTexture = spec.sourceTexture || null;
+	this.sourceTexture = spec.sourceTexture;
 	this.screenQuad = null;
 };
 
@@ -36,5 +36,11 @@ GG.ScreenPass.prototype.__setCustomUniforms = function(renderable, renderContext
 GG.ScreenPass.prototype.setSourceTexture = function(texture) {
 	this.sourceTexture = texture;
 };
+
+GG.ScreenPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
+	gl.disable(gl.CULL_FACE);
+	gl.disable(gl.DEPTH_TEST);
+};
+
 
 

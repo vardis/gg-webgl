@@ -4,14 +4,14 @@ GG.LT_SPOT = 3;
 
 GG.Light = function(spec) {
 	spec              = spec || {};
-	this.lightName    = spec.name || 'light';
-	this.lightType    = spec.type || GG.LT_POINT;
-	this.position     = spec.position || [0.0, 0.0, 0.0];
-	this.direction    = spec.direction || [0.0, 0.0, -1.0];
-	this.diffuse      = spec.diffuse || [1.0, 1.0, 1.0];
-	this.specular     = spec.specular || [1.0, 1.0, 1.0];
-	this.attenuation  = spec.attenuation || 5.0;
-	this.cosCutOff    = spec.cosCutOff || 0.5;
+	this.lightName    = spec.name != undefined ? spec.name : 'light';
+	this.lightType    = spec.type != undefined ? spec.type : GG.LT_POINT;
+	this.position     = spec.position != undefined ? spec.position : [0.0, 0.0, 0.0];
+	this.direction    = spec.direction != undefined ? spec.direction : [0.0, 0.0, -1.0];
+	this.diffuse      = spec.diffuse != undefined ? spec.diffuse : [1.0, 1.0, 1.0];
+	this.specular     = spec.specular != undefined ? spec.specular : [1.0, 1.0, 1.0];
+	this.attenuation  = spec.attenuation != undefined ? spec.attenuation : 5.0;
+	this.cosCutOff    = spec.cosCutOff != undefined ? spec.cosCutOff : 0.5;
 	this.shadowCamera = new GG.PerspectiveCamera();
 };
 

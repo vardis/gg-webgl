@@ -8,7 +8,7 @@
  */
 GG.StaticParticleSystem = function(geometry, material, spec) {
 	spec                        = spec || {};
-	this.pointSize              = spec.pointSize || 1.0;
+	this.pointSize              = spec.pointSize != undefined ? spec.pointSize : 1.0;
 	
 	this.vertexBuffer           = gl.createBuffer(1);
 	this.vertexBuffer.size      = geometry.getVertices().length / 3;	

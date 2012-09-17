@@ -14,6 +14,10 @@ GG.Scene.prototype.addObject = function(object) {
 	return this;
 };
 
+GG.Scene.prototype.listObjects = function () {
+	return this.objects;
+};
+
 GG.Scene.prototype.perObject = function(fn) {
 	this.objects.forEach(fn);
 	return this;

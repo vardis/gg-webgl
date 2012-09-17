@@ -28,14 +28,13 @@
  */
 GG.RenderPass = function (spec) {
 	spec                = spec || {}	
-	this.vertexShader   = spec.vertexShader || null;
-	this.fragmentShader = spec.fragmentShader || null;
-	this.renderableType = spec.renderableType || GG.RenderPass.MESH;
-	this.callback       = spec.callback || this;
+	this.vertexShader   = spec.vertexShader;
+	this.fragmentShader = spec.fragmentShader;
+	this.renderableType = spec.renderableType != undefined ? spec.renderableType : GG.RenderPass.MESH;
+	this.callback       = spec.callback != undefined ? spec.callback : this;
 	this.attributeNames = spec.attributeNames || [];
 	this.program        = null;
-	this.adaptsToScene  = spec.adaptsToScene || false;
-	this.usesLighting   = spec.usesLighting || true;
+	this.usesLighting   = spec.usesLighting != undefined ? spec.usesLighting : true;
 };
 
 GG.RenderPass.prototype.constructor = GG.RenderPass;
@@ -47,18 +46,15 @@ GG.RenderPass.prototype.initialize = function() {
 	if (!this.program) {
 		this.program = GG.ProgramUtils.createProgram(this.vertexShader, this.fragmentShader);
 	}
-	this.initializeAttributes();
-	this.initializeUniforms();
-};
-
-GG.RenderPass.prototype.initializeAttributes = function() {
-	GG.ProgramUtils.getAttributeLocations(this.program);
-};
-
-GG.RenderPass.prototype.initializeUniforms = function() {
+	GG.ProgramUtils.getAttributeLocations(this.program);	
 	GG.ProgramUtils.getUniformsLocations(this.program);	
-	//this.__locateCustomUniforms(this.program);	
 };
+
+
+GG.RenderPass.prototype.destroy = function() {
+	if (this.program) gl.deleteProgram(this.program);
+};
+
 
 GG.RenderPass.prototype.render = function(renderable, renderContext) {
 	if (this.program == null) {
@@ -79,16 +75,15 @@ GG.RenderPass.prototype.render = function(renderable, renderContext) {
 	this.__setCustomUniforms(renderable, renderContext, this.program);		
 
 	if (renderable && this.renderableType == GG.RenderPass.MESH) {
-		renderContext.renderer.renderMesh(renderable, this.program);
+		var options = {
+			mode : this.getRenderPrimitive(renderable)
+		};
+		renderContext.renderer.renderMesh(renderable, this.program, options);
 	} else {
 		this.callback.__renderGeometry(renderable);
 	}
 	
 	gl.useProgram(null);
-};
-
-GG.RenderPass.prototype.isAdaptableToScene = function() {
-	return this.adaptsToScene;
 };
 
 GG.RenderPass.prototype.usesSceneLighting = function() {
@@ -109,11 +104,17 @@ GG.RenderPass.prototype.setProgram = function(program) {
 };
 
 // no-op default implementations
-GG.RenderPass.prototype.__locateCustomUniforms = function(program) {};
 GG.RenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__setCustomAttributes = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__renderGeometry = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {};
+
+/**
+ * Subclasses can override this method in order to render lines or points, fans, strips, etc.
+ */
+GG.RenderPass.prototype.getRenderPrimitive = function(renderable) {
+	return gl.TRIANGLES;
+};
 
 /*
 pass = new RenderPass({

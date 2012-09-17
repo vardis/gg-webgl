@@ -1,3 +1,8 @@
+/**
+ * Each TriangleMesh is associated with a Geomtry that stores the actual vertices,
+ * normals, and the rest vertex attributes. 
+ * Only geometries of triangle lists are supported. 
+ */
 GG.TriangleMesh = function(geometry, material, spec) {
 	
 	this.geometry                     = geometry;
@@ -32,9 +37,10 @@ GG.TriangleMesh = function(geometry, material, spec) {
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.geometry.getIndices(), gl.STATIC_DRAW);
 	}
-}
 
-GG.TriangleMesh.prototype = new GG.Object3D();
+};
+
+GG.TriangleMesh.prototype             = new GG.Object3D();
 GG.TriangleMesh.prototype.constructor = GG.TriangleMesh;
 
 GG.TriangleMesh.prototype.getGeometry = function() {
@@ -55,4 +61,24 @@ GG.TriangleMesh.prototype.getTexCoordsBuffer = function() {
 
 GG.TriangleMesh.prototype.getIndexBuffer = function() {
 	return this.indexBuffer;
+};
+
+GG.TriangleMesh.prototype.getFlatNormalsBuffer = function() {
+	if (this.flatNormalsBuffer === undefined) {
+		var flatNormals = this.geometry.getFlatNormals();
+		if (flatNormals === undefined) {
+			flatNormals = this.geometry.calculateFlatNormals();
+		}
+		if (flatNormals) {
+			this.flatNormalsBuffer                = gl.createBuffer(1);
+			this.flatNormalsBuffer.size           = this.geometry.getFlatNormals().length / 3;
+			this.flatNormalsBuffer.itemSize       = 3;
+			this.flatNormalsBuffer.itemType       = gl.FLOAT;
+			gl.bindBuffer(gl.ARRAY_BUFFER, this.flatNormalsBuffer);			
+			gl.bufferData(gl.ARRAY_BUFFER, this.geometry.getFlatNormals(), gl.STATIC_DRAW);
+		} else {
+			return null;
+		}
+	}
+	return this.flatNormalsBuffer;
 };

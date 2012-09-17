@@ -21,17 +21,17 @@
  */
 GG.RenderTarget = function(spec) {
 	spec                  = spec || {};	
-	this.width            = spec.width || 320;
-	this.height           = spec.height || 200;
+	this.width            = spec.width != undefined ? spec.width : 320;
+	this.height           = spec.height != undefined ? spec.height : 200;
 	this.colorFormat      = spec.colorFormat;
 	this.depthFormat      = spec.depthFormat;
 	this.stencilFormat    = spec.stencilFormat;
-	this.useColor         = spec.useColor || true;
-	this.useDepth         = spec.useDepth || true;
-	this.useStencil       = spec.useStencil || false;
+	this.useColor         = spec.useColor != undefined ? spec.useColor : true;
+	this.useDepth         = spec.useDepth != undefined ? spec.useDepth : true;
+	this.useStencil       = spec.useStencil != undefined ? spec.useStencil : false;
 	
-	this.clearColor       = spec.clearColor || [0.0, 0.0, 0.0, 1.0];
-	this.clearDepth       = spec.clearDepth || 1.0;
+	this.clearColor       = spec.clearColor != undefined ? spec.clearColor : [0.0, 0.0, 0.0, 1.0];
+	this.clearDepth       = spec.clearDepth != undefined ? spec.clearDepth : 1.0;
 	
 	this.colorAttachments = [];
 	if (this.useColor && spec.colorAttachment0 != undefined) {
@@ -61,9 +61,9 @@ GG.RenderTarget.prototype.destroy = function () {
 };
 
 GG.RenderTarget.prototype.initialize = function () {
-	this.colorFormat = this.colorFormat || gl.RGBA;
-	this.depthFormat = this.depthFormat || gl.DEPTH_COMPONENT16;
-	this.stencilFormat = this.stencilFormat || gl.STENCIL_INDEX8;
+	this.colorFormat = this.colorFormat != undefined ? this.colorFormat : gl.RGBA;
+	this.depthFormat = this.depthFormat != undefined ? this.depthFormat : gl.DEPTH_COMPONENT16;
+	this.stencilFormat = this.stencilFormat != undefined ? this.stencilFormat : gl.STENCIL_INDEX8;
 
 	this.spec = {
 		width : this.width,
@@ -173,7 +173,7 @@ GG.RenderTarget.prototype.getColorAttachment = function(i) {
 	return this.colorAttachments[i];
 };
 
-GG.RenderTarget.prototype.getDeptAttachment = function() {
+GG.RenderTarget.prototype.getDepthAttachment = function() {
 	return this.depthAttachment;
 };
 

@@ -1,16 +1,37 @@
 GG.Geometry = function (spec) {
-	spec           = spec           || {};
-	this.vertices  = spec.vertices  || null;
-	this.normals   = spec.normals   || null;
-	this.texCoords = spec.texCoords || null;
-	this.colors    = spec.colors    || null;
-	this.tangents  = spec.tangents  || null;
-	this.indices   = spec.indices   || null;
+	spec             = spec || {};
+	this.vertices    = spec.vertices;
+	this.normals     = spec.normals;
+	this.flatNormals = spec.flatNormals;
+	this.texCoords   = spec.texCoords;
+	this.colors      = spec.colors;
+	this.tangents    = spec.tangents;
+	this.indices     = spec.indices;
 };
 
 GG.Geometry.prototype.constructor = GG.Geometry;
 
 GG.Geometry.fromJSON = function (jsonObj) {	
+	if ('vertices' in jsonObj) {
+		spec = {};
+		spec.vertices  = new Float32Array(jsonObj.vertices);
+
+		if ('normals' in jsonObj) {
+			spec.normals   = new Float32Array(jsonObj.normals);		
+		}
+
+		if ('uvs' in jsonObj) {
+			spec.texCoords = new Float32Array(jsonObj.uvs);
+		}
+	
+		if ('faces' in jsonObj) {			
+			spec.indices = new Uint16Array(jsonObj.faces);
+		}
+		return new GG.Geometry(spec);
+	}
+};
+
+GG.Geometry.fromThreeJsJSON = function (jsonObj) {	
 	if ('vertices' in jsonObj) {
 		spec = {};
 		spec.vertices  = new Float32Array(jsonObj.vertices);
@@ -62,12 +83,46 @@ GG.Geometry.fromJSON = function (jsonObj) {
 	}
 };
 
+GG.Geometry.prototype.calculateFlatNormals = function() {
+	if (this.indices) {
+		// case of triangle lists only
+		this.flatNormals = new Float32Array(this.normals.length);
+
+		for (var i = 0; i < this.indices.length - 1; i += 3) {
+			var v1 = this.indices[i];
+			var v2 = this.indices[i+1];
+			var v3 = this.indices[i+2];
+
+			var n1 = this.normals.subarray(v1*3, v1*3+3);
+			var n2 = this.normals.subarray(v2*3, v2*3+3);
+			var n3 = this.normals.subarray(v3*3, v3*3+3);
+
+			var avg = [n1[0] + n2[0] + n3[0], n1[1] + n2[1] + n3[1], n1[2] + n2[2] + n3[2]];
+			avg[0] = avg[0] / 3.0;
+			avg[1] = avg[1] / 3.0;
+			avg[2] = avg[2] / 3.0;
+
+			this.flatNormals.set(avg, v1*3);
+			this.flatNormals.set(avg, v2*3);
+			this.flatNormals.set(avg, v3*3);
+		}
+		return this.flatNormals;	
+	} else {
+		return null;
+	}
+	
+};
+
 GG.Geometry.prototype.getVertices = function() {
 	return this.vertices;
 };
 
 GG.Geometry.prototype.getNormals = function() {
 	return this.normals;
+};
+
+GG.Geometry.prototype.getFlatNormals = function() {
+	return this.flatNormals;
 };
 
 GG.Geometry.prototype.getTexCoords = function() {

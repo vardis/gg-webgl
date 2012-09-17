@@ -10,8 +10,8 @@ GG.ParticlesTechnique = function(spec) {
 	spec = spec || {};
 	GG.BaseTechnique.call(this, spec);
 
-	this.texture = spec.texture || null;
-	this.distanceAttenuation = spec.attenuation || 1.0;
+	this.texture = spec.texture;
+	this.distanceAttenuation = spec.attenuation != undefined ? spec.attenuation : 1.0;
 
 	// stores compiled programs for different configurations of the techniques
 	// and the particle system that is to be rendered

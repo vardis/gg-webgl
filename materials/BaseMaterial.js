@@ -3,31 +3,44 @@ GG.BaseMaterial = function(spec) {
 	
 	this.technique   = spec.technique;
 	
-	this.ambient     = spec.ambient || [0.1, 0.1, 0.1];
-	this.diffuse     = spec.diffuse || [1.0, 1.0, 1.0];
-	this.specular    = spec.specular || [1.0, 1.0, 1.0];
-	this.shininess   = spec.shininess || 10.0;
+	this.ambient     = spec.ambient != undefined ? spec.ambient : [0.1, 0.1, 0.1];
+	this.diffuse     = spec.diffuse != undefined ? spec.diffuse : [1.0, 1.0, 1.0];
+	this.specular    = spec.specular != undefined ? spec.specular : [1.0, 1.0, 1.0];
+	this.shininess   = spec.shininess != undefined ? spec.shininess : 10.0;
 	
-	this.diffuseMap  = spec.diffuseMap || null;
-	this.specularMap = spec.specularMap || null;
-	this.opacityMap  = spec.opacityMap || null;
-	this.lightMap    = spec.lightMap || null;
-	this.glowMap     = spec.glowMap || null;
+	this.diffuseMap  = spec.diffuseMap;
+	this.specularMap = spec.specularMap;
+	this.opacityMap  = spec.opacityMap;
+	this.lightMap    = spec.lightMap;
+	this.glowMap     = spec.glowMap;
 	
-	this.flatShade   = spec.flatShade || false;
-	this.phongShade  = spec.phongShade || true;	
-	this.shadeless   = spec.shadeless || false;
+	this.flatShade   = spec.flatShade != undefined ? spec.flatShade : false;
+	this.phongShade  = spec.phongShade != undefined ? spec.phongShade : true;	
+	this.shadeless   = spec.shadeless != undefined ? spec.shadeless : false;
+	this.wireframe   = spec.wireframe != undefined ? spec.wireframe : false;
+	this.wireOffset  = spec.wireOffset != undefined ? spec.wireOffset : 0.001;
+	this.wireWidth   = spec.wireOffset != undefined ? spec.wireOffset : 1.0;
+
+	// environment map to be sampled for reflections
+	this.envMap          = spec.envMap != undefined ? spec.envMap : null;
+	// amount of reflectance
+	this.reflectance     = spec.reflectance != undefined ? spec.reflectance : 0.80;
+
+	// index of refraction 
+	this.IOR             = spec.IOR != undefined ? spec.IOR : [ 1.0, 1.0, 1.0 ];
+
+	// index of refraction of the environment surounding the object 
+	this.externalIOR     = spec.externalIOR != undefined ? spec.externalIOR : [ 1.330, 1.31, 1.230 ];
+
+	this.fresnelBias     = spec.fresnelBias != undefined ? spec.fresnelBias : 0.44;
+	this.fresnelExponent = spec.fresnelExponent != undefined ? spec.fresnelExponent : 2.0;
 };
 
 GG.BaseMaterial.prototype = new GG.BaseMaterial();
 GG.BaseMaterial.prototype.constructor = GG.BaseMaterial;
 
-GG.BaseMaterial.prototype.getTechnique = function() {
-	if (this.technique == null) {
-		return this.pickTechnique();
-	} else {
-		return this.technique;
-	}	
+GG.BaseMaterial.prototype.getTechnique = function() {	
+	return this.pickTechnique();
 };
 
 GG.BaseMaterial.prototype.setTechnique = function(technique) {
@@ -36,21 +49,22 @@ GG.BaseMaterial.prototype.setTechnique = function(technique) {
 };
 
 GG.BaseMaterial.prototype.pickTechnique = function() {
+	if (this.wireframe) {
+		if (this.wireframeTechnique == null) {
+			this.wireframeTechnique = new GG.WireframeTechnique();
+		}
+		return this.wireframeTechnique;
+	}
 	if (this.shadeless) {
 		if (this.shadelessTechnique == null) {
-			this.shadelessTechnique = new GG.ConstantLightingTechnique();
+			this.shadelessTechnique = new GG.ConstantColorTechnique();
 		}
 		return this.shadelessTechnique;
 	}
-	if (this.flatShade) {
-		if (this.flatShadeTechniqe == null) {
-			this.flatShadeTechniqe = new GG.ConstantLightingTechnique();
-		}
-		return this.flatShadeTechniqe;
-	} else {
-		if (this.phongShadeTechnique == null) {
-			this.phongShadeTechnique = new GG.PhongShadeTechnique();
-		}
-		return this.phongShadeTechnique;
+	
+	if (this.phongShadeTechnique == null) {
+		this.phongShadeTechnique = new GG.PhongShadingTechnique();
 	}
+	return this.phongShadeTechnique;
+	
 };

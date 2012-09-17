@@ -5,6 +5,7 @@ GG.Clock = function() {
 	this.lastDelta   = 0.0;
 	this.running     = true;
 	this.scaleFactor = 1.0;
+	this.normalized  = 0.0;
 };
 
 GG.Clock.prototype.constructor = GG.Clock;
@@ -13,6 +14,7 @@ GG.Clock.prototype.tick = function() {
 	if (this.running) {
 		var now = new Date();
 		this.lastDelta = this.scaleFactor * (now.getTime() - this.lastTick.getTime());
+		this.normalized = (this.normalized + this.lastDelta) % 1.0;
 		this.lastTick = now;
 	} else {
 		this.lastDelta = 0.0;
@@ -46,6 +48,10 @@ GG.Clock.prototype.setScaleFactor = function(s) {
 
 GG.Clock.prototype.deltaTime = function() {
 	return this.lastDelta;
+};
+
+GG.Clock.prototype.normalizedTime = function () {
+	return this.normalized;
 };
 
 GG.Clock.prototype.totalRunningTime = function() {

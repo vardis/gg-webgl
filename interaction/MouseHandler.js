@@ -11,11 +11,11 @@ GG.MouseHandler = function() {
 		that.mouseDown  = true;
 		that.lastMouseX = event.clientX;
 		that.lastMouseY = event.clientY;
-	}
+	};
 
 	this.handleMouseUp = function (event) {
 		that.mouseDown = false;
-	}
+	};
 
 	this.handleKeyDown = function (event) {
 		switch (event.keyCode) {
@@ -37,11 +37,19 @@ GG.MouseHandler = function() {
 			case 40: 	// down
 			that.camera.forward(0.2);
 			console.log("backwards");
+			break;		
+
+			case 33: 	// page up
+			that.camera.elevate(0.2);
 			break;
 
-			default: break;
+			case 34: 	// page down
+			that.camera.elevate(-0.2);
+			break;
+
+			default: console.log('key is: ' + event.keyCode); break;
 		}
-	}
+	};
 
 	this.handleMouseMove = function (event) {
 		if (!that.mouseDown) {
@@ -53,28 +61,37 @@ GG.MouseHandler = function() {
 		var deltaX = newX - that.lastMouseX;
 		that.rotY  += deltaX;
 		
-		/*
-		var newRotationMatrix = mat4.create();
-		mat4.identity(newRotationMatrix);
-		mat4.rotate(newRotationMatrix, degToRad(deltaX / 10), [0, 1, 0]);
-*/
 		var deltaY = newY - that.lastMouseY;
 		that.rotX  += deltaY;
 
 		that.camera.setRotation([that.rotX, that.rotY, 0.0]);
-		/*
-		mat4.rotate(newRotationMatrix, degToRad(deltaY / 10), [1, 0, 0]);
-		mat4.multiply(newRotationMatrix, moonRotationMatrix, moonRotationMatrix);
-*/
+		
 		that.lastMouseX = newX
 		that.lastMouseY = newY;
-	}
+	};
+
+	this.handleMouseWheel = function (event) {
+		var delta = event.wheelDeltaY * 0.01;
+		that.camera.zoom(delta);
+	};
 	
 	GG.canvas.onmousedown = this.handleMouseDown;
+	GG.canvas.onmousewheel = this.handleMouseWheel;
     document.onmouseup = this.handleMouseUp;
     document.onmousemove = this.handleMouseMove;
     document.onkeydown = this.handleKeyDown;
     document.onkeyup = this.handleKeyUp;
+
+    // http://www.sitepoint.com/html5-javascript-mouse-wheel/
+    if (GG.canvas.addEventListener) {
+		// IE9, Chrome, Safari, Opera
+		GG.canvas.addEventListener("mousewheel", this.handleMouseWheel, false);
+		// Firefox
+		GG.canvas.addEventListener("DOMMouseScroll", this.handleMouseWheel, false);
+	} else {
+		// IE 6/7/8
+		GG.canvas.attachEvent("onmousewheel", this.handleMouseWheel);
+	}
 };
 
 

@@ -1,9 +1,16 @@
 GG.DefaultSceneRenderer = function (spec) {
-	this.scene = spec.scene || null;
-	this.camera = spec.camera || null;
-	this.programCache = {};
+	spec                 = spec || {};
+	this.scene           = spec.scene;
+	this.camera          = spec.camera;
+	this.programCache    = {};
 	this.shadowTechnique = new GG.ShadowMapTechnique({ shadowType : GG.SHADOW_MAPPING });
-	this.dbg = new GG.DepthMapDebugOutput();
+	this.dbg             = new GG.DepthMapDebugOutput();	
+	/*
+	this.backgroundQueue = new GG.RenderQueue({ name : 'background', priority : 0 });
+	this.defaultQueue    = new GG.RenderQueue({ name : 'default', priority : 1 });
+	this.overlayQueue    = new GG.RenderQueue({ name : 'overlay', priority : 2 });
+*/
+	this.depthPrePassTechnique = new GG.DepthPrePassTechnique();
 };
 
 GG.DefaultSceneRenderer.prototype.setScene = function(sc) {
@@ -24,127 +31,146 @@ GG.DefaultSceneRenderer.prototype.getCamera = function() {
 	return this.camera;
 };
 
+GG.DefaultSceneRenderer.prototype.findVisibleObjects = function(scene, camera) {
+	return scene.listObjects();
+};
+
+GG.DefaultSceneRenderer.prototype.findShadowCasters = function(scene, camera) {
+	return scene.listObjects();
+};
+
+GG.DefaultSceneRenderer.prototype.findEffectiveLights = function(scene, camera) {
+	return scene.listLights();
+};
+
+GG.DefaultSceneRenderer.prototype.findShadowCastingLights = function(lights) {
+	return lights.filter(function (light) {
+		return light.lightType != GG.LT_POINT;
+	});
+};
+
+/**
+ * Bind render target, if any
+ * Clear the color and depth buffers
+ * Render a pre-pass depth pass
+ * Find the objects visible for the current camera
+ * Find the lights close enough to affect the scene
+ * For each light
+ *   Find the objects that are affected by it
+ *   Render shadow map for light, if shadows are enabled
+ *   Render the list of objects 
+ * Unbind render target, if any
+ */
 GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {
-	var sceneLights = this.scene.listLights();
-	var ctx = new GG.RenderContext();
-	ctx.camera = this.camera;
-	ctx.scene = this.scene;
-	ctx.lights = sceneLights;
-	ctx.renderTarget = renderTarget;
+	
+	var ctx            = new GG.RenderContext();
+	ctx.camera         = this.camera;
+	ctx.scene          = this.scene;
+	ctx.renderTarget   = renderTarget;
+	
+	var visibleObjects = this.findVisibleObjects(this.scene, this.camera);
+	var shadowCasters  = this.findShadowCasters(this.scene);
 
-	var depthPass = this.depthPass;
-	var that = this;
+	// TODO: Create an ambient light set to the ambient light of the scene
+	var effectiveLights = this.findEffectiveLights(this.scene, this.camera);
+	
+	var vp = this.camera.getViewport();
 
-	var enableShadows = this.scene.hasShadows() && this.shadowTechnique;
-	if (enableShadows) {
-		this.shadowTechnique.scenePrePass(this.scene, ctx);
-	}
-
+var sl;
 	try {
-		if (renderTarget) renderTarget.activate();	
-		
-		this.scene.perObject(function (renderable) {
-			
-			var technique = renderable.getMaterial().getTechnique();
-			technique.renderPasses().forEach(function(pass) {
-				if (pass.isAdaptableToScene()) {
-					var hash = that.computeHashForPass(pass);
-					var gpuProgram = that.programCache[hash];
-					if (!gpuProgram) {
-						var vsSource = pass.getVertexShaderSource();
-						var fsSource = pass.getFragmentShaderSource();
-						if (pass.usesSceneLighting()) {
-							that.adaptProgramToSceneLighting(vsSource, fsSource);
-						}
-						if (enableShadows) {
-							that.shadowTechnique.adaptProgram(vsSource, fsSource);
-						}
-						gpuProgram = GG.ProgramUtils.createProgram(vsSource.toString(), fsSource.toString());		
-						that.programCache[hash]	= gpuProgram;
-
-						that.locateSceneUniforms(pass, gpuProgram);
-
-						pass.setProgram(gpuProgram);
-						pass.initialize();
-					} else {
-						pass.setProgram(gpuProgram);
-					}
-					// set scene uniforms here...
-					gl.useProgram(gpuProgram);
-					if (enableShadows) {
-						that.shadowTechnique.setUniforms(gpuProgram, ctx);
-					}
-				}
-			});
-			if (technique) {
-				technique.render(renderable, ctx);
-			}					
-		});
-
-		if (enableShadows) {
-			gl.viewport(0, 0, 320, 200);
-			var cam = this.scene.listDirectionalLights()[0].getShadowCamera();
-			
-			this.dbg.sourceTexture = this.shadowTechnique.getShadowMapTexture();
-			this.dbg.minDepth = cam.near;
-			this.dbg.maxDepth = cam.far;
-			this.dbg.render();
-
+		if (renderTarget) {
+			renderTarget.activate();	
+		} else {
+			//this.renderer.setViewport(this.camera.getViewport());			
+			gl.viewport(0, 0, vp.getWidth(), vp.getHeight());
+			gl.clearColor(vp.getClearColor()[0], vp.getClearColor()[1], vp.getClearColor[2], 1.0);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		}
 		
+		gl.enable(gl.DEPTH_TEST);
+		gl.depthFunc(gl.LEQUAL);
+
+		// fills the depth buffer only in order to skip processing for invisible fragments
+		this.renderDepthPrePass(visibleObjects, ctx);
+
+		// additively blend the individual light passes
+		gl.enable(gl.BLEND);
+		gl.blendEquation(gl.FUNC_ADD);
+		gl.blendFunc(gl.ONE, gl.ONE);
+
+
+		gl.cullFace(gl.BACK);
+		gl.frontFace(gl.CCW);
+		gl.enable(gl.CULL_FACE);
+
+		for (var i = effectiveLights.length - 1; i >= 0; i--) {		
+			var light = effectiveLights[i];
+			ctx.light = light;
+			for (var j = visibleObjects.length - 1; j >= 0; j--) {
+				var renderable = visibleObjects[j];						
+				var technique = renderable.getMaterial().getTechnique();
+				technique.render(renderable, ctx);				
+			}
+		}
+
+		var shadowLights = this.findShadowCastingLights(effectiveLights);
+		var enableShadows = this.scene.hasShadows() && this.shadowTechnique && shadowLights.length > 0;
+		if (enableShadows) {
+			
+			// applies the shadows on top of the scene
+			for (var i = shadowLights.length - 1; i >= 0; i--) {	
+				var light = shadowLights[i];
+				ctx.light = light;	
+				this.shadowTechnique.buildShadowMap(shadowCasters, ctx);
+
+				sl = light;
+				
+				//TODO: re-set the render state here, it is compromised by the shadow technique
+				gl.viewport(0, 0, vp.getWidth(), vp.getHeight());
+
+				// emulates a multiplicative blending mode
+				gl.enable(gl.BLEND);
+				//gl.disable(gl.BLEND);
+				gl.blendEquation(gl.FUNC_ADD);
+				gl.blendFunc(gl.DST_COLOR, gl.ZERO);	
+				//gl.blendFunc(gl.ONE, gl.ONE);
+
+				gl.enable(gl.CULL_FACE);
+				gl.cullFace(gl.BACK);
+				gl.frontFace(gl.CCW);
+
+				for (var j = visibleObjects.length - 1; j >= 0; j--) {		
+					this.shadowTechnique.render(visibleObjects[j], ctx);		
+				}				
+			}
+			
+			
+		}
 	} finally {
+		gl.disable(gl.BLEND);
 		if (renderTarget) renderTarget.deactivate();
 	}
+
+	if (enableShadows) {
+		gl.viewport(0, 0, 320, 200);
+		var cam = sl.getShadowCamera();
+		
+		this.dbg.sourceTexture = this.shadowTechnique.getShadowMapTexture();
+		this.dbg.minDepth = cam.near;
+		this.dbg.maxDepth = cam.far;
+		this.dbg.render();
+	}
+	
 };
 
-
-GG.DefaultSceneRenderer.prototype.locateSceneUniforms = function(pass, program) {
-	if (pass.usesSceneLighting()) {
-		GG.ProgramUtils.getLightUniformsLocations(program, 'u_pointLights', 4);
-		GG.ProgramUtils.getLightUniformsLocations(program, 'u_directionalLights', 4);
-		GG.ProgramUtils.getLightUniformsLocations(program, 'u_spotLights', 4);
+GG.DefaultSceneRenderer.prototype.renderDepthPrePass = function (visibleObjects, ctx) {
+	try {		
+    	gl.colorMask(false, false, false, false);
+    	for (var i = visibleObjects.length - 1; i >= 0; i--) {		
+			this.depthPrePassTechnique.render(visibleObjects[i], ctx);		
+		}
+	} finally {		
+    	gl.colorMask(true, true, true, true);
 	}
+	
 };
-
-GG.DefaultSceneRenderer.prototype.adaptProgramToSceneLighting = function(vertexSource, fragmentSource) {	
-	if (!fragmentSource.hasUniform('u_pointLights')) {
-		fragmentSource.uniformPointLights();
-	}
-	if (!fragmentSource.hasUniform('u_directionalLights')) {
-		fragmentSource.uniformDirectionalLights();
-	}
-	if (!fragmentSource.hasUniform('u_spotLights')) {
-		fragmentSource.uniformSpotLights();
-	}	
-};
-
-GG.DefaultSceneRenderer.prototype.computeHashForPass = function(pass) {
-	var h = pass.Prototype;
-	if (pass.usesSceneLighting()) {
-		h += this.scene.numPointLights() 
-		+ '_' + this.scene.numSpotLights() 
-		+ '_' + this.scene.numDirectionalLights() 
-		+ '_' + this.scene.shadowsEnabled 
-	}
-	h += '_' + this.scene.fogEnabled;
-	return h;
-};
-
-/*
-adapt program to scene := 
-	adapt lights 
-	adapt shadows 
-	adapt fog 
-	if program supports lighting, then create scene lights uniforms
-	if scene uses fog, then extend program with fog uniforms and code block
-	if scene uses shadows, then add shadow uniforms and blocks
-
-adapt lights :=
-	if program has source:
-		check for predetermined names in the uniforms
-		if not present then:
-			add uniforms
-	else abort
-
-adapth shadows :=
-*/
