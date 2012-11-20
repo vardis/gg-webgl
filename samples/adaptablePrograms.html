@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+
+		<script src="../gl-matrix.js"></script>
+		<script>
+			var GG = {
+				version : "1.0",
+				context : null
+			};
+			
+		</script>
+		
+		<script type="text/javascript" src="../dat.gui.min.js"></script>
+
+		<script src="../GG_all.js"></script>
+
+		<script src="adaptablePrograms.js"></script>
+		
+		<script>
+		
+		function init () {
+			new AdaptableProgramSample().start();
+
+			var gui = new dat.GUI();
+			gui.add(window.sample, 'blendMode', [
+				'BLEND_MULTIPLY',
+				'BLEND_ADD',
+				'BLEND_SUBTRACT',
+				'BLEND_DARKEN',
+				'BLEND_COLOR_BURN',
+				'BLEND_LINEAR_BURN',
+				'BLEND_LIGHTEN',
+				'BLEND_SCREEN',
+				'BLEND_COLOR_DODGE',
+				'BLEND_OVERLAY',
+				'BLEND_SOFT_LIGHT',
+				'BLEND_HARD_LIGHT',
+				'BLEND_VIVID_LIGHT',
+				'BLEND_LINEAR_LIGHT',
+				'BLEND_PIN_LIGHT'    
+				]).onChange(function(value) {
+				  window.sample.updateBlendMode();
+				});
+		}
+		</script>
+
+	</head>
+	<body onload="init();">
+		
+		<canvas id="c" style="border: none;" width="640" height="480"></canvas>
+	</body>
+</html>
