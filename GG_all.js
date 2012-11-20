@@ -27,13 +27,32 @@ var GG = {
 	
 };
 
-GG.TEX_UNIT_DIFFUSE_MAP  = 0;
-GG.TEX_UNIT_NORMAL_MAP   = 1;
-GG.TEX_UNIT_SPECULAR_MAP = 2;
-GG.TEX_UNIT_ALPHA_MAP    = 3;
-GG.TEX_UNIT_GLOW_MAP     = 4;
-GG.TEX_UNIT_SHADOW_MAP   = 5;
-GG.TEX_UNIT_ENV_MAP      = 6;
+GG.MAX_DIFFUSE_TEX_UNITS = 8;
+GG.TEX_UNIT_DIFFUSE_MAP_0  = 0;
+GG.TEX_UNIT_DIFFUSE_MAP_1  = 1;
+GG.TEX_UNIT_DIFFUSE_MAP_2  = 2;
+GG.TEX_UNIT_DIFFUSE_MAP_3  = 3;
+GG.TEX_UNIT_DIFFUSE_MAP_4  = 4;
+GG.TEX_UNIT_DIFFUSE_MAP_5  = 5;
+GG.TEX_UNIT_DIFFUSE_MAP_6  = 6;
+GG.TEX_UNIT_DIFFUSE_MAP_7  = 7;
+GG.TEX_UNIT_DIFFUSE_MAPS  = [
+	GG.TEX_UNIT_DIFFUSE_MAP_0,
+	GG.TEX_UNIT_DIFFUSE_MAP_1,
+	GG.TEX_UNIT_DIFFUSE_MAP_2,
+	GG.TEX_UNIT_DIFFUSE_MAP_3,
+	GG.TEX_UNIT_DIFFUSE_MAP_4,
+	GG.TEX_UNIT_DIFFUSE_MAP_5,
+	GG.TEX_UNIT_DIFFUSE_MAP_6,
+	GG.TEX_UNIT_DIFFUSE_MAP_7
+];
+
+GG.TEX_UNIT_NORMAL_MAP   = GG.TEX_UNIT_DIFFUSE_MAP_7 + 1;
+GG.TEX_UNIT_SPECULAR_MAP = GG.TEX_UNIT_NORMAL_MAP    + 1;
+GG.TEX_UNIT_ALPHA_MAP    = GG.TEX_UNIT_SPECULAR_MAP  + 1;
+GG.TEX_UNIT_GLOW_MAP     = GG.TEX_UNIT_ALPHA_MAP     + 1;
+GG.TEX_UNIT_SHADOW_MAP   = GG.TEX_UNIT_GLOW_MAP      + 1;
+GG.TEX_UNIT_ENV_MAP      = GG.TEX_UNIT_SHADOW_MAP    + 1;
 			
 var gl, canvas;
 			
@@ -239,7 +258,7 @@ GG.Loader = {
 	 * The callback will receive the parsed JSON object.
 	 */
 	loadJSON : function (requestId, url, callback) {
-		GG.AjaxUtils.getRequest(url, "application/x-javascript", function (jsonData) {
+		GG.AjaxUtils.getRequest(url, "application/javascript", function (jsonData) {
 			if (callback) {
 				callback(JSON.parse(jsonData));
 			}
@@ -249,6 +268,100 @@ GG.Loader = {
 GG.ShaderLib = new function (argument) {
 	
 	return {
+		blendModeMultiply : [
+			"vec3 blendModeMultiply(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return baseColor * sourceColor;",
+			"}"
+		].join('\n'),
+
+		blendModeAdd : [
+			"vec3 blendModeAdd(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return baseColor + sourceColor;",
+			"}"
+		].join('\n'),
+
+		blendModeSubtract : [
+			"vec3 blendModeSubtract(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return baseColor - sourceColor;",
+			"}"
+		].join('\n'),
+
+		blendModeDarken : [
+			"vec3 blendModeDarken(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return min(baseColor, sourceColor);",
+			"}"
+		].join('\n'),
+
+		blendModeColorBurn : [
+			"vec3 blendModeColorBurn(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return vec3(sourceColor.r == 0.0 ? 0.0 : 1.0 - ((1.0 - baseColor.r) / sourceColor.r),",
+			"		sourceColor.g == 0.0 ? 0.0 : 1.0 - ((1.0 - baseColor.g) / sourceColor.g),",
+			"		sourceColor.b == 0.0 ? 0.0 : 1.0 - ((1.0 - baseColor.b) / sourceColor.b));",
+			"}"
+		].join('\n'),
+
+		blendModeLinearBurn : [
+			"vec3 blendModeLinearBurn(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return baseColor + sourceColor - vec3(1.0);",
+			"}"
+		].join('\n'),
+
+		blendModeLighten : [
+			"vec3 blendModeLighten(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return max(baseColor, sourceColor);",
+			"}"
+		].join('\n'),
+
+		blendModeScreen : [
+			"vec3 blendModeScreen(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return (baseColor + sourceColor) - (baseColor * sourceColor);",
+			"}"
+		].join('\n'),
+
+		blendModeColorDodge : [
+			"vec3 blendModeColorDodge(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return vec3(sourceColor.r == 1.0 ? 1.0 : min(1.0, baseColor.r/(1.0 - sourceColor.r)),",
+			"		sourceColor.g == 1.0 ? 1.0 : min(1.0, baseColor.g/(1.0 - sourceColor.g)),",
+			"		sourceColor.b == 1.0 ? 1.0 : min(1.0, baseColor.b/(1.0 - sourceColor.b));",
+			"}"
+		].join('\n'),
+
+		blendModeOverlay : [
+			"vec3 blendModeOverlay(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return vec3(baseColor.r <= 0.5 ? 2.0*sourceColor.r*baseColor.r : 1.0 - 2.0*(1.0 - baseColor.r)*(1.0 - sourceColor.r),",
+			"		baseColor.g <= 0.5 ? 2.0*sourceColor.g*baseColor.g : 1.0 - 2.0*(1.0 - baseColor.g)*(1.0 - sourceColor.g),",
+			"		baseColor.b <= 0.5 ? 2.0*sourceColor.b*baseColor.b : 1.0 - 2.0*(1.0 - baseColor.b)*(1.0 - sourceColor.b));",
+			"}"
+		].join('\n'),
+
+		blendModeSoftLight : [
+			"vec3 blendModeSoftLight(in vec3 baseColor, in vec3 sourceColor) {",
+			"}"
+		].join('\n'),
+
+		blendModeHardLight : [
+			"vec3 blendModeHardLight(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return vec3(sourceColor.r <= 0.5 ? 2.0*sourceColor.r*baseColor.r : 1.0 - 2.0*(1.0 - baseColor.r)*(1.0 - sourceColor.r),",
+			"		sourceColor.g <= 0.5 ? 2.0*sourceColor.g*baseColor.g : 1.0 - 2.0*(1.0 - baseColor.g)*(1.0 - sourceColor.g),",
+			"		sourceColor.b <= 0.5 ? 2.0*sourceColor.b*baseColor.b : 1.0 - 2.0*(1.0 - baseColor.b)*(1.0 - sourceColor.b));",
+			"}"
+		].join('\n'),
+
+		blendModeVividLight : [
+			"vec3 blendModeVividLight(in vec3 baseColor, in vec3 sourceColor) {",
+			"}"
+		].join('\n'),
+
+		blendModeLinearLight : [
+			"vec3 blendModeLinearLight(in vec3 baseColor, in vec3 sourceColor) {",
+			"}"
+		].join('\n'),
+
+		blendModePinLight : [
+			"vec3 blendModePinLight(in vec3 baseColor, in vec3 sourceColor) {",
+			"}"
+		].join('\n'),
+
 		screen_filter_vertex : [
 			"attribute vec4 a_position;",
 			"varying vec2 v_texCoords;",
@@ -410,6 +523,9 @@ GG.MathUtils = function() {
 GG.ProgramUtils = function() {
 	return {
 		compileShader : function(shaderType, source) {
+			if (source == undefined || source == null) {
+				return null;
+			}
 			var shader = gl.createShader(shaderType);
 			gl.shaderSource(shader, source);
 			gl.compileShader(shader);
@@ -581,7 +697,7 @@ GG.ProgramUtils = function() {
 		},
 
 		getMaterialUniformLocations : function(program, uniformName) {
-			['ambient', 'diffuse', 'specular', 'shininess'].forEach(function (u) {
+			['ambient', 'diffuse', 'specular', 'shininess', 'diffuseMap'].forEach(function (u) {
 				var field = uniformName + '.' + u;
 				program[field] = gl.getUniformLocation(program, field);	
 			});
@@ -822,7 +938,7 @@ GG.SphereGeometry = function(radius, rings, segments) {
 			this.normals[vv*3 + 2]   = invLen*z0;
 			
 			this.texCoords[vv*2]     = seg / this.segments;
-			this.texCoords[vv*2 + 1] = seg / this.rings;
+			this.texCoords[vv*2 + 1] = ring / this.rings;
 
 			vv++;		
 		}; // end for seg
@@ -1320,6 +1436,10 @@ GG.Texture = function (spec) {
 
 GG.Texture.prototype.constructor = GG.Texture;
 
+GG.Texture.prototype.copyImageData = function (image) {
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+};
+
 GG.Texture.prototype.bindAtUnit = function(unitIndex) {
 	gl.activeTexture(GG.Texture.getGlUnitFromIndex(unitIndex));
 	gl.bindTexture(this.textureType, this.texture);
@@ -1371,8 +1491,12 @@ GG.Texture.createTexture = function (spec) {
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, spec.minFilter != undefined ? spec.minFilter : gl.NEAREST);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, spec.wrapS != undefined ? spec.wrapS : gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, spec.wrapT != undefined ? spec.wrapT : gl.CLAMP_TO_EDGE);
-
-	gl.texImage2D(gl.TEXTURE_2D, 0, formatDetails[colorFormat][0], width, height, 0, formatDetails[colorFormat][1], formatDetails[colorFormat][2], null);
+	
+	if (spec.image != undefined) {
+		gl.texImage2D(gl.TEXTURE_2D, 0, formatDetails[colorFormat][0],  formatDetails[colorFormat][1], formatDetails[colorFormat][2], spec.image);	
+	} else {
+		gl.texImage2D(gl.TEXTURE_2D, 0, formatDetails[colorFormat][0], width, height, 0, formatDetails[colorFormat][1], formatDetails[colorFormat][2], null);
+	}
 	gl.bindTexture(gl.TEXTURE_2D, null);
 
 	copySpec = GG.cloneDictionary(spec);
@@ -1980,7 +2104,7 @@ GG.PingPongBuffer = function (spec) {
 		var textures = [ GG.Texture.createTexture(spec), GG.Texture.createTexture(spec) ];	
 		spec.colorAttachments = textures;
 	}		
-	this.textureUnit = spec.textureUnit != undefined ? spec.textureUnit : GG.TEX_UNIT_DIFFUSE_MAP;
+	this.textureUnit = spec.textureUnit != undefined ? spec.textureUnit : GG.TEX_UNIT_DIFFUSE_MAP_0;
 	this.spec        = GG.cloneDictionary(spec);		
 };
 
@@ -2122,8 +2246,8 @@ GG.PostProcessChain.prototype.process = function () {
 			gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 		}
 
-		// call initialize now in order to get the gpu program
-		this.screenPass.initialize();
+		// call createGpuProgram now in order to get the gpu program
+		this.screenPass.createGpuProgram();
 		gl.useProgram(this.screenPass.program);
 		
 		for (var i = 0; i < this.filterChain.length; i++) {
@@ -2638,6 +2762,78 @@ To set the lights: ProgramUtils.setPointLights('u_pointLights', array_of_lights)
 
 
 */
+GG.BLEND_MULTIPLY    = 1;
+GG.BLEND_ADD          = 2;
+GG.BLEND_SUBTRACT     = 3;
+GG.BLEND_DARKEN       = 4;
+GG.BLEND_COLOR_BURN   = 5;
+GG.BLEND_LINEAR_BURN  = 6;
+GG.BLEND_LIGHTEN      = 7;
+GG.BLEND_SCREEN       = 8;
+GG.BLEND_COLOR_DODGE  = 9;
+GG.BLEND_OVERLAY      = 10;
+GG.BLEND_SOFT_LIGHT   = 11;
+GG.BLEND_HARD_LIGHT   = 12;
+GG.BLEND_VIVID_LIGHT  = 13;
+GG.BLEND_LINEAR_LIGHT = 14;
+GG.BLEND_PIN_LIGHT    = 15;
+
+
+GG.TextureStackEntry = function (spec) {
+	spec = spec || {};
+	this.texture    = spec.texture;
+	this.blendMode  = spec.blendMode != null ? spec.blendMode : GG.BLEND_MULTIPLY;
+	this.uvSetIndex = 0;
+	this.offsetU    = 0;
+	this.offsetV    = 0;
+	this.scaleU     = 1;
+	this.scaleV     = 1;
+};
+
+GG.TextureStack = function (spec) {	
+	this.stackEntries = [];
+};
+
+GG.TextureStack.prototype.constructor = GG.TextureStack;
+
+GG.TextureStack.prototype.isEmpty = function () {
+	return this.stackEntries.length == 0;
+};
+
+GG.TextureStack.prototype.size = function () {
+	return this.stackEntries.length;
+};
+
+GG.TextureStack.prototype.getAt = function (index) {
+	return this.stackEntries[index];
+};
+
+GG.TextureStack.prototype.setEntryAt = function (index, entry) {
+	this.stackEntries[index] = entry;
+	return this;
+};
+
+GG.TextureStack.prototype.setAt = function (index, texture, blendMode) {
+	var entry = new GG.TextureStackEntry({ 'texture' : texture, 'blendMode' : blendMode});
+	this.stackEntries[index] = entry;
+	return this;
+};
+
+GG.TextureStack.prototype.pushTexture = function (entry) {
+	this.stackEntries.push(entry);
+	return this;
+};
+
+GG.TextureStack.prototype.hashCode = function () {
+	var size = this.size();
+	var hash = size.toString();
+	for (var i = 0; i < size; i++) {
+		var entry = this.stackEntries[i];
+		hash += entry.texture != null;
+		hash += entry.blendMode;
+	}
+	return hash;
+};
 GG.BaseMaterial = function(spec) {
 	spec             = spec || {};
 	
@@ -2653,6 +2849,8 @@ GG.BaseMaterial = function(spec) {
 	this.opacityMap  = spec.opacityMap;
 	this.lightMap    = spec.lightMap;
 	this.glowMap     = spec.glowMap;
+
+	this.diffuseTextureStack = new GG.TextureStack();
 	
 	this.flatShade   = spec.flatShade != undefined ? spec.flatShade : false;
 	this.phongShade  = spec.phongShade != undefined ? spec.phongShade : true;	
@@ -2679,6 +2877,13 @@ GG.BaseMaterial = function(spec) {
 GG.BaseMaterial.prototype = new GG.BaseMaterial();
 GG.BaseMaterial.prototype.constructor = GG.BaseMaterial;
 
+GG.BaseMaterial.BIT_DIFFUSE_MAP     = 1;
+GG.BaseMaterial.BIT_SPECULAR_MAP    = 2;
+GG.BaseMaterial.BIT_OPACITY_MAP     = 4;
+GG.BaseMaterial.BIT_LIGHT_MAP       = 16;
+GG.BaseMaterial.BIT_GLOW_MAP        = 32;
+GG.BaseMaterial.BIT_ENVIRONMENT_MAP = 64;
+
 GG.BaseMaterial.prototype.getTechnique = function() {	
 	return this.pickTechnique();
 };
@@ -2686,6 +2891,11 @@ GG.BaseMaterial.prototype.getTechnique = function() {
 GG.BaseMaterial.prototype.setTechnique = function(technique) {
 	this.technique = technique;
 	return this;
+};
+
+GG.BaseMaterial.prototype.addDiffuseTexture = function(texture, blendMode) {
+	var entry = new GG.TextureStackEntry({ 'texture' : texture, 'blendMode' : blendMode});
+	this.diffuseTextureStack.pushTexture(entry);
 };
 
 GG.BaseMaterial.prototype.pickTechnique = function() {
@@ -2707,6 +2917,14 @@ GG.BaseMaterial.prototype.pickTechnique = function() {
 	}
 	return this.phongShadeTechnique;
 	
+};
+
+GG.BaseMaterial.prototype.getRenderAttributesMask = function () {
+	var bitMask = 0;
+	if (this.diffuseMap) {
+		bitMask |= GG.BaseMaterial.BIT_DIFFUSE_MAP;
+	}
+	return bitMask;
 };
 
 GG.PhongMaterial = function (spec) {
@@ -2762,13 +2980,16 @@ GG.RenderPass.prototype.constructor = GG.RenderPass;
 
 GG.RenderPass.MESH = 1;
 
-GG.RenderPass.prototype.initialize = function() {
+GG.RenderPass.prototype.createGpuProgram = function() {
 	// create the gpu program if it is not linked already
 	if (!this.program) {
 		this.program = GG.ProgramUtils.createProgram(this.vertexShader, this.fragmentShader);
 	}
-	GG.ProgramUtils.getAttributeLocations(this.program);	
-	GG.ProgramUtils.getUniformsLocations(this.program);	
+
+	if (this.program) {
+		GG.ProgramUtils.getAttributeLocations(this.program);	
+		GG.ProgramUtils.getUniformsLocations(this.program);	
+	}
 };
 
 
@@ -2776,14 +2997,13 @@ GG.RenderPass.prototype.destroy = function() {
 	if (this.program) gl.deleteProgram(this.program);
 };
 
-
-GG.RenderPass.prototype.render = function(renderable, renderContext) {
+GG.RenderPass.prototype.prepareForRendering = function(renderable, renderContext) {
 	if (this.program == null) {
-		this.initialize();
+		this.createGpuProgram();
 	}
+};
 
-	this.__setCustomRenderState(renderable, renderContext, this.program);
-
+GG.RenderPass.prototype.setShaderParametersForRendering = function(renderable, renderContext) {
 	gl.useProgram(this.program);
 
 	// this should be overridden in each subclass
@@ -2794,7 +3014,13 @@ GG.RenderPass.prototype.render = function(renderable, renderContext) {
 
 	// this should be overridden in each subclass	
 	this.__setCustomUniforms(renderable, renderContext, this.program);		
+};
 
+GG.RenderPass.prototype.setRenderState = function(renderable, renderContext) {
+	this.__setCustomRenderState(renderable, renderContext, this.program);
+};
+
+GG.RenderPass.prototype.submitGeometryForRendering = function(renderable, renderContext) {
 	if (renderable && this.renderableType == GG.RenderPass.MESH) {
 		var options = {
 			mode : this.getRenderPrimitive(renderable)
@@ -2803,8 +3029,25 @@ GG.RenderPass.prototype.render = function(renderable, renderContext) {
 	} else {
 		this.callback.__renderGeometry(renderable);
 	}
-	
+};
+
+GG.RenderPass.prototype.finishRendering = function(renderable, renderContext) {
 	gl.useProgram(null);
+};
+
+GG.RenderPass.prototype.render = function(renderable, renderContext) {
+	
+	this.prepareForRendering(renderable, renderContext);
+
+	if (this.program) {
+		this.setRenderState(renderable, renderContext);
+
+		this.setShaderParametersForRendering(renderable, renderContext);
+		
+		this.submitGeometryForRendering(renderable, renderContext);
+		
+		this.finishRendering();	
+	}
 };
 
 GG.RenderPass.prototype.usesSceneLighting = function() {
@@ -2837,35 +3080,6 @@ GG.RenderPass.prototype.getRenderPrimitive = function(renderable) {
 	return gl.TRIANGLES;
 };
 
-/*
-pass = new RenderPass({
-	vertexShader : GG.ShaderLib.blurX.vertex.strong(4),
-	fragmentShader : GG.ShaderLib.blurX.fragment.strong(4),
-	screenPass : true
-})
-
-technique {
-
-	phongPass.render(sceneFBO)
-	blitPass.setSourceTexture(sceneFBO.texture0);
-	blitPass.render(sceneCopyFBO)
-	downscalePass.setSourceTexture(sceneCopyFBO);
-	downscalePass.render(ppBuffer.targetFBO);
-	ppBuffer.swap()
-	blurXPass.render(ppBuffer.targetFBO)
-	ppBuffer.swap()
-	blurYPass.render(ppBuffer.targetFBO)
-	upscalePass.setSourceTexture(ppBuffer.targetFBO);
-	upscalePass.render(upscaledFBO);
-	combineAndGlowPass.setOriginalTexture(sceneCopyFBO.texture0)
-	combineAndGlowPass.setScaledTexture(upscaledFBO.texture0)
-	combineAndGlowPass.render(finalFBO)
-
-	postProcessPass.setSourceTexture(finalFBO)
-	postProcessPass.render()
-}
-*/
-
 /**
  * Simplifies the creation of render passes that perform a screen space
  * effect, for e.g. tone mapping, bloom, blur, etc.
@@ -2894,10 +3108,10 @@ GG.ScreenPass.prototype.__renderGeometry = function(renderable) {
 };
 
 GG.ScreenPass.prototype.__setCustomUniforms = function(renderable, renderContext, program) {
-	// the default sourceTexture always goes to texture unit GG.TEX_UNIT_DIFFUSE_MAP
+	// the default sourceTexture always goes to texture unit GG.TEX_UNIT_DIFFUSE_MAP_0
 	if (this.sourceTexture != null) {
-		this.sourceTexture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAP);		
-		gl.uniform1i(this.program.u_sourceTexture, GG.TEX_UNIT_DIFFUSE_MAP);
+		this.sourceTexture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAP_0);		
+		gl.uniform1i(this.program.u_sourceTexture, GG.TEX_UNIT_DIFFUSE_MAP_0);
 	}
 };
 
@@ -2983,12 +3197,74 @@ GG.GaussianBlurPass.prototype.__setCustomUniforms = function(renderable, renderC
 	gl.uniform2fv(program.u_texStepSize, texStep);
 };
 
+GG.AdaptiveRenderPass = function (spec) {
+	this.programCache = {};
+	this.activeRenderAttributes = 0;	
+	this.activeHash = null;
+
+	GG.RenderPass.call(this, spec);
+};
+
+GG.AdaptiveRenderPass.prototype             = new GG.RenderPass();
+GG.AdaptiveRenderPass.prototype.constructor = GG.AdaptiveRenderPass;
+
+GG.AdaptiveRenderPass.prototype.prepareForRendering = function (renderable, renderContext) {
+	if (renderable.getMaterial() != null) {
+		this.adaptShadersToMaterial(renderable.getMaterial());
+	}	
+	GG.RenderPass.prototype.prepareForRendering.call(this, renderable, renderContext);
+};
+
+GG.AdaptiveRenderPass.prototype.adaptShadersToMaterial = function (material) {	
+	var hash = this.hashMaterial(material);
+	if (this.shouldInvalidateProgram(hash)) {
+		this.program = null;
+		var cachedProgram = this.lookupCachedProgramInstance(hash);
+		if (cachedProgram != null) {
+			this.useProgramInstance(cachedProgram, hash);
+		} else {
+			this.createNewProgramInstance(material, hash);		
+			this.storeProgramInstanceInCache(this.program, hash);	
+		}		
+	}
+};
+
+GG.AdaptiveRenderPass.prototype.useProgramInstance = function (program, hash) {
+	this.program = program;
+	this.activeHash = hash;
+};
+
+GG.AdaptiveRenderPass.prototype.createNewProgramInstance = function (material, hash) {
+	this.createShadersForMaterial(material);
+	this.createGpuProgram();	
+	this.useProgramInstance(this.program, hash);
+};
+
+GG.AdaptiveRenderPass.prototype.shouldInvalidateProgram = function (hash) {	
+	return this.program == null || this.activeHash != hash;
+};
+
+GG.AdaptiveRenderPass.prototype.lookupCachedProgramInstance = function (hash) {
+	return this.programCache[hash];
+};
+
+GG.AdaptiveRenderPass.prototype.storeProgramInstanceInCache = function (program, hash) {
+	return this.programCache[hash] = program;
+};
+
+GG.AdaptiveRenderPass.prototype.createShadersForMaterial = function (material) {
+	throw "AdaptiveRenderPass.createShadersForMaterial is abstract";
+};
+
+GG.AdaptiveRenderPass.prototype.hashMaterial = function () {
+	throw "AdaptiveRenderPass.supportedRenderAttributesMask is abstract";
+};
 GG.BaseTechnique = function(spec) {	
 	spec          = spec || {};	
 	this.textures = spec.textures != undefined ? spec.textures : [];	
 	this.passes   = spec.passes || [];
 	this.program  = null;
-}
+};
 
 GG.BaseTechnique.prototype.constructor = GG.BaseTechnique;
 GG.BaseTechnique.prototype.getTextures = function() {
@@ -3123,7 +3399,7 @@ GG.TexturedShadelessPass.prototype = new GG.RenderPass();
 GG.TexturedShadelessPass.prototype.constructor = GG.TexturedShadelessPass;
 
 GG.TexturedShadelessPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
-	this.texture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAP);
+	this.texture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAP_0);
     gl.uniform1i(this.program.samplerUniform.handle(), 0);
 };
 GG.CubemapTechnique = function(spec) {
@@ -3457,6 +3733,180 @@ GG.DepthPrePassTechnique.Pass.prototype.getRenderPrimitive = function(renderable
 	//TODO: Handle renderables with multiple render passes
 	return t.passes[0].getRenderPrimitive(renderable);
 };
+GG.TextureStackTechnique = function (spec) {
+	spec = spec || {};
+	spec.passes = [new GG.TextureStackPass()];
+	GG.BaseTechnique.call(this, spec);
+};
+
+GG.TextureStackTechnique.prototype = new GG.BaseTechnique();
+GG.TextureStackTechnique.prototype.constructor = GG.TextureStackTechnique;
+
+GG.TextureStackPass = function (spec) {
+	GG.AdaptiveRenderPass.call(this, spec);
+};
+
+GG.TextureStackPass.prototype             = new GG.AdaptiveRenderPass();
+GG.TextureStackPass.prototype.constructor = GG.TextureStackPass;
+
+GG.TextureStackPass.prototype.supportedRenderAttributesMask = function () {
+	return GG.BaseMaterial.BIT_DIFFUSE_MAP;
+};
+
+GG.TextureStackPass.prototype.hashMaterial = function(material) {
+	return material.diffuseTextureStack.hashCode();
+};
+
+GG.TextureStackPass.prototype.createShadersForMaterial = function (material) {
+	var pg = new GG.ProgramSource();
+	pg.position()
+		.texCoord0()
+  		.uniformModelViewMatrix()  		
+		.uniformProjectionMatrix()
+		.varying('vec2', 'v_texCoords')
+		.addMainBlock([
+			"	gl_Position = u_matProjection*u_matModelView*a_position;",
+			"	v_texCoords = a_texCoords;"
+			].join('\n'));
+	this.vertexShader = pg.toString();
+
+	pg = new GG.ProgramSource();
+	pg.asFragmentShader()	
+		.varying('vec2', 'v_texCoords')
+		.uniformMaterial()
+		.uniform('vec4', 'u_uvScaleOffset')
+		.addMainBlock([
+			"	vec3 diffuse = vec3(0.0);",
+			"	vec3 specular = vec3(0.0);"
+		].join('\n'));
+
+	if (material.diffuseTextureStack != null) {
+		this.evaluateTextureStack(pg, material.diffuseTextureStack)
+	}
+
+	pg.addMainBlock("	gl_FragColor = vec4(/*u_material.ambient + u_material.diffuse*diffuse + u_material.specular*specular*/diffuse, 1.0);");	
+	this.fragmentShader = pg.toString();	
+};
+
+GG.TextureStackPass.prototype.evaluateTextureStack = function(programSource, textureStack) {
+	if (!textureStack.isEmpty()) {
+		var codeListing = [];
+		for (var i = 0; i < textureStack.size(); i++) {			
+			this.defineUniformsForDiffuseMapAtIndex(i, programSource);
+			this.sampleDiffuseMapAtIndex(i, codeListing);
+			this.blendDiffuseMapAtIndex(i, textureStack.getAt(i).blendMode, programSource, codeListing);
+		}
+		codeListing.push("diffuse = " + this.getVariableNameForDiffuseMapAtIndex(textureStack.size() - 1) + ".rgb;");		
+		programSource.addMainBlock(codeListing.join('\n'));
+	}
+};
+
+GG.TextureStackPass.prototype.defineUniformsForDiffuseMapAtIndex = function (index, programSource) {
+	var uniformName = this.getUniformNameForDiffuseMapAtIndex(index);
+	programSource.uniform("sampler2D", uniformName);
+
+	var scaleOffsetUniformName = this.getUniformNameForUvScaleOffset(index);
+	programSource.uniform("vec4", scaleOffsetUniformName);
+};
+
+GG.TextureStackPass.prototype.sampleDiffuseMapAtIndex = function (index, codeListing) {
+	var colorVar = this.getVariableNameForDiffuseMapAtIndex(index);		
+	var uniformName = this.getUniformNameForDiffuseMapAtIndex(index);	
+	var scaleOffset = this.getUniformNameForUvScaleOffset(index);
+	codeListing.push("vec3 " + colorVar + " = texture2D(" + uniformName + ", " + scaleOffset + ".zw + (" + scaleOffset + ".xy * v_texCoords)).rgb;");								
+};
+
+GG.TextureStackPass.prototype.blendDiffuseMapAtIndex = function (index, blendMode, programSource, codeListing) {
+	if (index > 0) {
+		var sourceColorVar = this.getVariableNameForDiffuseMapAtIndex(index);		
+		var destColorVar = this.getVariableNameForDiffuseMapAtIndex(index - 1);
+		this.emitBlendTextureCode(destColorVar, sourceColorVar, blendMode, programSource, codeListing);		
+	}
+};
+
+GG.TextureStackPass.prototype.getUniformNameForUvScaleOffset = function (index) {
+	return "u_uvScaleOffset_" + index;
+};
+
+GG.TextureStackPass.prototype.getUniformNameForDiffuseMapAtIndex = function (index) {
+	return "u_diffuseMap_" + index;
+};
+
+GG.TextureStackPass.prototype.getVariableNameForDiffuseMapAtIndex = function (index) {
+	return "diffuseMap_" + index;
+};
+
+GG.TextureStackPass.prototype.declareBlendingFunction = function (blendMode, programSource) {
+	var fun = null;
+	switch (blendMode) {
+		case GG.BLEND_MULTIPLY:
+			programSource.addDecl(GG.ShaderLib.blendModeMultiply);
+			fun = 'blendModeMultiply';
+			break;
+		case GG.BLEND_ADD:
+			programSource.addDecl(GG.ShaderLib.blendModeAdd);			
+			fun = 'blendModeAdd';
+			break;
+		case GG.BLEND_SUBTRACT:
+			programSource.addDecl(GG.ShaderLib.blendModeSubtract);
+			fun = 'blendModeSubtract';
+			break;
+		case GG.BLEND_LIGHTEN:
+			programSource.addDecl(GG.ShaderLib.blendModeLighten);
+			fun = 'blendModeLighten';
+			break;
+		case GG.BLEND_COLOR_BURN:
+			programSource.addDecl(GG.ShaderLib.blendModeColorBurn);
+			fun = 'blendModeColorBurn';
+			break;
+		case GG.BLEND_LINEAR_BURN:
+			programSource.addDecl(GG.ShaderLib.blendModeLinearBurn);
+			fun = 'blendModeLinearBurn';
+			break;
+		case GG.BLEND_DARKEN:
+			programSource.addDecl(GG.ShaderLib.blendModeDarken);
+			fun = 'blendModeDarken';
+			break;
+		case GG.BLEND_SCREEN:
+			programSource.addDecl(GG.ShaderLib.blendModeScreen);
+			fun = 'blendModeScreen';
+			break;
+		case GG.BLEND_COLOR_DODGE:
+			programSource.addDecl(GG.ShaderLib.blendModeColorDodge);
+			fun = 'blendModeColorDodge';
+			break;
+		default:
+			return "// Unknown blend mode: " + blendMode;
+	}
+	return fun;
+};
+
+GG.TextureStackPass.prototype.emitBlendTextureCode = function (destColor, sourceColor, blendMode, programSource, codeListing) {
+	var func = this.declareBlendingFunction(blendMode, programSource);	
+	if (fun != null) {
+		codeListing.push(sourceColor + " = " + fun + "(" + destColor + ", " + sourceColor + ");");
+	}
+};
+
+GG.TextureStackPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	var textureStack = renderable.material.diffuseTextureStack;
+	for (var i = 0; i < textureStack.size(); i++) {
+		var uniform = this.getUniformNameForDiffuseMapAtIndex(i);		
+		gl.uniform1i(program[uniform], GG.TEX_UNIT_DIFFUSE_MAPS[i]);
+
+		var entry = textureStack.getAt(i);
+		var scaleOffsetUniformName = this.getUniformNameForUvScaleOffset(i);
+		gl.uniform4fv(program[scaleOffsetUniformName], [entry.scaleU, entry.scaleV, entry.offsetU, entry.offsetV]);
+	}
+};
+
+GG.TextureStackPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {		
+	var textureStack = renderable.material.diffuseTextureStack;
+	for (var i = 0; i < textureStack.size(); i++) {
+		textureStack.getAt(i).texture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAPS[i]);
+	}
+};
+
 /**
  * Simple particles rendering using points for each particle.
  * You can also specify a single texture and the attenuation factor.

@@ -1,6 +1,9 @@
 GG.ProgramUtils = function() {
 	return {
 		compileShader : function(shaderType, source) {
+			if (source == undefined || source == null) {
+				return null;
+			}
 			var shader = gl.createShader(shaderType);
 			gl.shaderSource(shader, source);
 			gl.compileShader(shader);
@@ -172,7 +175,7 @@ GG.ProgramUtils = function() {
 		},
 
 		getMaterialUniformLocations : function(program, uniformName) {
-			['ambient', 'diffuse', 'specular', 'shininess'].forEach(function (u) {
+			['ambient', 'diffuse', 'specular', 'shininess', 'diffuseMap'].forEach(function (u) {
 				var field = uniformName + '.' + u;
 				program[field] = gl.getUniformLocation(program, field);	
 			});

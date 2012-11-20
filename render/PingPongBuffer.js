@@ -5,7 +5,7 @@ GG.PingPongBuffer = function (spec) {
 		var textures = [ GG.Texture.createTexture(spec), GG.Texture.createTexture(spec) ];	
 		spec.colorAttachments = textures;
 	}		
-	this.textureUnit = spec.textureUnit != undefined ? spec.textureUnit : GG.TEX_UNIT_DIFFUSE_MAP;
+	this.textureUnit = spec.textureUnit != undefined ? spec.textureUnit : GG.TEX_UNIT_DIFFUSE_MAP_0;
 	this.spec        = GG.cloneDictionary(spec);		
 };
 

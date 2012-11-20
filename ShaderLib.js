@@ -1,6 +1,100 @@
 GG.ShaderLib = new function (argument) {
 	
 	return {
+		blendModeMultiply : [
+			"vec3 blendModeMultiply(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return baseColor * sourceColor;",
+			"}"
+		].join('\n'),
+
+		blendModeAdd : [
+			"vec3 blendModeAdd(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return baseColor + sourceColor;",
+			"}"
+		].join('\n'),
+
+		blendModeSubtract : [
+			"vec3 blendModeSubtract(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return baseColor - sourceColor;",
+			"}"
+		].join('\n'),
+
+		blendModeDarken : [
+			"vec3 blendModeDarken(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return min(baseColor, sourceColor);",
+			"}"
+		].join('\n'),
+
+		blendModeColorBurn : [
+			"vec3 blendModeColorBurn(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return vec3(sourceColor.r == 0.0 ? 0.0 : 1.0 - ((1.0 - baseColor.r) / sourceColor.r),",
+			"		sourceColor.g == 0.0 ? 0.0 : 1.0 - ((1.0 - baseColor.g) / sourceColor.g),",
+			"		sourceColor.b == 0.0 ? 0.0 : 1.0 - ((1.0 - baseColor.b) / sourceColor.b));",
+			"}"
+		].join('\n'),
+
+		blendModeLinearBurn : [
+			"vec3 blendModeLinearBurn(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return baseColor + sourceColor - vec3(1.0);",
+			"}"
+		].join('\n'),
+
+		blendModeLighten : [
+			"vec3 blendModeLighten(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return max(baseColor, sourceColor);",
+			"}"
+		].join('\n'),
+
+		blendModeScreen : [
+			"vec3 blendModeScreen(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return (baseColor + sourceColor) - (baseColor * sourceColor);",
+			"}"
+		].join('\n'),
+
+		blendModeColorDodge : [
+			"vec3 blendModeColorDodge(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return vec3(sourceColor.r == 1.0 ? 1.0 : min(1.0, baseColor.r/(1.0 - sourceColor.r)),",
+			"		sourceColor.g == 1.0 ? 1.0 : min(1.0, baseColor.g/(1.0 - sourceColor.g)),",
+			"		sourceColor.b == 1.0 ? 1.0 : min(1.0, baseColor.b/(1.0 - sourceColor.b));",
+			"}"
+		].join('\n'),
+
+		blendModeOverlay : [
+			"vec3 blendModeOverlay(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return vec3(baseColor.r <= 0.5 ? 2.0*sourceColor.r*baseColor.r : 1.0 - 2.0*(1.0 - baseColor.r)*(1.0 - sourceColor.r),",
+			"		baseColor.g <= 0.5 ? 2.0*sourceColor.g*baseColor.g : 1.0 - 2.0*(1.0 - baseColor.g)*(1.0 - sourceColor.g),",
+			"		baseColor.b <= 0.5 ? 2.0*sourceColor.b*baseColor.b : 1.0 - 2.0*(1.0 - baseColor.b)*(1.0 - sourceColor.b));",
+			"}"
+		].join('\n'),
+
+		blendModeSoftLight : [
+			"vec3 blendModeSoftLight(in vec3 baseColor, in vec3 sourceColor) {",
+			"}"
+		].join('\n'),
+
+		blendModeHardLight : [
+			"vec3 blendModeHardLight(in vec3 baseColor, in vec3 sourceColor) {",
+			"	return vec3(sourceColor.r <= 0.5 ? 2.0*sourceColor.r*baseColor.r : 1.0 - 2.0*(1.0 - baseColor.r)*(1.0 - sourceColor.r),",
+			"		sourceColor.g <= 0.5 ? 2.0*sourceColor.g*baseColor.g : 1.0 - 2.0*(1.0 - baseColor.g)*(1.0 - sourceColor.g),",
+			"		sourceColor.b <= 0.5 ? 2.0*sourceColor.b*baseColor.b : 1.0 - 2.0*(1.0 - baseColor.b)*(1.0 - sourceColor.b));",
+			"}"
+		].join('\n'),
+
+		blendModeVividLight : [
+			"vec3 blendModeVividLight(in vec3 baseColor, in vec3 sourceColor) {",
+			"}"
+		].join('\n'),
+
+		blendModeLinearLight : [
+			"vec3 blendModeLinearLight(in vec3 baseColor, in vec3 sourceColor) {",
+			"}"
+		].join('\n'),
+
+		blendModePinLight : [
+			"vec3 blendModePinLight(in vec3 baseColor, in vec3 sourceColor) {",
+			"}"
+		].join('\n'),
+
 		screen_filter_vertex : [
 			"attribute vec4 a_position;",
 			"varying vec2 v_texCoords;",

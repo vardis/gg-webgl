@@ -26,10 +26,10 @@ GG.ScreenPass.prototype.__renderGeometry = function(renderable) {
 };
 
 GG.ScreenPass.prototype.__setCustomUniforms = function(renderable, renderContext, program) {
-	// the default sourceTexture always goes to texture unit GG.TEX_UNIT_DIFFUSE_MAP
+	// the default sourceTexture always goes to texture unit GG.TEX_UNIT_DIFFUSE_MAP_0
 	if (this.sourceTexture != null) {
-		this.sourceTexture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAP);		
-		gl.uniform1i(this.program.u_sourceTexture, GG.TEX_UNIT_DIFFUSE_MAP);
+		this.sourceTexture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAP_0);		
+		gl.uniform1i(this.program.u_sourceTexture, GG.TEX_UNIT_DIFFUSE_MAP_0);
 	}
 };
 

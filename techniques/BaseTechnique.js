@@ -3,7 +3,7 @@ GG.BaseTechnique = function(spec) {
 	this.textures = spec.textures != undefined ? spec.textures : [];	
 	this.passes   = spec.passes || [];
 	this.program  = null;
-}
+};
 
 GG.BaseTechnique.prototype.constructor = GG.BaseTechnique;
 GG.BaseTechnique.prototype.getTextures = function() {

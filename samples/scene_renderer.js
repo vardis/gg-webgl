@@ -9,7 +9,8 @@ SceneRendererSample = function (spec) {
 
 	this.mouseHandler         = null;
 
-	this.redLight, greenLight = null;
+	this.redLight = null;
+	this.greenLight = null;
 	this.phongMat             = null;
 
 	this.lightModel           = null;

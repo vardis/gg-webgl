@@ -13,6 +13,8 @@ GG.BaseMaterial = function(spec) {
 	this.opacityMap  = spec.opacityMap;
 	this.lightMap    = spec.lightMap;
 	this.glowMap     = spec.glowMap;
+
+	this.diffuseTextureStack = new GG.TextureStack();
 	
 	this.flatShade   = spec.flatShade != undefined ? spec.flatShade : false;
 	this.phongShade  = spec.phongShade != undefined ? spec.phongShade : true;	
@@ -39,6 +41,13 @@ GG.BaseMaterial = function(spec) {
 GG.BaseMaterial.prototype = new GG.BaseMaterial();
 GG.BaseMaterial.prototype.constructor = GG.BaseMaterial;
 
+GG.BaseMaterial.BIT_DIFFUSE_MAP     = 1;
+GG.BaseMaterial.BIT_SPECULAR_MAP    = 2;
+GG.BaseMaterial.BIT_OPACITY_MAP     = 4;
+GG.BaseMaterial.BIT_LIGHT_MAP       = 16;
+GG.BaseMaterial.BIT_GLOW_MAP        = 32;
+GG.BaseMaterial.BIT_ENVIRONMENT_MAP = 64;
+
 GG.BaseMaterial.prototype.getTechnique = function() {	
 	return this.pickTechnique();
 };
@@ -46,6 +55,11 @@ GG.BaseMaterial.prototype.getTechnique = function() {
 GG.BaseMaterial.prototype.setTechnique = function(technique) {
 	this.technique = technique;
 	return this;
+};
+
+GG.BaseMaterial.prototype.addDiffuseTexture = function(texture, blendMode) {
+	var entry = new GG.TextureStackEntry({ 'texture' : texture, 'blendMode' : blendMode});
+	this.diffuseTextureStack.pushTexture(entry);
 };
 
 GG.BaseMaterial.prototype.pickTechnique = function() {
@@ -67,4 +81,12 @@ GG.BaseMaterial.prototype.pickTechnique = function() {
 	}
 	return this.phongShadeTechnique;
 	
+};
+
+GG.BaseMaterial.prototype.getRenderAttributesMask = function () {
+	var bitMask = 0;
+	if (this.diffuseMap) {
+		bitMask |= GG.BaseMaterial.BIT_DIFFUSE_MAP;
+	}
+	return bitMask;
 };

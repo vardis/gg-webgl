@@ -48,6 +48,6 @@ GG.TexturedShadelessPass.prototype = new GG.RenderPass();
 GG.TexturedShadelessPass.prototype.constructor = GG.TexturedShadelessPass;
 
 GG.TexturedShadelessPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
-	this.texture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAP);
+	this.texture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAP_0);
     gl.uniform1i(this.program.samplerUniform.handle(), 0);
 };

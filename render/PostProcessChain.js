@@ -90,8 +90,8 @@ GG.PostProcessChain.prototype.process = function () {
 			gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 		}
 
-		// call initialize now in order to get the gpu program
-		this.screenPass.initialize();
+		// call createGpuProgram now in order to get the gpu program
+		this.screenPass.createGpuProgram();
 		gl.useProgram(this.screenPass.program);
 		
 		for (var i = 0; i < this.filterChain.length; i++) {

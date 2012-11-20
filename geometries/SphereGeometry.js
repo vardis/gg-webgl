@@ -42,7 +42,7 @@ GG.SphereGeometry = function(radius, rings, segments) {
 			this.normals[vv*3 + 2]   = invLen*z0;
 			
 			this.texCoords[vv*2]     = seg / this.segments;
-			this.texCoords[vv*2 + 1] = seg / this.rings;
+			this.texCoords[vv*2 + 1] = ring / this.rings;
 
 			vv++;		
 		}; // end for seg

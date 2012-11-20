@@ -20,7 +20,7 @@ PostProcessSample.prototype.initialize = function () {
 	this.camera       = new GG.PerspectiveCamera();
 	this.camera.setPosition([0.0, 0.0, 9.8]);	
 	this.camera.getViewport().setWidth(gl.viewportWidth);
-	this.camera.getViewport().setHeight(gl.viewportWidth);
+	this.camera.getViewport().setHeight(gl.viewportHeight);
 
 	this.mouseHandler.setCamera(this.camera);
 	

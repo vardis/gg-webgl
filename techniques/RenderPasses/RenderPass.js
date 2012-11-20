@@ -41,13 +41,16 @@ GG.RenderPass.prototype.constructor = GG.RenderPass;
 
 GG.RenderPass.MESH = 1;
 
-GG.RenderPass.prototype.initialize = function() {
+GG.RenderPass.prototype.createGpuProgram = function() {
 	// create the gpu program if it is not linked already
 	if (!this.program) {
 		this.program = GG.ProgramUtils.createProgram(this.vertexShader, this.fragmentShader);
 	}
-	GG.ProgramUtils.getAttributeLocations(this.program);	
-	GG.ProgramUtils.getUniformsLocations(this.program);	
+
+	if (this.program) {
+		GG.ProgramUtils.getAttributeLocations(this.program);	
+		GG.ProgramUtils.getUniformsLocations(this.program);	
+	}
 };
 
 
@@ -55,14 +58,13 @@ GG.RenderPass.prototype.destroy = function() {
 	if (this.program) gl.deleteProgram(this.program);
 };
 
-
-GG.RenderPass.prototype.render = function(renderable, renderContext) {
+GG.RenderPass.prototype.prepareForRendering = function(renderable, renderContext) {
 	if (this.program == null) {
-		this.initialize();
+		this.createGpuProgram();
 	}
+};
 
-	this.__setCustomRenderState(renderable, renderContext, this.program);
-
+GG.RenderPass.prototype.setShaderParametersForRendering = function(renderable, renderContext) {
 	gl.useProgram(this.program);
 
 	// this should be overridden in each subclass
@@ -73,7 +75,13 @@ GG.RenderPass.prototype.render = function(renderable, renderContext) {
 
 	// this should be overridden in each subclass	
 	this.__setCustomUniforms(renderable, renderContext, this.program);		
+};
 
+GG.RenderPass.prototype.setRenderState = function(renderable, renderContext) {
+	this.__setCustomRenderState(renderable, renderContext, this.program);
+};
+
+GG.RenderPass.prototype.submitGeometryForRendering = function(renderable, renderContext) {
 	if (renderable && this.renderableType == GG.RenderPass.MESH) {
 		var options = {
 			mode : this.getRenderPrimitive(renderable)
@@ -82,8 +90,25 @@ GG.RenderPass.prototype.render = function(renderable, renderContext) {
 	} else {
 		this.callback.__renderGeometry(renderable);
 	}
-	
+};
+
+GG.RenderPass.prototype.finishRendering = function(renderable, renderContext) {
 	gl.useProgram(null);
+};
+
+GG.RenderPass.prototype.render = function(renderable, renderContext) {
+	
+	this.prepareForRendering(renderable, renderContext);
+
+	if (this.program) {
+		this.setRenderState(renderable, renderContext);
+
+		this.setShaderParametersForRendering(renderable, renderContext);
+		
+		this.submitGeometryForRendering(renderable, renderContext);
+		
+		this.finishRendering();	
+	}
 };
 
 GG.RenderPass.prototype.usesSceneLighting = function() {
@@ -115,32 +140,3 @@ GG.RenderPass.prototype.__setCustomRenderState = function(renderable, ctx, progr
 GG.RenderPass.prototype.getRenderPrimitive = function(renderable) {
 	return gl.TRIANGLES;
 };
-
-/*
-pass = new RenderPass({
-	vertexShader : GG.ShaderLib.blurX.vertex.strong(4),
-	fragmentShader : GG.ShaderLib.blurX.fragment.strong(4),
-	screenPass : true
-})
-
-technique {
-
-	phongPass.render(sceneFBO)
-	blitPass.setSourceTexture(sceneFBO.texture0);
-	blitPass.render(sceneCopyFBO)
-	downscalePass.setSourceTexture(sceneCopyFBO);
-	downscalePass.render(ppBuffer.targetFBO);
-	ppBuffer.swap()
-	blurXPass.render(ppBuffer.targetFBO)
-	ppBuffer.swap()
-	blurYPass.render(ppBuffer.targetFBO)
-	upscalePass.setSourceTexture(ppBuffer.targetFBO);
-	upscalePass.render(upscaledFBO);
-	combineAndGlowPass.setOriginalTexture(sceneCopyFBO.texture0)
-	combineAndGlowPass.setScaledTexture(upscaledFBO.texture0)
-	combineAndGlowPass.render(finalFBO)
-
-	postProcessPass.setSourceTexture(finalFBO)
-	postProcessPass.render()
-}
-*/
