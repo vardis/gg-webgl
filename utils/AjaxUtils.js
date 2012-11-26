@@ -8,10 +8,11 @@ GG.AjaxUtils = function() {
 					// The file protocol reports success with zero.
 					var success = request.status == 200 || request.status == 0;      
 					if (success && successCallback) {
-						if (request.hasOwnProperty('expectedType')) {
-							if (request.getResponseHeader("Content-Type").indexOf(request.expectedType) < 0) {
+						if (request.hasOwnProperty('expectedTypes')) {
+							var contentType = request.getResponseHeader("Content-Type");
+							if (request.expectedTypes.indexOf(contentType) < 0) {
 								if (errorCallback) {
-									errorCallback("Expected content type of " + expectedType 
+									errorCallback("Expected content type of " + request.expectedTypes 
 										+ " but received " + request.getResponseHeader());
 								}
 								success = false;
@@ -53,10 +54,10 @@ GG.AjaxUtils = function() {
 			});
 		},
 
-		getRequest : function (url, type, callback, errorCallback) {
+		getRequest : function (url, expectedTypes, callback, errorCallback) {
 			var request = new XMLHttpRequest();
   			request.open("GET", url, true);
-  			request.expectedType = type;
+  			request.expectedType = expectedTypes;
   			GG.AjaxUtils.asyncRequest(request, function(response) {								
 				callback(response, url);
 			}, errorCallback);

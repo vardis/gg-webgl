@@ -7,16 +7,18 @@ AdaptableProgramSample = function (spec) {
 	this.mouseHandler  = null;
 	this.y_rot         = 0.0;
 	this.blendMode = "ADD";
+	this.initialized = false;
+	this.assetsLoaded = false;
 	GG.SampleBase.call(this, spec);
 };
 
 AdaptableProgramSample.prototype = new GG.SampleBase();
 AdaptableProgramSample.prototype.constructor = AdaptableProgramSample;
 
-AdaptableProgramSample.prototype.initialize = function () {
+AdaptableProgramSample.prototype.initializeAssets = function () {
 	this.material = new GG.BaseMaterial();
 
-	var that = this;	
+	var self = this;	
 	GG.Loader.loadImage('earth', '../assets/textures/earth.png', function (reqId, image) {		
 		var earthTexture = GG.Texture.createTexture({ 
 			'image' : image, width : 1024, 
@@ -24,9 +26,10 @@ AdaptableProgramSample.prototype.initialize = function () {
 			'wrapS' : gl.REPEAT, wrapT : gl.REPEAT,
 			flipY : false 
 		});		
-		that.material.addDiffuseTexture(earthTexture);
+		self.material.addDiffuseTexture(earthTexture);
+		self.assetsLoaded = true;
 	});
-	
+
 	/*
 	GG.Loader.loadImage('orange', '../assets/textures/orange.png', function (reqId, image) {		
 		var orangeTexture = GG.Texture.createTexture({ 
@@ -42,6 +45,10 @@ AdaptableProgramSample.prototype.initialize = function () {
 		that.material.addDiffuseTexture(blueTexture, that.getBlendMode());
 	});
 */
+};
+
+
+AdaptableProgramSample.prototype.initializeWithAssetsLoaded = function () {
 	this.sphere = new GG.TriangleMesh(new GG.SphereGeometry());
 	this.sphere.setMaterial(this.material);
 	this.technique = new GG.TextureStackTechnique();
@@ -55,6 +62,11 @@ AdaptableProgramSample.prototype.initialize = function () {
 	this.mouseHandler.setCamera(this.camera);
 
 	this.context = new GG.RenderContext({ camera : this.camera });
+	this.initialized = true;
+};
+
+AdaptableProgramSample.prototype.initialize = function () {	
+	this.initializeAssets();		
 };
 
 AdaptableProgramSample.prototype.getBlendMode = function () {
@@ -84,6 +96,10 @@ AdaptableProgramSample.prototype.updateBlendMode = function () {
 };
 
 AdaptableProgramSample.prototype.update = function () {	 
+	if (this.assetsLoaded && !this.initialized) {
+		this.initializeWithAssetsLoaded();
+	}
+
 	this.y_rot += GG.clock.deltaTime() * 0.001;
 	//this.sphere.setRotation([0.0, this.y_rot, 0.0]);
 	if (this.material.diffuseTextureStack.size() > 0) {

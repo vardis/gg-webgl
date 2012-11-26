@@ -20,6 +20,9 @@ SceneRendererSample = function (spec) {
 	this.sceneRenderer        = null;
 
 	this.teapot               = null;
+
+	this.texturedMaterial     = null;
+
 	GG.SampleBase.call(this, spec);
 };
 
@@ -49,7 +52,19 @@ SceneRendererSample.prototype.initialize = function () {
 	this.phongMat.ambient    = [0.0, 0.0, 0.0];
 	this.phongMat.shininess  = 20.0;
 	
-	this.sphereMesh.material = this.phongMat;
+	this.texturedMaterial = new GG.BaseMaterial();
+	var that = this;
+	GG.Loader.loadImage('earth', '../assets/textures/earth.png', function (reqId, image) {		
+		var earthTexture = GG.Texture.createTexture({ 
+			'image' : image, width : 1024, 
+			minFilter : gl.LINEAR, magFilter : gl.LINEAR, 
+			'wrapS' : gl.REPEAT, wrapT : gl.REPEAT,
+			flipY : false 
+		});		
+		that.texturedMaterial.addDiffuseTexture(earthTexture);
+	});
+
+	this.sphereMesh.material = this.texturedMaterial;
 	this.cubeMesh.material   = this.phongMat;
 	this.planeMesh.material  = this.phongMat;
 

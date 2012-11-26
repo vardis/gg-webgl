@@ -1,4 +1,5 @@
 GG.Loader = {
+
 	/** 
 	 * Loads an image asynchronously 
 	 * The callback must accept two parameters: the request id and the resulting Image object.
@@ -44,7 +45,7 @@ GG.Loader = {
 	 * The callback will receive the parsed JSON object.
 	 */
 	loadJSON : function (requestId, url, callback) {
-		GG.AjaxUtils.getRequest(url, "application/javascript", function (jsonData) {
+		GG.AjaxUtils.getRequest(url, ["application/javascript", "application/x-javascript"], function (jsonData) {
 			if (callback) {
 				callback(JSON.parse(jsonData));
 			}

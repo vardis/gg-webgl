@@ -157,10 +157,11 @@ GG.AjaxUtils = function() {
 					// The file protocol reports success with zero.
 					var success = request.status == 200 || request.status == 0;      
 					if (success && successCallback) {
-						if (request.hasOwnProperty('expectedType')) {
-							if (request.getResponseHeader("Content-Type").indexOf(request.expectedType) < 0) {
+						if (request.hasOwnProperty('expectedTypes')) {
+							var contentType = request.getResponseHeader("Content-Type");
+							if (request.expectedTypes.indexOf(contentType) < 0) {
 								if (errorCallback) {
-									errorCallback("Expected content type of " + expectedType 
+									errorCallback("Expected content type of " + request.expectedTypes 
 										+ " but received " + request.getResponseHeader());
 								}
 								success = false;
@@ -202,10 +203,10 @@ GG.AjaxUtils = function() {
 			});
 		},
 
-		getRequest : function (url, type, callback, errorCallback) {
+		getRequest : function (url, expectedTypes, callback, errorCallback) {
 			var request = new XMLHttpRequest();
   			request.open("GET", url, true);
-  			request.expectedType = type;
+  			request.expectedType = expectedTypes;
   			GG.AjaxUtils.asyncRequest(request, function(response) {								
 				callback(response, url);
 			}, errorCallback);
@@ -213,6 +214,7 @@ GG.AjaxUtils = function() {
 	};
 }();
 GG.Loader = {
+
 	/** 
 	 * Loads an image asynchronously 
 	 * The callback must accept two parameters: the request id and the resulting Image object.
@@ -258,7 +260,7 @@ GG.Loader = {
 	 * The callback will receive the parsed JSON object.
 	 */
 	loadJSON : function (requestId, url, callback) {
-		GG.AjaxUtils.getRequest(url, "application/javascript", function (jsonData) {
+		GG.AjaxUtils.getRequest(url, ["application/javascript", "application/x-javascript"], function (jsonData) {
 			if (callback) {
 				callback(JSON.parse(jsonData));
 			}
@@ -1447,17 +1449,18 @@ GG.Texture.prototype.bindAtUnit = function(unitIndex) {
 
 GG.Texture.prototype.setMinFilter = function(filterType) {
 	gl.bindTexture(this.textureType, this.texture);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterType);
+	gl.texParameteri(this.textureType, gl.TEXTURE_MIN_FILTER, filterType);
 };
 
 GG.Texture.prototype.setMagFilter = function(filterType) {
 	gl.bindTexture(this.textureType, this.texture);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterType);
+	gl.texParameteri(this.textureType, gl.TEXTURE_MAG_FILTER, filterType);
 };
 
 GG.Texture.prototype.setWrapMode = function(wrapModeS, wrapModeT) {
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapModeS);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapModeT);
+	gl.bindTexture(this.textureType, this.texture);
+	gl.texParameteri(this.textureType, gl.TEXTURE_WRAP_S, wrapModeS);
+	gl.texParameteri(this.textureType, gl.TEXTURE_WRAP_T, wrapModeT);
 };
 
 GG.Texture.prototype.handle = function() {
@@ -2410,12 +2413,14 @@ GG.GLSLProgram.BuiltInUniforms = [
  * declarations
  * main {
  *	main init
+ *  texturing affecting the diffuse, specular or N variables
  *	main lighting
  *		per point light
  *		per directional light
  *		per spot light
  *	main blocks
  *	post process
+ *  final color assignment
  * } 
  *
  * Fragment shader variable names by convention:
@@ -2441,6 +2446,7 @@ GG.ProgramSource = function (spec) {
 	this.varyings               = {};
 	this.mainInit               = [];	
 	this.mainBlocks             = [];
+	this.texturingBlocks        = [];
 	this.pointLightBlocks       = [];
 	this.directionalLightBlocks = [];
 	this.spotLightBlocks        = [];
@@ -2543,6 +2549,14 @@ GG.ProgramSource.prototype.addMainBlock = function(block, name) {
 	return this;
 };
 
+GG.ProgramSource.prototype.addTexturingBlock = function(block, name) {
+	this.texturingBlocks.push({
+		'name' : name != undefined ? name : 'tex_block_' + this.texturingBlocks.length,
+		'code' : block,
+		'order' : this.texturingBlocks.length
+	});
+	return this;
+};
 GG.ProgramSource.prototype.perPointLightBlock = function (block) {
 	this.pointLightBlocks.push({
 		'name' : name != undefined ? name : 'block_' + this.pointLightBlocks.length,
@@ -2662,6 +2676,12 @@ GG.ProgramSource.prototype.toString = function() {
 		glsl += this.mainInit[i].code + '\n';
 	};
 	glsl += '// End - Main Init\n\n';
+
+	glsl += '// Begin - Texturing\n';
+	for (var i = 0; i < this.texturingBlocks.length; i++) {
+		glsl += this.texturingBlocks[i].code + '\n';
+	};
+	glsl += '// End - Texturing\n\n';
 
 	// Shading
 	for (var i = 0; i < this.pointLightBlocks.length; i++) {
@@ -3197,9 +3217,26 @@ GG.GaussianBlurPass.prototype.__setCustomUniforms = function(renderable, renderC
 	gl.uniform2fv(program.u_texStepSize, texStep);
 };
 
+/**
+ * A render pass that adapts its shaders according to the material being used for rendering.
+ * This class serves as a base class for render passes that need to act in an adaptive manner
+ * because of a large number of possible material inputs that would otherwise need to be
+ * handled manually or by a super-shader approach.
+ * As compiling on-the-fly a gpu program is expensive in terms of time, this base class also
+ * provides a memory for recently created instances of the render pass. Therefore in most cases
+ * there's no compilation taking place, a pre-existing instance is rather fetched from the
+ * cache and used in render the current object.
+ *
+ * Base classes need to override the following methods:
+ *  a) createShadersForMaterial
+ *     This is where the logic should be placed for creating the gpu program which will render
+ *     the current material.
+ *  b) hashMaterial
+ *     This method should generate a unique key per class of materials. The returned value is
+ *     used to determine whether the current program can handle a material.
+ */
 GG.AdaptiveRenderPass = function (spec) {
 	this.programCache = {};
-	this.activeRenderAttributes = 0;	
 	this.activeHash = null;
 
 	GG.RenderPass.call(this, spec);
@@ -3216,6 +3253,8 @@ GG.AdaptiveRenderPass.prototype.prepareForRendering = function (renderable, rend
 };
 
 GG.AdaptiveRenderPass.prototype.adaptShadersToMaterial = function (material) {	
+	// if the program cannot handle the current material, either lookup
+	// an appropriate instance from the cache or create a new on on the fly
 	var hash = this.hashMaterial(material);
 	if (this.shouldInvalidateProgram(hash)) {
 		this.program = null;
@@ -3249,6 +3288,7 @@ GG.AdaptiveRenderPass.prototype.lookupCachedProgramInstance = function (hash) {
 };
 
 GG.AdaptiveRenderPass.prototype.storeProgramInstanceInCache = function (program, hash) {
+	console.log("Storing hash " + hash);
 	return this.programCache[hash] = program;
 };
 
@@ -3256,8 +3296,174 @@ GG.AdaptiveRenderPass.prototype.createShadersForMaterial = function (material) {
 	throw "AdaptiveRenderPass.createShadersForMaterial is abstract";
 };
 
-GG.AdaptiveRenderPass.prototype.hashMaterial = function () {
-	throw "AdaptiveRenderPass.supportedRenderAttributesMask is abstract";
+GG.AdaptiveRenderPass.prototype.hashMaterial = function (material) {
+	throw "AdaptiveRenderPass.hashMaterial is abstract";
+};
+GG.EmbeddableAdaptiveRenderPass = function(spec) {
+	this.activeHash = null;
+	GG.AdaptiveRenderPass.call(this, spec);
+};
+
+GG.EmbeddableAdaptiveRenderPass.prototype.constructor = GG.EmbeddableAdaptiveRenderPass;
+
+GG.EmbeddableAdaptiveRenderPass.prototype.shouldInvalidateProgram = function (hash) {	
+	return this.activeHash != hash;
+};
+
+
+GG.EmbeddableAdaptiveRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {
+	throw "EmbeddableAdaptiveRenderPass.adaptShadersToMaterial is abstract";
+};
+
+GG.EmbeddableAdaptiveRenderPass.prototype.hashMaterial = function (material) {
+	throw "EmbeddableAdaptiveRenderPass.hashMaterial is abstract";
+};
+GG.DiffuseTextureStackEmbeddableTechnique = function (spec) {
+	// body...
+};
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype = new GG.EmbeddableAdaptiveRenderPass();
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.constructor = GG.DiffuseTextureStackEmbeddableTechnique;
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.adaptShadersToMaterial = function (
+	vertexShader, fragmentShader, material) {
+
+	if (material.diffuseTextureStack == null) return;
+
+	vertexShader
+		.texCoord0()  		
+		.varying('vec2', 'v_texCoords')
+		.addMainBlock("	v_texCoords = a_texCoords;");
+	
+	fragmentShader.varying('vec2', 'v_texCoords')
+		.uniformMaterial()
+		.uniform('vec4', 'u_uvScaleOffset');		
+
+	this.evaluateTextureStack(fragmentShader, material.diffuseTextureStack);
+};
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.hashMaterial = function (material) {	
+	return material.diffuseTextureStack.hashCode();
+};
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.evaluateTextureStack = function(programSource, textureStack) {
+	if (!textureStack.isEmpty()) {
+		console.log("texture stack is not empty");
+		var codeListing = [];
+		for (var i = 0; i < textureStack.size(); i++) {			
+			this.defineUniformsForDiffuseMapAtIndex(i, programSource);
+			this.sampleDiffuseMapAtIndex(i, codeListing);
+			this.blendDiffuseMapAtIndex(i, textureStack.getAt(i).blendMode, programSource, codeListing);
+		}
+		codeListing.push("diffuse = " + this.getVariableNameForDiffuseMapAtIndex(textureStack.size() - 1) + ".rgb;");		
+		programSource.addTexturingBlock(codeListing.join('\n'));
+	} else console.log("texture stack is  empty");
+};
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.defineUniformsForDiffuseMapAtIndex = function (index, programSource) {
+	var uniformName = this.getUniformNameForDiffuseMapAtIndex(index);
+	programSource.uniform("sampler2D", uniformName);
+
+	var scaleOffsetUniformName = this.getUniformNameForUvScaleOffset(index);
+	programSource.uniform("vec4", scaleOffsetUniformName);
+};
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.sampleDiffuseMapAtIndex = function (index, codeListing) {
+	var colorVar = this.getVariableNameForDiffuseMapAtIndex(index);		
+	var uniformName = this.getUniformNameForDiffuseMapAtIndex(index);	
+	var scaleOffset = this.getUniformNameForUvScaleOffset(index);
+	codeListing.push("vec3 " + colorVar + " = texture2D(" + uniformName + ", " + scaleOffset + ".zw + (" + scaleOffset + ".xy * v_texCoords)).rgb;");								
+};
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.blendDiffuseMapAtIndex = function (index, blendMode, programSource, codeListing) {
+	if (index > 0) {
+		var sourceColorVar = this.getVariableNameForDiffuseMapAtIndex(index);		
+		var destColorVar = this.getVariableNameForDiffuseMapAtIndex(index - 1);
+		this.emitBlendTextureCode(destColorVar, sourceColorVar, blendMode, programSource, codeListing);		
+	}
+};
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.getUniformNameForUvScaleOffset = function (index) {
+	return "u_uvScaleOffset_" + index;
+};
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.getUniformNameForDiffuseMapAtIndex = function (index) {
+	return "u_diffuseMap_" + index;
+};
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.getVariableNameForDiffuseMapAtIndex = function (index) {
+	return "diffuseMap_" + index;
+};
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.declareBlendingFunction = function (blendMode, programSource) {
+	var fun = null;
+	switch (blendMode) {
+		case GG.BLEND_MULTIPLY:
+			programSource.addDecl(GG.ShaderLib.blendModeMultiply);
+			fun = 'blendModeMultiply';
+			break;
+		case GG.BLEND_ADD:
+			programSource.addDecl(GG.ShaderLib.blendModeAdd);			
+			fun = 'blendModeAdd';
+			break;
+		case GG.BLEND_SUBTRACT:
+			programSource.addDecl(GG.ShaderLib.blendModeSubtract);
+			fun = 'blendModeSubtract';
+			break;
+		case GG.BLEND_LIGHTEN:
+			programSource.addDecl(GG.ShaderLib.blendModeLighten);
+			fun = 'blendModeLighten';
+			break;
+		case GG.BLEND_COLOR_BURN:
+			programSource.addDecl(GG.ShaderLib.blendModeColorBurn);
+			fun = 'blendModeColorBurn';
+			break;
+		case GG.BLEND_LINEAR_BURN:
+			programSource.addDecl(GG.ShaderLib.blendModeLinearBurn);
+			fun = 'blendModeLinearBurn';
+			break;
+		case GG.BLEND_DARKEN:
+			programSource.addDecl(GG.ShaderLib.blendModeDarken);
+			fun = 'blendModeDarken';
+			break;
+		case GG.BLEND_SCREEN:
+			programSource.addDecl(GG.ShaderLib.blendModeScreen);
+			fun = 'blendModeScreen';
+			break;
+		case GG.BLEND_COLOR_DODGE:
+			programSource.addDecl(GG.ShaderLib.blendModeColorDodge);
+			fun = 'blendModeColorDodge';
+			break;
+		default:
+			return "// Unknown blend mode: " + blendMode;
+	}
+	return fun;
+};
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.emitBlendTextureCode = function (destColor, sourceColor, blendMode, programSource, codeListing) {
+	var func = this.declareBlendingFunction(blendMode, programSource);	
+	if (fun != null) {
+		codeListing.push(sourceColor + " = " + fun + "(" + destColor + ", " + sourceColor + ");");
+	}
+};
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.setCustomUniforms = function(renderable, ctx, program) {
+	var textureStack = renderable.material.diffuseTextureStack;
+	for (var i = 0; i < textureStack.size(); i++) {
+		var uniform = this.getUniformNameForDiffuseMapAtIndex(i);		
+		gl.uniform1i(program[uniform], GG.TEX_UNIT_DIFFUSE_MAPS[i]);
+
+		var entry = textureStack.getAt(i);
+		var scaleOffsetUniformName = this.getUniformNameForUvScaleOffset(i);
+		gl.uniform4fv(program[scaleOffsetUniformName], [entry.scaleU, entry.scaleV, entry.offsetU, entry.offsetV]);
+	}
+};
+
+GG.DiffuseTextureStackEmbeddableTechnique.prototype.setCustomRenderState = function(renderable, ctx, program) {		
+	var textureStack = renderable.material.diffuseTextureStack;
+	for (var i = 0; i < textureStack.size(); i++) {
+		textureStack.getAt(i).texture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAPS[i]);
+	}
 };
 GG.BaseTechnique = function(spec) {	
 	spec          = spec || {};	
@@ -3571,6 +3777,7 @@ GG.ReflectiveTechnique.ReflectivePass.prototype.__setCustomRenderState = functio
 GG.PhongShadingTechnique = function(spec) {
 	spec = spec || {};
 	spec.passes = [new GG.PhongPass()];
+
 	GG.BaseTechnique.call(this, spec);
 };
 
@@ -3579,20 +3786,16 @@ GG.PhongShadingTechnique.prototype.constructor = GG.PhongShadingTechnique;
 
 GG.PhongPass = function(spec) {	
 	GG.RenderPass.call(this, spec);
-	this.createProgram();
+	this.diffuseTexturingTech = new GG.DiffuseTextureStackEmbeddableTechnique();
+	this.createProgram(null);	
 };
 
-GG.PhongPass.prototype = new GG.RenderPass();
+GG.PhongPass.prototype = new GG.AdaptiveRenderPass();
 GG.PhongPass.prototype.constructor = GG.PhongPass;
 
-GG.PhongPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
-	GG.ProgramUtils.setMaterialUniforms(program, GG.Naming.UniformMaterial, renderable.material);
-	GG.ProgramUtils.setLightsUniform(program, GG.Naming.UniformLight, ctx.light);
-};
-
-GG.PhongPass.prototype.createProgram = function() {
-	var pg = new GG.ProgramSource();
-	pg.position()
+GG.PhongPass.prototype.createProgram = function(material) {
+	var vs = new GG.ProgramSource();
+	vs.position()
 		.normal()
   		.uniformModelViewMatrix()
   		.uniformNormalsMatrix()
@@ -3607,11 +3810,10 @@ GG.PhongPass.prototype.createProgram = function() {
 			"	v_normal = u_matNormals * a_normal;",
 			"	v_viewVector = -viewPos.xyz; //(u_matInverseView * vec4(0.0, 0.0, 0.0, 1.0) - viewPos).xyz;",		
 			"	v_viewPos = viewPos;"
-			].join('\n'));
-	this.vertexShader = pg.toString();
+			].join('\n'));	
 
-	pg = new GG.ProgramSource();
-	pg.asFragmentShader()
+	fs = new GG.ProgramSource();
+	fs.asFragmentShader()
 		.varying('vec3', 'v_normal')
 		.varying('vec4', 'v_viewPos')
 		.varying('vec3', 'v_viewVector')
@@ -3619,17 +3821,29 @@ GG.PhongPass.prototype.createProgram = function() {
 		.uniformLight()
 		.uniformMaterial()
 		.addDecl(GG.ShaderLib.phong.lightIrradiance)
-		.addMainBlock([
+		.addMainInitBlock([
 			"	vec3 N = normalize(v_normal);",
 			"	vec3 V = normalize(v_viewVector);",		
 			"	vec3 diffuse = vec3(0.0);",
-			"	vec3 specular = vec3(0.0);",
+			"	vec3 specular = vec3(0.0);"
+			].join('\n'))
+		.addMainBlock([			
 			"	vec3 L = normalize(u_matView*vec4(u_light.position, 1.0) - v_viewPos).xyz;",
 			"	lightIrradiance(N, V, L, u_light, u_material, diffuse, specular);",
 			"	gl_FragColor = vec4(u_material.ambient + u_material.diffuse*diffuse + u_material.specular*specular, 1.0);"			
 		].join('\n'));
-		
-	this.fragmentShader = pg.toString();	
+
+	if (material != null) {
+		this.diffuseTexturingTech.adaptShadersToMaterial(vs, fs, material);
+	}
+	this.vertexShader = vs.toString();
+	this.fragmentShader = fs.toString();	
+};
+
+GG.PhongPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	GG.ProgramUtils.setMaterialUniforms(program, GG.Naming.UniformMaterial, renderable.material);
+	GG.ProgramUtils.setLightsUniform(program, GG.Naming.UniformLight, ctx.light);
+	this.diffuseTexturingTech.setCustomUniforms(renderable, ctx, program);
 };
 
 GG.PhongPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
@@ -3638,6 +3852,15 @@ GG.PhongPass.prototype.__setCustomRenderState = function(renderable, ctx, progra
 	gl.frontFace(gl.CW);
 	gl.enable(gl.CULL_FACE);
 	*/
+	this.diffuseTexturingTech.setCustomRenderState(renderable, ctx, program);
+};
+
+GG.PhongPass.prototype.createShadersForMaterial = function (material) {
+	this.createProgram(material);
+};
+
+GG.PhongPass.prototype.hashMaterial = function (material) {
+	return this.diffuseTexturingTech.hashMaterial(material);
 };
 GG.WireframeTechnique = function (spec) {
 	spec              = spec || {};

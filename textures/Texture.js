@@ -25,17 +25,18 @@ GG.Texture.prototype.bindAtUnit = function(unitIndex) {
 
 GG.Texture.prototype.setMinFilter = function(filterType) {
 	gl.bindTexture(this.textureType, this.texture);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterType);
+	gl.texParameteri(this.textureType, gl.TEXTURE_MIN_FILTER, filterType);
 };
 
 GG.Texture.prototype.setMagFilter = function(filterType) {
 	gl.bindTexture(this.textureType, this.texture);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterType);
+	gl.texParameteri(this.textureType, gl.TEXTURE_MAG_FILTER, filterType);
 };
 
 GG.Texture.prototype.setWrapMode = function(wrapModeS, wrapModeT) {
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapModeS);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapModeT);
+	gl.bindTexture(this.textureType, this.texture);
+	gl.texParameteri(this.textureType, gl.TEXTURE_WRAP_S, wrapModeS);
+	gl.texParameteri(this.textureType, gl.TEXTURE_WRAP_T, wrapModeT);
 };
 
 GG.Texture.prototype.handle = function() {

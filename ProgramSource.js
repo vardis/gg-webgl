@@ -7,12 +7,14 @@
  * declarations
  * main {
  *	main init
+ *  texturing affecting the diffuse, specular or N variables
  *	main lighting
  *		per point light
  *		per directional light
  *		per spot light
  *	main blocks
  *	post process
+ *  final color assignment
  * } 
  *
  * Fragment shader variable names by convention:
@@ -38,6 +40,7 @@ GG.ProgramSource = function (spec) {
 	this.varyings               = {};
 	this.mainInit               = [];	
 	this.mainBlocks             = [];
+	this.texturingBlocks        = [];
 	this.pointLightBlocks       = [];
 	this.directionalLightBlocks = [];
 	this.spotLightBlocks        = [];
@@ -140,6 +143,14 @@ GG.ProgramSource.prototype.addMainBlock = function(block, name) {
 	return this;
 };
 
+GG.ProgramSource.prototype.addTexturingBlock = function(block, name) {
+	this.texturingBlocks.push({
+		'name' : name != undefined ? name : 'tex_block_' + this.texturingBlocks.length,
+		'code' : block,
+		'order' : this.texturingBlocks.length
+	});
+	return this;
+};
 GG.ProgramSource.prototype.perPointLightBlock = function (block) {
 	this.pointLightBlocks.push({
 		'name' : name != undefined ? name : 'block_' + this.pointLightBlocks.length,
@@ -259,6 +270,12 @@ GG.ProgramSource.prototype.toString = function() {
 		glsl += this.mainInit[i].code + '\n';
 	};
 	glsl += '// End - Main Init\n\n';
+
+	glsl += '// Begin - Texturing\n';
+	for (var i = 0; i < this.texturingBlocks.length; i++) {
+		glsl += this.texturingBlocks[i].code + '\n';
+	};
+	glsl += '// End - Texturing\n\n';
 
 	// Shading
 	for (var i = 0; i < this.pointLightBlocks.length; i++) {

@@ -69,6 +69,7 @@ GG.AdaptiveRenderPass.prototype.lookupCachedProgramInstance = function (hash) {
 };
 
 GG.AdaptiveRenderPass.prototype.storeProgramInstanceInCache = function (program, hash) {
+	console.log("Storing hash " + hash);
 	return this.programCache[hash] = program;
 };
 
@@ -76,6 +77,6 @@ GG.AdaptiveRenderPass.prototype.createShadersForMaterial = function (material) {
 	throw "AdaptiveRenderPass.createShadersForMaterial is abstract";
 };
 
-GG.AdaptiveRenderPass.prototype.hashMaterial = function () {
-	throw "AdaptiveRenderPass.supportedRenderAttributesMask is abstract";
+GG.AdaptiveRenderPass.prototype.hashMaterial = function (material) {
+	throw "AdaptiveRenderPass.hashMaterial is abstract";
 };

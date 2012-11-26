@@ -41,6 +41,8 @@ GG_files = [
 	'techniques/RenderPasses/BlitPass.js',	
 	'techniques/RenderPasses/GaussianBlurPass.js',	
 	'techniques/RenderPasses/AdaptiveRenderPass.js',
+	'techniques/RenderPasses/EmbeddableAdaptiveRenderPass.js',
+	'techniques/DiffuseTextureStackEmbeddableTechnique.js',
 	'techniques/BaseTechnique.js',
 	'techniques/ConstantColorTechnique.js',
 	'techniques/TexturedShadelessTechnique.js',
