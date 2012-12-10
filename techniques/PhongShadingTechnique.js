@@ -12,6 +12,7 @@ GG.PhongPass = function(spec) {
 	GG.RenderPass.call(this, spec);
 	this.diffuseTexturingPass = new GG.DiffuseTextureStackEmbeddableRenderPass();
 	this.specularMapPass = new GG.SpecularMappingEmbeddableTechnique();
+    this.alphaMapPass = new GG.AlphaMappingEmbeddableRenderPass();
 	this.createProgram(null);	
 };
 
@@ -66,13 +67,17 @@ GG.PhongPass.prototype.createProgram = function(material) {
 			"	lightIrradiance(N, V, L, u_light, u_material, diffuse, specular);"			
 		].join('\n'))
 		.finalColor(
-			"	gl_FragColor = vec4(u_material.ambient + vec3(0.9)*u_material.diffuse*diffuse + u_material.specular*specular, 1.0);"
+			"	gl_FragColor = vec4(u_material.ambient" +
+                " + u_material.diffuse*diffuse" +
+                " + u_material.specular*specular" +
+                ", " + GG.Naming.VarAlphaOutput + ");"
 			//"gl_FragColor = vec4(specular, 1.0);"
 			);
-
+    //TODO: Add light ambient and object emissive
 	if (material != null) {
 		this.diffuseTexturingPass.adaptShadersToMaterial(vs, fs, material);
 		this.specularMapPass.adaptShadersToMaterial(vs, fs, material);
+        this.alphaMapPass.adaptShadersToMaterial(vs, fs, material);
 	}
 	this.vertexShader = vs.toString();
 	this.fragmentShader = fs.toString();	
@@ -83,16 +88,13 @@ GG.PhongPass.prototype.__setCustomUniforms = function(renderable, ctx, program) 
 	GG.ProgramUtils.setLightsUniform(program, GG.Naming.UniformLight, ctx.light);
 	this.diffuseTexturingPass.__setCustomUniforms(renderable, ctx, program);
 	this.specularMapPass.__setCustomUniforms(renderable, ctx, program);
+    this.alphaMapPass.__setCustomUniforms(renderable, ctx, program);
 };
 
 GG.PhongPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
-	/*
-	gl.cullFace(gl.BACK);
-	gl.frontFace(gl.CW);
-	gl.enable(gl.CULL_FACE);
-	*/
 	this.diffuseTexturingPass.__setCustomRenderState(renderable, ctx, program);
 	this.specularMapPass.__setCustomRenderState(renderable, ctx, program);
+    this.alphaMapPass.__setCustomRenderState(renderable, ctx, program);
 };
 
 GG.PhongPass.prototype.createShadersForMaterial = function (material) {
@@ -100,5 +102,7 @@ GG.PhongPass.prototype.createShadersForMaterial = function (material) {
 };
 
 GG.PhongPass.prototype.hashMaterial = function (material) {
-	return this.diffuseTexturingPass.hashMaterial(material) + this.specularMapPass.hashMaterial(material);
+	return this.diffuseTexturingPass.hashMaterial(material)
+        + this.specularMapPass.hashMaterial(material)
+        + this.alphaMapPass.hashMaterial(material);
 };

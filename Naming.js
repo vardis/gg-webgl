@@ -16,7 +16,13 @@ GG.Naming = {
 	AttributePosition        : 'a_position',
 	AttributeNormal          : 'a_normal',
 	AttributeColor           : 'a_color',
-	AttributeTexCoords       : 'a_texCoords'
+	AttributeTexCoords       : 'a_texCoords',
+
+    // the following name the fragment shader variables to receive the
+    // final values for the diffuse, specular and alpha, respectively.
+    VarDiffuseOutput         : 'diffuse',
+    VarSpecularOutput        : 'specular',
+    VarAlphaOutput           : 'alpha'
 
 };
 

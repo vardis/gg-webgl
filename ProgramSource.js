@@ -236,6 +236,21 @@ GG.ProgramSource.prototype.uniformNormalsMatrix = function() {
 	return this;
 };
 
+GG.ProgramSource.prototype.declareDiffuseOutput = function() {
+    this.addMainInitBlock('vec3 ' + GG.Naming.VarDiffuseOutput + " = vec3(0.0);");
+    return this;
+};
+
+GG.ProgramSource.prototype.declareSpecularOutput = function() {
+    this.addMainInitBlock('vec3 ' + GG.Naming.VarSpecularOutput + " = vec3(0.0);");
+    return this;
+};
+
+GG.ProgramSource.prototype.declareAlphaOutput = function() {
+    this.addMainInitBlock('float ' + GG.Naming.VarAlphaOutput + " = 1.0;");
+    return this;
+};
+
 GG.ProgramSource.prototype.finalColor = function(s) {
 	this.finalColorAssignment = s;
 	return this;

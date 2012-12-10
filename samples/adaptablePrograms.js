@@ -40,6 +40,7 @@ AdaptableProgramSample.prototype.initializeAssets = function () {
 			flipY : false 
 		});		
 		self.material.setSpecularMap(specularMap);
+        self.material.setAlphaMap(specularMap);
 		self.assetsLoaded = true;
 	});
 
@@ -123,10 +124,10 @@ AdaptableProgramSample.prototype.update = function () {
 	}
 
 	if (this.initialized) {
-		/*
+
         this.y_rot += GG.clock.deltaTime() * 0.001;
 		this.sphere.setRotation([0.0, this.y_rot, 0.0]);
-    */
+    /*
 		if (this.material.diffuseTextureStack.size() > 0) {
 			var e = this.material.diffuseTextureStack.getAt(0);
 			e.offsetU = (e.offsetU + GG.clock.deltaTime()*0.0001) % 1.0;					
@@ -134,6 +135,10 @@ AdaptableProgramSample.prototype.update = function () {
 
         var tex = this.material.specularMap;
         tex.offsetU = (tex.offsetU + GG.clock.deltaTime()*0.0001) % 1.0;
+
+        tex = this.material.alphaMap;
+        tex.offsetU = (tex.offsetU + GG.clock.deltaTime()*0.0001) % 1.0;
+        */
 	}
 };
 

@@ -9,7 +9,7 @@ GG.BaseMaterial = function(spec) {
 	this.shininess   = spec.shininess != undefined ? spec.shininess : 10.0;
 	
 	this.specularMap = new GG.TextureUnit({ 'texture' : spec.specularMap, 'unit' : GG.TEX_UNIT_SPECULAR_MAP });
-	this.opacityMap  = new GG.TextureUnit({ 'texture' : spec.opacityMap, 'unit' : GG.TEX_UNIT_ALPHA_MAP });
+	this.alphaMap    = new GG.TextureUnit({ 'texture' : spec.alphaMap, 'unit' : GG.TEX_UNIT_ALPHA_MAP });
 	this.lightMap    = spec.lightMap;
 	this.glowMap     = spec.glowMap;
 
@@ -42,7 +42,7 @@ GG.BaseMaterial.prototype.constructor = GG.BaseMaterial;
 
 GG.BaseMaterial.BIT_DIFFUSE_MAP     = 1;
 GG.BaseMaterial.BIT_SPECULAR_MAP    = 2;
-GG.BaseMaterial.BIT_OPACITY_MAP     = 4;
+GG.BaseMaterial.BIT_ALPHA_MAP       = 4;
 GG.BaseMaterial.BIT_LIGHT_MAP       = 16;
 GG.BaseMaterial.BIT_GLOW_MAP        = 32;
 GG.BaseMaterial.BIT_ENVIRONMENT_MAP = 64;
@@ -64,6 +64,12 @@ GG.BaseMaterial.prototype.setSpecularMap = function (texture) {
 	this.specularMap = new GG.TextureUnit({ 'texture' : texture, 'unit' : GG.TEX_UNIT_SPECULAR_MAP });
     return this;
 };
+
+GG.BaseMaterial.prototype.setAlphaMap = function (texture) {
+    this.alphaMap = new GG.TextureUnit({ 'texture' : texture, 'unit' : GG.TEX_UNIT_ALPHA_MAP});
+    return this;
+};
+
 
 GG.BaseMaterial.prototype.pickTechnique = function() {
 	if (this.wireframe) {
