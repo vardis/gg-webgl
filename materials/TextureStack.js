@@ -15,15 +15,22 @@ GG.BLEND_LINEAR_LIGHT = 14;
 GG.BLEND_PIN_LIGHT    = 15;
 
 
-GG.TextureStackEntry = function (spec) {
+GG.TextureUnit = function (spec) {
 	spec = spec || {};
-	this.texture    = spec.texture;
+	this.texture    = spec.texture != undefined ? spec.texture : null;
+	this.glTexUnit = spec.unit  != undefined ? spec.unit : GG.TEX_UNIT_DIFFUSE_MAP_0;
 	this.blendMode  = spec.blendMode != null ? spec.blendMode : GG.BLEND_MULTIPLY;
 	this.uvSetIndex = 0;
 	this.offsetU    = 0;
 	this.offsetV    = 0;
 	this.scaleU     = 1;
 	this.scaleV     = 1;
+};
+
+GG.TextureUnit.prototype.bind = function () {
+	if (this.texture) {
+		this.texture.bindAtUnit(this.glTexUnit);
+	}
 };
 
 GG.TextureStack = function (spec) {	
@@ -44,20 +51,22 @@ GG.TextureStack.prototype.getAt = function (index) {
 	return this.stackEntries[index];
 };
 
-GG.TextureStack.prototype.setEntryAt = function (index, entry) {
-	this.stackEntries[index] = entry;
-	return this;
-};
-
 GG.TextureStack.prototype.setAt = function (index, texture, blendMode) {
-	var entry = new GG.TextureStackEntry({ 'texture' : texture, 'blendMode' : blendMode});
+	var entry = this._createEntryForIndex(index, texture, blendMode);
 	this.stackEntries[index] = entry;
 	return this;
 };
 
-GG.TextureStack.prototype.pushTexture = function (entry) {
+GG.TextureStack.prototype.add = function (texture, blendMode) {
+	var entry = this._createEntryForIndex(this.stackEntries.length, texture, blendMode);
 	this.stackEntries.push(entry);
 	return this;
+};
+
+GG.TextureStack.prototype._createEntryForIndex = function (index, texture, blendMode) {
+	var texUnit = GG.TEX_UNIT_DIFFUSE_MAPS[index];
+	var entry = new GG.TextureUnit({ 'texture' : texture, 'blendMode' : blendMode, 'unit' : texUnit });
+	return entry;
 };
 
 GG.TextureStack.prototype.hashCode = function () {

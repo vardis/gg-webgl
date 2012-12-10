@@ -179,6 +179,27 @@ GG.ProgramUtils = function() {
 				var field = uniformName + '.' + u;
 				program[field] = gl.getUniformLocation(program, field);	
 			});
-		}		
+		},
+
+		getTexUnitUniformLocations : function (program, uniformName) {
+			['map', 'offset', 'scale'].forEach(function (u) {
+				var field = uniformName + '.' + u;
+				program[field] = gl.getUniformLocation(program, field);	
+			});
+            var field = uniformName + '.' + 'offset';
+            program[field] = gl.getUniformLocation(program, field);
+
+            field = uniformName + '.' + 'scale';
+            program[field] = gl.getUniformLocation(program, field);
+
+            field = GG.Naming.textureUnitUniformMap(uniformName);
+            program[field] = gl.getUniformLocation(program, field);
+		},
+
+		setTexUnitUniforms : function (program, uniformName, texUnit) {			
+			gl.uniform2fv(program[uniformName + '.offset'], [texUnit.offsetU, texUnit.offsetV]);
+			gl.uniform2fv(program[uniformName + '.scale'], [texUnit.scaleU, texUnit.scaleV]);
+			gl.uniform1i(program[GG.Naming.textureUnitUniformMap(uniformName)], texUnit.glTexUnit);
+		}
 	}
 }();

@@ -16,6 +16,10 @@ GG.Naming = {
 	AttributePosition        : 'a_position',
 	AttributeNormal          : 'a_normal',
 	AttributeColor           : 'a_color',
-	AttributeTexCoords       : 'a_texCoords',
+	AttributeTexCoords       : 'a_texCoords'
 
+};
+
+GG.Naming.textureUnitUniformMap = function (basename) {
+    return basename + '_map';
 };

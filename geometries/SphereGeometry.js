@@ -44,9 +44,10 @@ GG.SphereGeometry = function(radius, rings, segments) {
 			this.texCoords[vv*2]     = seg / this.segments;
 			this.texCoords[vv*2 + 1] = ring / this.rings;
 
-			vv++;		
-		}; // end for seg
-	} // end for ring
+			vv++;
+
+} // end for seg
+    } // end for ring
 
 	var indexData = [];
     for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {

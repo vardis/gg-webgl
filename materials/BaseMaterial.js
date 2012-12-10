@@ -8,9 +8,8 @@ GG.BaseMaterial = function(spec) {
 	this.specular    = spec.specular != undefined ? spec.specular : [1.0, 1.0, 1.0];
 	this.shininess   = spec.shininess != undefined ? spec.shininess : 10.0;
 	
-	this.diffuseMap  = spec.diffuseMap;
-	this.specularMap = spec.specularMap;
-	this.opacityMap  = spec.opacityMap;
+	this.specularMap = new GG.TextureUnit({ 'texture' : spec.specularMap, 'unit' : GG.TEX_UNIT_SPECULAR_MAP });
+	this.opacityMap  = new GG.TextureUnit({ 'texture' : spec.opacityMap, 'unit' : GG.TEX_UNIT_ALPHA_MAP });
 	this.lightMap    = spec.lightMap;
 	this.glowMap     = spec.glowMap;
 
@@ -58,8 +57,12 @@ GG.BaseMaterial.prototype.setTechnique = function(technique) {
 };
 
 GG.BaseMaterial.prototype.addDiffuseTexture = function(texture, blendMode) {
-	var entry = new GG.TextureStackEntry({ 'texture' : texture, 'blendMode' : blendMode});
-	this.diffuseTextureStack.pushTexture(entry);
+	this.diffuseTextureStack.add(texture, blendMode);
+};
+
+GG.BaseMaterial.prototype.setSpecularMap = function (texture) {
+	this.specularMap = new GG.TextureUnit({ 'texture' : texture, 'unit' : GG.TEX_UNIT_SPECULAR_MAP });
+    return this;
 };
 
 GG.BaseMaterial.prototype.pickTechnique = function() {
@@ -83,10 +86,3 @@ GG.BaseMaterial.prototype.pickTechnique = function() {
 	
 };
 
-GG.BaseMaterial.prototype.getRenderAttributesMask = function () {
-	var bitMask = 0;
-	if (this.diffuseMap) {
-		bitMask |= GG.BaseMaterial.BIT_DIFFUSE_MAP;
-	}
-	return bitMask;
-};

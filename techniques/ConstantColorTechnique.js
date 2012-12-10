@@ -1,9 +1,9 @@
-GG.ConstantColorTechnique = function(spec) {		
-	spec        = spec || {};
-	spec.passes = [ new GG.ConstantColorPass() ];
-	
-	GG.BaseTechnique.call(this, spec);
-}
+GG.ConstantColorTechnique = function (spec) {
+    spec = spec || {};
+    spec.passes = [ new GG.ConstantColorPass() ];
+
+    GG.BaseTechnique.call(this, spec);
+};
 
 GG.ConstantColorTechnique.prototype = new GG.BaseTechnique();
 GG.ConstantColorTechnique.prototype.constructor = GG.ConstantColorTechnique;

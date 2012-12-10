@@ -28,8 +28,8 @@ GG.TexturedShadelessPass = function (spec) {
 		.varying('vec2', 'v_texCoords')
 		.addMainBlock([
 			"	v_texCoords = a_texCoords;",
-			"	gl_Position = u_matProjection*u_matModelView*a_position;",
-			].join('\n')
+			"	gl_Position = u_matProjection*u_matModelView*a_position;"
+    ].join('\n')
 		);
 
 	this.vertexShader = pg.toString();

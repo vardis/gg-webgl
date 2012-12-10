@@ -76,12 +76,12 @@ GG.Scene.prototype.hasSpotLights = function() {
 	return this.spotLights.length > 0;
 };
 
-GG.Scene.prototype.listLights = function() {
-	return []
-		.concat(this.pointLights)
-		.concat(this.directionaLights)
-		.concat(this.spotLights);
-}
+GG.Scene.prototype.listLights = function () {
+    return []
+        .concat(this.pointLights)
+        .concat(this.directionaLights)
+        .concat(this.spotLights);
+};
 
 GG.Scene.prototype.hasShadows = function() {
 	return this.shadowsEnabled;

@@ -13,7 +13,7 @@
  *	mesh.attributes("normals").foreach(...)
  */
 GG.CubeGeometry = function(dimensions) {
-	dimensions = dimensions != undefined ? dimensions : [1.0, 1.0, 1.0]
+	dimensions = dimensions != undefined ? dimensions : [1.0, 1.0, 1.0];
 	var x      = dimensions[0], y = dimensions[1], z = dimensions[2];
 	
 	this.vertices  = new Float32Array(36*3);

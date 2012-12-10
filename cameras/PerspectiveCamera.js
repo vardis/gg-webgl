@@ -1,9 +1,9 @@
-GG.PerspectiveCamera = function(spec) {
-	spec                 = spec || {};
-	GG.BaseCamera.call(this, spec);
-	this.fov             = 45.0;	
-	this.projectionMatix = mat4.create();	
-}
+GG.PerspectiveCamera = function (spec) {
+    spec = spec || {};
+    GG.BaseCamera.call(this, spec);
+    this.fov = 45.0;
+    this.projectionMatix = mat4.create();
+};
 
 GG.PerspectiveCamera.prototype = new GG.BaseCamera();
 GG.PerspectiveCamera.prototype.constructor = GG.PerspectiveCamera;

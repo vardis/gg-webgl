@@ -76,7 +76,7 @@ GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {
 	
 	var vp = this.camera.getViewport();
 
-var sl;
+    var sl;
 	try {
 		if (renderTarget) {
 			renderTarget.activate();	
@@ -103,9 +103,8 @@ var sl;
 		gl.frontFace(gl.CCW);
 		gl.enable(gl.CULL_FACE);
 
-		for (var i = effectiveLights.length - 1; i >= 0; i--) {		
-			var light = effectiveLights[i];
-			ctx.light = light;
+		for (var i = effectiveLights.length - 1; i >= 0; i--) {
+            ctx.light = effectiveLights[i];
 			for (var j = visibleObjects.length - 1; j >= 0; j--) {
 				var renderable = visibleObjects[j];						
 				var technique = renderable.getMaterial().getTechnique();
@@ -143,8 +142,6 @@ var sl;
 					this.shadowTechnique.render(visibleObjects[j], ctx);		
 				}				
 			}
-			
-			
 		}
 	} finally {
 		gl.disable(gl.BLEND);

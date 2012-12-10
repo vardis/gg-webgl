@@ -134,7 +134,7 @@ GG.ShaderLib = new function (argument) {
 			"		float cosSpot = clamp(dot(normalize(u_matView*vec4(lightInfo.direction, 0.0)).xyz, -light), 0.0, 1.0);",
 			"		df *= pow(cosSpot, -lightInfo.attenuation) * smoothstep(lightInfo.cosCutOff, 1.0, cosSpot);",
 			"	}",
-			"	float sp = pow(max(0.0, dot(reflect(-light, normal), view)), mat.shininess);",
+			"	float sp = pow(clamp(dot(reflect(-light, normal), view), 0.0, 1.0), mat.shininess);",
 			"	diffuse += df*lightInfo.diffuse;",
 			"	specular += step(0.00001, df)*sp*lightInfo.specular;",
 			"}"
@@ -177,6 +177,12 @@ GG.ShaderLib = new function (argument) {
 				"	return dot(enc, bitShifts);",
 				"}"
 			].join('\n'),
+
+			'sampleTexUnit'  : [
+				"vec4 sampleTexUnit(sampler2D map, TexUnitParams_t texUnit) {",
+				"	return texture2D(map, texUnit.offset + (texUnit.scale * v_texCoords));",
+				"}"
+			].join('\n'),
  
 			'lightInfoStructure' : [
 			"struct LightInfo {",
@@ -196,6 +202,13 @@ GG.ShaderLib = new function (argument) {
 			"	vec3 specular;",
 			"	vec3 ambient;",
 			"	float shininess;",
+			"};"
+			].join('\n'),
+
+			"textureUnitParams" : [
+			"struct TexUnitParams_t {",
+			"	vec2 offset;",
+			"	vec2 scale;",
 			"};"
 			].join('\n')
 		}

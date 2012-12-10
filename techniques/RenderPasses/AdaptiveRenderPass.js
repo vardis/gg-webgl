@@ -69,7 +69,6 @@ GG.AdaptiveRenderPass.prototype.lookupCachedProgramInstance = function (hash) {
 };
 
 GG.AdaptiveRenderPass.prototype.storeProgramInstanceInCache = function (program, hash) {
-	console.log("Storing hash " + hash);
 	return this.programCache[hash] = program;
 };
 

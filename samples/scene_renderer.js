@@ -163,8 +163,8 @@ SceneRendererSample.prototype.update = function () {
 };
 
 
-SceneRendererSample.prototype.draw = function () {	 	
-	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);	
-	this.sceneRenderer.render();	
-}
+SceneRendererSample.prototype.draw = function () {
+    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+    this.sceneRenderer.render();
+};
 			

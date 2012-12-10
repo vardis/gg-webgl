@@ -27,7 +27,7 @@
  * provide a renderableType in the input specifications.
  */
 GG.RenderPass = function (spec) {
-	spec                = spec || {}	
+	spec = spec || {};
 	this.vertexShader   = spec.vertexShader;
 	this.fragmentShader = spec.fragmentShader;
 	this.renderableType = spec.renderableType != undefined ? spec.renderableType : GG.RenderPass.MESH;
@@ -50,6 +50,7 @@ GG.RenderPass.prototype.createGpuProgram = function() {
 	if (this.program) {
 		GG.ProgramUtils.getAttributeLocations(this.program);	
 		GG.ProgramUtils.getUniformsLocations(this.program);	
+		this.__locateCustomUniforms(this.program);
 	}
 };
 
@@ -133,6 +134,7 @@ GG.RenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program)
 GG.RenderPass.prototype.__setCustomAttributes = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__renderGeometry = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {};
+GG.RenderPass.prototype.__locateCustomUniforms = function(program) {};
 
 /**
  * Subclasses can override this method in order to render lines or points, fans, strips, etc.

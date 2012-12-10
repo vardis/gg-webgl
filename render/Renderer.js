@@ -64,6 +64,11 @@ GG.Renderer.prototype.renderMesh = function (mesh, program, options) {
 		gl.vertexAttribPointer(attribTexCoords, mesh.getTexCoordsBuffer().itemSize, mesh.getTexCoordsBuffer().itemType, false, 0, 0);
 	}
 
+	var attribColor = program[GG.GLSLProgram.BuiltInAttributes.attribColor];
+	if (attribColor != undefined) {
+		mesh.getColorsBufer().streamAttribute(attribColor);
+	}
+
 	options = options || {};
 	var mode = gl.TRIANGLES;
 	if ('mode' in options ) {

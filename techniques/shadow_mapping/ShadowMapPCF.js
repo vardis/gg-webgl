@@ -6,17 +6,21 @@ GG.ShadowMapPCF = function (spec) {
 	var pg = new GG.ProgramSource()
 		.floatPrecision('highp')
 		.position()
+		.normal()
 		.varying('vec4', 'v_posLightPerspective')
 		.varying('vec4', 'v_lightViewPos')
+		.varying('vec3', 'v_normal')
 		.uniform('mat4', 'u_matModel')
+		.uniform('mat3', 'u_matNormals')
 		.uniform('mat4', 'u_matView')
 		.uniform('mat4', 'u_matProjection')
 		.uniform('mat4', 'u_matLightView')
 		.uniform('mat4', 'u_matLightProjection')
 		.addMainBlock([
 			"v_lightViewPos = u_matLightView * u_matModel * a_position;",
-			"mat4 scaleBias = mat4(0.5, 0.0, 0.0, 0.0,0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 0.5, 1.0);",
+			"mat4 scaleBias = mat4(0.5, 0.0, 0.0, 0.0,0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.5, 0.5, 0.5, 1.0);",
 			"v_posLightPerspective = scaleBias * u_matLightProjection * v_lightViewPos;",
+			"v_normal = u_matNormals * a_normal;",
 			"gl_Position = u_matProjection * u_matView * u_matModel * a_position;"
 			].join('\n'));
 	spec['vertexShader'] = pg.toString();
@@ -30,13 +34,17 @@ GG.ShadowMapPCF = function (spec) {
 		.uniform('float', 'u_depthOffset')
 		.uniform('float', 'u_filterSize')	
 		.uniform('float', 'u_lightSpaceDepthRange')	
+		.uniform('mat4', 'u_matView')
+		.uniform('vec3', 'u_lightDir')
 		.varying('vec4', 'v_posLightPerspective')
 		.varying('vec4', 'v_lightViewPos')
-		.addDecl(GG.ShaderLib.blocks['libUnpackRrgbaToFloat'])
+		.varying('vec3', 'v_normal')
+		.addDecl('libUnpackRrgbaToFloat', GG.ShaderLib.blocks['libUnpackRrgbaToFloat'])
 		.addMainBlock([
 			"float average = 0.0;",
-			"vec2 lightUV = v_posLightPerspective.xy / v_posLightPerspective.w;",
-			"if (!(lightUV.s < 0.0 || lightUV.t < 0.0 || lightUV.s > 1.0 || lightUV.t > 1.0)) {", 
+			"float df = dot(v_normal, normalize(u_matView * vec4(-u_lightDir, 0.0)).xyz);",					
+			"vec3 lightUV = v_posLightPerspective.xyz / v_posLightPerspective.w;",
+			"if (df > 0.0 && lightUV.z <= 1.0 && v_posLightPerspective.w > 0.0 && !(lightUV.s < 0.0 || lightUV.t < 0.0 || lightUV.s > 1.0 || lightUV.t > 1.0)) {", 
 			"	float lightDistance = length(v_lightViewPos.xyz);",
 			// normalize the distance
 			"	lightDistance *= 1.0 / u_lightSpaceDepthRange;",
@@ -49,7 +57,7 @@ GG.ShadowMapPCF = function (spec) {
 			"		for (float x = -2.0; x <= 2.0; x++) {",
 			"			if (abs(x) > u_filterSize) continue;",
 
-			"			vec2 sampleUV = lightUV + vec2(x*u_texStep.x, y*u_texStep.y);",
+			"			vec2 sampleUV = lightUV.st + vec2(x*u_texStep.x, y*u_texStep.y);",
 			"			if (!(sampleUV.s < 0.0 || sampleUV.t < 0.0 || sampleUV.s > 1.0 || sampleUV.t > 1.0)) {", 
 			"				float depth = libUnpackRrgbaToFloat(texture2D(u_shadowMap, sampleUV));",
 			"				passed += (depth > lightDistance) ? 1.0 : 0.0;",
@@ -79,9 +87,11 @@ GG.ShadowMapPCF.prototype.__setCustomUniforms = function(renderable, ctx, progra
 	texStep = [ 1.0 / this.options.shadowMapWidth, 1.0 / this.options.shadowMapHeight ];
 	gl.uniform2fv(program.u_texStep, texStep);
 
-	var cam = ctx.scene.listDirectionalLights()[0].getShadowCamera();
+	gl.uniform3fv(program.u_lightDir, ctx.light.direction);
+
+	var cam = ctx.light.getShadowCamera();
 	gl.uniform1f(program.u_lightSpaceDepthRange, cam.far - cam.near);
-	gl.uniformMatrix4fv(program.u_matLightView, false, cam.getViewMatrix());
+	gl.uniformMatrix4fv(program.u_matLightView, false, cam.viewMatrix);
 	gl.uniformMatrix4fv(program.u_matLightProjection, false, cam.getProjectionMatrix());
 	gl.uniform1f(program.u_depthOffset, this.options.depthOffset);
 

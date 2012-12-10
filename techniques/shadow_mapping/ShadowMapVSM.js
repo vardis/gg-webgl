@@ -32,8 +32,8 @@ GG.ShadowMapVSM = function (spec) {
 		.uniform('float', 'u_lightSpaceDepthRange')	
 		.varying('vec4', 'v_posLightPerspective')
 		.varying('vec4', 'v_lightViewPos')
-		.addDecl(GG.ShaderLib.blocks['libUnpackVec2ToFloat'])
-		.addDecl([
+		.addDecl('libUnpackVec2ToFloat', GG.ShaderLib.blocks['libUnpackVec2ToFloat'])
+		.addDecl('ChebychevInequality', [
 			/**
 			 * Calculates a sharp bound of Chebychev's inequality, the
 			 * Cantelli's inequality.

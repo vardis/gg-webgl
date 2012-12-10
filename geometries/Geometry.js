@@ -11,9 +11,9 @@ GG.Geometry = function (spec) {
 
 GG.Geometry.prototype.constructor = GG.Geometry;
 
-GG.Geometry.fromJSON = function (jsonObj) {	
-	if ('vertices' in jsonObj) {
-		spec = {};
+GG.Geometry.fromJSON = function (jsonObj) {
+    spec = {};
+    if ('vertices' in jsonObj) {
 		spec.vertices  = new Float32Array(jsonObj.vertices);
 
 		if ('normals' in jsonObj) {
@@ -27,13 +27,13 @@ GG.Geometry.fromJSON = function (jsonObj) {
 		if ('faces' in jsonObj) {			
 			spec.indices = new Uint16Array(jsonObj.faces);
 		}
-		return new GG.Geometry(spec);
 	}
+    return new GG.Geometry(spec);
 };
 
-GG.Geometry.fromThreeJsJSON = function (jsonObj) {	
-	if ('vertices' in jsonObj) {
-		spec = {};
+GG.Geometry.fromThreeJsJSON = function (jsonObj) {
+    spec = {};
+    if ('vertices' in jsonObj) {
 		spec.vertices  = new Float32Array(jsonObj.vertices);
 
 		if ('normals' in jsonObj) {
@@ -79,8 +79,8 @@ GG.Geometry.fromThreeJsJSON = function (jsonObj) {
 			}
 			spec.indices = new Uint16Array(indices);
 		}
-		return new GG.Geometry(spec);
 	}
+    return new GG.Geometry(spec);
 };
 
 GG.Geometry.prototype.calculateFlatNormals = function() {

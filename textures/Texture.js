@@ -43,9 +43,9 @@ GG.Texture.prototype.handle = function() {
 	return this.tex;
 };
 
-GG.Texture.getGlUnitFromIndex = function (unitIndex) {	
-	return eval("gl.TEXTURE" + unitIndex);
-}
+GG.Texture.getGlUnitFromIndex = function (unitIndex) {
+    return eval("gl.TEXTURE" + unitIndex);
+};
 
 GG.Texture.createTexture = function (spec) {
 	var tex = gl.createTexture();

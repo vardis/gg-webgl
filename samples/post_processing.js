@@ -79,7 +79,7 @@ PostProcessSample.prototype.initialize = function () {
 PostProcessSample.prototype.update = function () {	 
 	
 	this.light.position[0] = 15.0*Math.cos(0.5*this.y_rot);
-	this.light.position[1] = 5.0
+	this.light.position[1] = 5.0;
 	this.light.position[2] = 15.0*Math.sin(0.5*this.y_rot);		
 	
 	if (this.loaded) {

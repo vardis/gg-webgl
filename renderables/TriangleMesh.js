@@ -30,6 +30,12 @@ GG.TriangleMesh = function(geometry, material, spec) {
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordsBuffer);			
 	gl.bufferData(gl.ARRAY_BUFFER, this.geometry.getTexCoords(), gl.STATIC_DRAW);	
 
+	if (this.geometry.getColors != null) {
+		this.colorsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getColors(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+	} else {
+		this.colorsBuffer = null;
+	}
+	
 	if (geometry.indices != undefined) {
 		this.indexBuffer          = gl.createBuffer(1);
 		this.indexBuffer.numItems = this.geometry.getIndices().length;
@@ -57,6 +63,10 @@ GG.TriangleMesh.prototype.getNormalsBuffer = function() {
 
 GG.TriangleMesh.prototype.getTexCoordsBuffer = function() {
 	return this.texCoordsBuffer;
+};
+
+GG.TriangleMesh.prototype.getColorsBuffer = function () {
+	return this.colorsBuffer;
 };
 
 GG.TriangleMesh.prototype.getIndexBuffer = function() {

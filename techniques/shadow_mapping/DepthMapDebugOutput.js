@@ -41,7 +41,7 @@ GG.DepthMapDebugOutput.prototype = new GG.ScreenPass();
 GG.DepthMapDebugOutput.prototype.constructor = GG.DepthMapDebugOutput;
 
 GG.DepthMapDebugOutput.prototype.__setCustomUniforms = function(renderable, renderContext, program) {
-	GG.ScreenPass.prototype.__setCustomUniforms.call(this, renderable, renderContext, program);
+	GG.ScreenPass.prototype.__setCustomUniforms.call(this, renderable, renderContext, program);	
 	gl.uniform1f(program.u_maxDepth, this.maxDepth);
 	gl.uniform1f(program.u_minDepth, this.minDepth);
 };

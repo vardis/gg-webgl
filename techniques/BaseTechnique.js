@@ -22,8 +22,8 @@ GG.BaseTechnique.prototype.destroy = function() {
 	if (this.passes) {
 		for (var i = this.passes.length - 1; i >= 0; i--) {
 			this.passes[i].destroy();
-		};
-	}	
+        }
+    }
 };
 
 GG.BaseTechnique.prototype.renderPasses = function() {

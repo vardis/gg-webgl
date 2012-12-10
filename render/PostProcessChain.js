@@ -64,9 +64,8 @@ GG.PostProcessChain.prototype.process = function () {
 
 		for (var i = 0; i < this.filterChain.length; i++) {
 			this.filterChain[i].inject(programSource);
-		};
-
-		programSource.addMainBlock("gl_FragColor = vec4(color.rgb, 1.0);");
+        }
+        programSource.addMainBlock("gl_FragColor = vec4(color.rgb, 1.0);");
 		
 		this.screenPass = new GG.ScreenPass({
 			vertexShader   : GG.ShaderLib.screen_filter_vertex,
@@ -96,8 +95,8 @@ GG.PostProcessChain.prototype.process = function () {
 		
 		for (var i = 0; i < this.filterChain.length; i++) {
 			this.filterChain[i].setUniforms(this.screenPass.program);
-		};
-		this.screenPass.render();
+        }
+        this.screenPass.render();
 	} finally {
 		if (this.dest instanceof GG.RenderTarget) {
 			this.dest.deactivate();

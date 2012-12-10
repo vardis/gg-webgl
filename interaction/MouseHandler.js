@@ -66,7 +66,7 @@ GG.MouseHandler = function() {
 
 		that.camera.setRotation([that.rotX, that.rotY, 0.0]);
 		
-		that.lastMouseX = newX
+		that.lastMouseX = newX;
 		that.lastMouseY = newY;
 	};
 
@@ -97,13 +97,13 @@ GG.MouseHandler = function() {
 
 GG.MouseHandler.prototype.constructor = GG.MouseHandler;
 
-GG.MouseHandler.prototype.getCamera = function() {
-	return this.camera;
-}
+GG.MouseHandler.prototype.getCamera = function () {
+    return this.camera;
+};
 
-GG.MouseHandler.prototype.setCamera = function(c) {
-	this.camera = c;
-	return this;
-}
+GG.MouseHandler.prototype.setCamera = function (c) {
+    this.camera = c;
+    return this;
+};
 
 

@@ -34,7 +34,7 @@ GG.ProgramSource = function (spec) {
 	this.shaderType             = 'vertex';
 	this.fpPrecision            = 'highp';
 	this.typeDeclarations       = {};
-	this.declarations           = [];
+	this.declarations           = {};
 	this.uniforms               = {};
 	this.attributes             = {};
 	this.varyings               = {};
@@ -44,6 +44,8 @@ GG.ProgramSource = function (spec) {
 	this.pointLightBlocks       = [];
 	this.directionalLightBlocks = [];
 	this.spotLightBlocks        = [];
+	this.postProcessBlocks      = [];
+	this.finalColorAssignment   = "";
 };
 
 GG.ProgramSource.prototype.asVertexShader = function() {
@@ -111,12 +113,15 @@ GG.ProgramSource.prototype.uniformMaterial = function(uniformName) {
 	return this;
 };
 
-GG.ProgramSource.prototype.addDecl = function(block, name) {
-	this.declarations.push({
-		'name' : name != undefined ? name : 'decl_' + this.declarations.length,
-		'code' : block,
-		'order' : this.declarations.length
-	});
+GG.ProgramSource.prototype.uniformTexUnit = function(uniformName) {
+	this.addTypeDecl(GG.ShaderLib.blocks.textureUnitParams, 'textureUnitParams');
+	this.uniform('TexUnitParams_t', uniformName);
+    this.uniform('sampler2D', GG.Naming.textureUnitUniformMap(uniformName))
+	return this;
+};
+
+GG.ProgramSource.prototype.addDecl = function(name, block) {
+	this.declarations[name] = block;
 	return this;
 };
 
@@ -151,6 +156,17 @@ GG.ProgramSource.prototype.addTexturingBlock = function(block, name) {
 	});
 	return this;
 };
+
+GG.ProgramSource.prototype.addPostProcessBlock = function(block, name) {
+	this.postProcessBlocks.push({
+		'name' : name != undefined ? name : 'postprocess_block_' + this.postProcessBlocks.length,
+		'code' : block,
+		'order' : this.postProcessBlocks.length
+	});
+	return this;
+};
+
+
 GG.ProgramSource.prototype.perPointLightBlock = function (block) {
 	this.pointLightBlocks.push({
 		'name' : name != undefined ? name : 'block_' + this.pointLightBlocks.length,
@@ -220,6 +236,10 @@ GG.ProgramSource.prototype.uniformNormalsMatrix = function() {
 	return this;
 };
 
+GG.ProgramSource.prototype.finalColor = function(s) {
+	this.finalColorAssignment = s;
+	return this;
+};
 
 
 GG.ProgramSource.prototype.toString = function() {
@@ -258,24 +278,24 @@ GG.ProgramSource.prototype.toString = function() {
 	glsl += '// End - Varyings\n\n';
 
 	glsl += '// Begin - Declarations\n';
-	for (var i = 0; i < this.declarations.length; i++) {
-		glsl += this.declarations[i].code + '\n';
-	};
-	glsl += '// End - Declarations\n\n';
+	for (var decl in this.declarations) {
+		glsl += this.declarations[decl] + '\n';
+    }
+    glsl += '// End - Declarations\n\n';
 
 	glsl += 'void main() { // begin main\n';
 
 	glsl += '// Begin - Main Init\n';
 	for (var i = 0; i < this.mainInit.length; i++) {
 		glsl += this.mainInit[i].code + '\n';
-	};
-	glsl += '// End - Main Init\n\n';
+    }
+    glsl += '// End - Main Init\n\n';
 
 	glsl += '// Begin - Texturing\n';
 	for (var i = 0; i < this.texturingBlocks.length; i++) {
 		glsl += this.texturingBlocks[i].code + '\n';
-	};
-	glsl += '// End - Texturing\n\n';
+    }
+    glsl += '// End - Texturing\n\n';
 
 	// Shading
 	for (var i = 0; i < this.pointLightBlocks.length; i++) {
@@ -290,7 +310,11 @@ GG.ProgramSource.prototype.toString = function() {
 
 	for (var i = 0; i < this.mainBlocks.length; i++) {
 		glsl += this.mainBlocks[i].code + '\n';
-	};
+    }
+    for (var i = 0; i < this.postProcessBlocks.length; i++) {
+		glsl += this.postProcessBlocks[i].code + '\n';
+    }
+    glsl += this.finalColorAssignment;
 
 	glsl += '} // end main \n';
 
