@@ -1,7 +1,10 @@
 GG.SampleBase = function (spec) {
 	spec = spec || {};
 	this.context = spec.context != undefined ? spec.context : "experimental-webgl";
-	this.canvas = null;
+	this.canvas  = null;
+
+    this.assetsLoaded = false;
+    this.initialized  = false;
 };
 
 GG.SampleBase.prototype.constructor = GG.SampleBase;
@@ -46,18 +49,38 @@ GG.SampleBase.prototype.start = function()  {
 };
 
 GG.SampleBase.prototype.initialize = function () {
+    this.initializeAssets();
+};
+
+GG.SampleBase.prototype.initializeAssets = function () {
+    // define in subclass
+};
+
+GG.SampleBase.prototype.initializeWithAssetsLoaded = function () {
 	// define in subclass
 };
 
+GG.SampleBase.prototype.draw = function () {
+    // define in subclass
+};
+
 GG.SampleBase.prototype.update = function () {
-	// define in subclass
+    if (this.assetsLoaded && !this.initialized) {
+        this.initializeWithAssetsLoaded();
+    }
+};
+
+GG.SampleBase.prototype.drawWithCondition = function () {
+    if (this.initialized) {
+        this.draw();
+    }
 };
 
 GG.SampleBase.prototype.tick = function () {
 	GG.clock.tick();	
 	
 	window.sample.update();
-	window.sample.draw();
+	window.sample.drawWithCondition();
 	requestAnimFrame(window.sample.tick);
 };
 			

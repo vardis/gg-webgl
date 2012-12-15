@@ -36,7 +36,8 @@ GG.GLSLProgram.BuiltInAttributes = {
 	attribPosition  : GG.Naming.AttributePosition,
 	attribNormal    : GG.Naming.AttributeNormal,
 	attribTexCoords : GG.Naming.AttributeTexCoords,
-	attribColor     : GG.Naming.AttributeColor
+	attribColor     : GG.Naming.AttributeColor,
+    attribTangent   : GG.Naming.AttributeTangent
 };
 
 GG.GLSLProgram.BuiltInUniforms = [

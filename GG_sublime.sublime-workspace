@@ -4,6 +4,98 @@
 		"selected_items":
 		[
 			[
+				"c",
+				"createVertexShader"
+			],
+			[
+				"cr",
+				"createFragmentShader"
+			],
+			[
+				"dif",
+				"diffuse"
+			],
+			[
+				"u_m",
+				"u_material"
+			],
+			[
+				"__",
+				"__setCustomRenderState"
+			],
+			[
+				"u",
+				"u_materialDiffuse"
+			],
+			[
+				"v",
+				"v_color"
+			],
+			[
+				"at",
+				"attribColor"
+			],
+			[
+				"a",
+				"attrib"
+			],
+			[
+				"ite",
+				"itemType"
+			],
+			[
+				"co",
+				"colorsBuffer"
+			],
+			[
+				"B",
+				"BaseMaterial  (class)"
+			],
+			[
+				"te",
+				"texture"
+			],
+			[
+				"uni",
+				"uniformName"
+			],
+			[
+				"sp",
+				"specularMap"
+			],
+			[
+				"Tex",
+				"TextureUnit  (function)"
+			],
+			[
+				"Pro",
+				"ProgramUtils  (namespace)"
+			],
+			[
+				"the",
+				"theMap"
+			],
+			[
+				"un",
+				"uniformName"
+			],
+			[
+				"sam",
+				"sampleTexUnit"
+			],
+			[
+				"fr",
+				"fragmentShader"
+			],
+			[
+				"gl",
+				"gl_FragColor"
+			],
+			[
+				"u_ma",
+				"u_matNormals"
+			],
+			[
 				"con",
 				"contentType"
 			],
@@ -64,24 +156,12 @@
 				"diffuseTextureStack"
 			],
 			[
-				"dif",
-				"diffuseTextureStack"
-			],
-			[
 				"Te",
 				"TextureStackEntry"
 			],
 			[
-				"te",
-				"texStack"
-			],
-			[
 				"progr",
 				"programSource"
-			],
-			[
-				"co",
-				"codeListing"
 			],
 			[
 				"S",
@@ -90,10 +170,6 @@
 			[
 				"proto",
 				"prototype"
-			],
-			[
-				"sp",
-				"sphere"
 			],
 			[
 				"diffu",
@@ -130,10 +206,6 @@
 			[
 				"Ren",
 				"RenderPasses"
-			],
-			[
-				"u",
-				"u_diffuseMap"
 			],
 			[
 				"p",
@@ -200,10 +272,6 @@
 				"program"
 			],
 			[
-				"v",
-				"viewPos"
-			],
-			[
 				"u_",
 				"u_matModelView"
 			],
@@ -230,10 +298,6 @@
 			[
 				"add",
 				"addMainBlock  (function)"
-			],
-			[
-				"a",
-				"addMainInitBlock  (function)"
 			],
 			[
 				"pgr",
@@ -280,10 +344,6 @@
 				"nearDist"
 			],
 			[
-				"gl",
-				"gl_Position"
-			],
-			[
 				"PI",
 				"PI_OVER_2"
 			],
@@ -308,10 +368,6 @@
 				"wrapS"
 			],
 			[
-				"fr",
-				"fresnelExponent"
-			],
-			[
 				"ex",
 				"externalIOR"
 			],
@@ -326,10 +382,6 @@
 			[
 				"ne",
 				"nearPlaneDist"
-			],
-			[
-				"at",
-				"attenuation"
 			],
 			[
 				"po",
@@ -436,10 +488,6 @@
 				"jsonObj"
 			],
 			[
-				"sam",
-				"sample"
-			],
-			[
 				"f",
 				"f	Anonymous Function"
 			],
@@ -466,138 +514,50 @@
 			[
 				"Sh",
 				"ShadowMapVSM"
-			],
-			[
-				"blur",
-				"blurPass"
-			],
-			[
-				"blu",
-				"blurPass"
-			],
-			[
-				"fb",
-				"fbos"
-			],
-			[
-				"var",
-				"variance"
-			],
-			[
-				"tex",
-				"texture"
-			],
-			[
-				"col",
-				"colorFormat"
-			],
-			[
-				"use",
-				"useStencil"
-			],
-			[
-				"Co",
-				"COLOR_ATTACHMENT0"
-			],
-			[
-				"ac",
-				"activeBuffer"
-			],
-			[
-				"T",
-				"TEXTURE_2D"
-			],
-			[
-				"SHADOW_MAPPING_",
-				"SHADOW_MAPPING_PCF"
-			],
-			[
-				"uni",
-				"uniform"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "utils/AjaxUtils.js",
+			"file": "techniques/particles/ParticlesTechnique.js",
 			"settings":
 			{
-				"buffer_size": 1987,
+				"buffer_size": 3980,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "samples/scene_renderer.js",
+			"file": "techniques/particles/StaticPointParticlesTechnique.js",
 			"settings":
 			{
-				"buffer_size": 5367,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "samples/SampleBase.js",
-			"settings":
-			{
-				"buffer_size": 1437,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "interaction/MouseHandler.js",
-			"settings":
-			{
-				"buffer_size": 2439,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "samples/scene_renderer.html",
-			"settings":
-			{
-				"buffer_size": 871,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"contents": "Package Control Messages\n========================\n\nPackage Control:\n---------------\n\n  Package Control 1.6.0 Changelog:\n  \n  Wow! It has been 9 months since the last stable release of Package Control.\n  Quite a lot has happened since then, including the release of Sublime Text 2\n  stable, and hundreds upon hundreds of new packages from the community!\n  \n  A quick thank you to Kevin Yank (@sentience) for recently volunteering to help\n  review packages for inclusion in the default channel, and ninj0x\n  (https://github.com/ninj0x) for rewriting the Package Control Community\n  Packages search functionality so it is nice and fast once again! The lists\n  below include specific thanks for code contributions.\n  \n  As Sublime Text has become increasingly more popular, and the number of\n  packages has increased so rapidly, the bandwidth requirements have also\n  significantly increased. This month the default channel will very likely serve\n  over 1TB of JSON data. If you feel so inclined, consider pitching in a small\n  amount to help cover the cost:\n  http://wbond.net/sublime_packages/package_control/say_thanks. A big thank you\n  to all of the users who have already contributed!\n  \n  \n  Enhancements\n  \n  \n   - Added full (custom) proxy authentication support for HTTPS connections\n  \n   - Added NTLM authentication for proxies on Windows\n  \n   - Proxy authentication information is now set via the new proxy_username and\n     proxy_password settings.\n  \n   - If the https_proxy setting it set to false, it will not inherit from the\n     http_proxy setting (thanks planardothum!)\n  \n   - The time of the last successful run is no longer stored in\n     Packages/User/Package Control.sublime-settings, but rather in\n     Packages/User/Package Control.last-run making it easier to ignore via git,\n     hg, etc. (thanks schlamar!)\n  \n   - Packages are now ignored during install and upgrade to help prevents errors\n     where Sublime Text tries to read a file as it is being extracted\n  \n   - Packages that include DLLs for Windows can now be upgraded. In-use\n     DLLs will be detected and the user prompted to restart.\n  \n   - Package version numbers may now include non-numeric components, and semantic\n     versioning (http://semver.org) is fully supported\n  \n   - JSON parsing messages are now printed to the console instead of being shown\n     in an error popup\n  \n   - Added support for changes to the BitBucket API\n  \n   - Added support for changes to GitHub URLs\n  \n   - Added the debug setting to help track down HTTP connection issues\n  \n   - All of the downloaders will now try to use HTTP compression\n  \n   - All of the downloaders will now follow redirects\n  \n   - Added new install_missing setting to control if Package Control should try\n     to install any packages that appear to be missing from the current machine.\n     This defaults to true, and is really only useful if you want to prevent\n     Package Control from connecting to the internet without explicitly asking\n     it to.\n  \n   - Added lots of code comments as a first step towards making contributions\n     by other developers easier\n  \n  \n  Bug Fixes\n  \n  \n   - Added support for the new preferences filename (thanks titoBouzout!)\n  \n   - If a package is missing from a machine, but not available for that\n     platform, it is no longer considered an error (thanks schlamar!)\n  \n   - Updated CA certs\n  \n   - Fixed handling of install and upgrade messages that contain non-ASCII\n     characters\n  \n   - Fixed a unicode error trying to load the CA cert bundle file on Windows when\n     the install path to Sublime Text contains non-ASCII characters\n  \n   - Better handling for edge case HTTP errors (thanks tgecho!)\n  \n   - Fixed a number of errors related to non-ASCII error messages being created\n     by the operating system (thanks quarnster!)\n  \n   - GitHub URLs will now automatically be trimmed of trailing .git suffixes\n  \n   - Badly formatted messages.json files will no longer break the install process\n",
-			"settings":
-			{
-				"buffer_size": 3999,
+				"buffer_size": 2668,
 				"line_ending": "Windows",
-				"name": "Package Control Messages",
-				"scratch": true
+				"name": "StaticPointParticlesTechnique"
 			}
 		},
 		{
-			"file": "samples/post_processing.html",
+			"file": "renderables/TriangleMesh.js",
 			"settings":
 			{
-				"buffer_size": 429,
+				"buffer_size": 3453,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "samples/post_processing.js",
+			"file": "buffers/AttributeDataBuffer.js",
 			"settings":
 			{
-				"buffer_size": 3224,
-				"line_ending": "Windows"
+				"buffer_size": 940,
+				"line_ending": "Windows",
+				"name": "DataBuffer"
 			}
 		},
 		{
-			"file": "techniques/PhongShadingTechnique.js",
+			"file": "renderables/StaticParticleSystem.js",
 			"settings":
 			{
-				"buffer_size": 3588,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "ShaderLib.js",
-			"settings":
-			{
-				"buffer_size": 6227,
+				"buffer_size": 1792,
 				"line_ending": "Windows"
 			}
 		},
@@ -605,47 +565,55 @@
 			"file": "techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js",
 			"settings":
 			{
-				"buffer_size": 1397,
+				"buffer_size": 1691,
 				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "techniques/RenderPasses/AdaptiveRenderPass.js",
+			"settings":
+			{
+				"buffer_size": 3230,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "techniques/PhongShadingTechnique.js",
+			"settings":
+			{
+				"buffer_size": 3598,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "techniques/RenderPasses/EmbeddableAdaptiveRenderPass.js",
+			"settings":
+			{
+				"buffer_size": 1553,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "ProgramSource.js",
+			"settings":
+			{
+				"buffer_size": 11336,
+				"line_ending": "Windows"
 			}
 		},
 		{
 			"file": "techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass.js",
 			"settings":
 			{
-				"buffer_size": 5855,
+				"buffer_size": 4758,
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "Light.js",
+			"file": "materials/BaseMaterial.js",
 			"settings":
 			{
-				"buffer_size": 1325,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "utils/ProgramUtils.js",
-			"settings":
-			{
-				"buffer_size": 6402,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "samples/adaptablePrograms.js",
-			"settings":
-			{
-				"buffer_size": 4881,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "geometries/SphereGeometry.js",
-			"settings":
-			{
-				"buffer_size": 2619,
+				"buffer_size": 3272,
 				"line_ending": "Windows"
 			}
 		}
@@ -746,49 +714,57 @@
 	},
 	"file_history":
 	[
-		"/D/webgl/gg-webgl/techniques/DiffuseTextureStackEmbeddableTechnique.js",
-		"/D/webgl/gg-webgl/samples/adaptablePrograms.js",
-		"/D/webgl/gg-webgl/materials/PhongMaterial.js",
-		"/D/webgl/gg-webgl/techniques/RenderPasses/AdaptiveRenderPass.js",
-		"/D/webgl/gg-webgl/materials/BaseMaterial.js",
+		"/D/webgl/gg-webgl/sample_base.js",
+		"/D/webgl/gg-webgl/render/Renderer.js",
+		"/D/webgl/gg-webgl/geometries/Geometry.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass - Copy.js",
 		"/D/webgl/gg-webgl/materials/TextureStack.js",
-		"/D/webgl/gg-webgl/ShaderLib.js",
-		"/D/webgl/gg-webgl/techniques/TextureStackTechnique.js",
-		"/D/webgl/gg-webgl/samples/scene_renderer.html",
-		"/D/webgl/gg-webgl/samples/adaptablePrograms.html",
-		"/D/webgl/gg-webgl/samples/scene_renderer.js",
-		"/D/webgl/gg-webgl/techniques/PhongShadingTechnique.js",
-		"/D/webgl/gg-webgl/utils/Loader.js",
-		"/D/webgl/gg-webgl/samples/SampleBase.js",
-		"/D/webgl/gg-webgl/samples/post_processing.js",
-		"/D/webgl/gg-webgl/interaction/MouseHandler.js",
-		"/D/webgl/gg-webgl/render/PingPongBuffer.js",
-		"/D/webgl/gg-webgl/techniques/TexturedShadelessTechnique.js",
-		"/D/webgl/gg-webgl/GG_init.js",
-		"/D/webgl/gg-webgl/techniques/RenderPasses/RenderPass.js",
-		"/D/webgl/gg-webgl/textures/Texture.js",
+		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapTechnique.js",
+		"/D/webgl/gg-webgl/materials/BaseMaterial.js",
+		"/D/webgl/gg-webgl/utils/ProgramUtils.js",
 		"/D/webgl/gg-webgl/ProgramSource.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass.js",
+		"/D/webgl/gg-webgl/ShaderLib.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/RenderPass.js",
+		"/D/webgl/gg-webgl/GG_init.js",
+		"/D/webgl/gg-webgl/samples/adaptablePrograms.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/AdaptiveRenderPass.js",
+		"/D/webgl/gg-webgl/textures/Texture.js",
+		"/D/webgl/gg-webgl/Naming.js",
+		"/D/webgl/gg-webgl/techniques/PhongShadingTechnique.js",
 		"/D/webgl/gg-webgl/techniques/RenderPasses/ScreenPass.js",
 		"/D/webgl/gg-webgl/scene/DefaultSceneRenderer.js",
+		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapSimple.js",
+		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapPCF.js",
+		"/D/webgl/gg-webgl/techniques/shadow_mapping/DepthMapDebugOutput.js",
+		"/D/webgl/gg-webgl/utils/AjaxUtils.js",
+		"/D/webgl/gg-webgl/samples/scene_renderer.js",
+		"/D/webgl/gg-webgl/samples/SampleBase.js",
+		"/D/webgl/gg-webgl/interaction/MouseHandler.js",
+		"/D/webgl/gg-webgl/samples/scene_renderer.html",
+		"/D/webgl/gg-webgl/samples/post_processing.html",
+		"/D/webgl/gg-webgl/samples/post_processing.js",
+		"/D/webgl/gg-webgl/Light.js",
 		"/D/webgl/gg-webgl/geometries/SphereGeometry.js",
+		"/D/webgl/gg-webgl/techniques/DiffuseTextureStackEmbeddableTechnique.js",
+		"/D/webgl/gg-webgl/materials/PhongMaterial.js",
+		"/D/webgl/gg-webgl/techniques/TextureStackTechnique.js",
+		"/D/webgl/gg-webgl/samples/adaptablePrograms.html",
+		"/D/webgl/gg-webgl/utils/Loader.js",
+		"/D/webgl/gg-webgl/render/PingPongBuffer.js",
+		"/D/webgl/gg-webgl/techniques/TexturedShadelessTechnique.js",
 		"/D/webgl/gg-webgl/build.py",
 		"/D/webgl/gg-webgl/render/RenderTarget.js",
-		"/D/webgl/gg-webgl/utils/ProgramUtils.js",
-		"/D/webgl/gg-webgl/render/Renderer.js",
 		"/D/webgl/gg-webgl/GLSLProgram.js",
-		"/D/webgl/gg-webgl/Naming.js",
 		"/D/webgl/gg-webgl/techniques/CubemapTechnique.js",
 		"/D/webgl/gg-webgl/textures/TextureCubemap.js",
 		"/D/webgl/gg-webgl/render/RenderContext.js",
-		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapSimple.js",
-		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapTechnique.js",
 		"/D/webgl/gg-webgl/render/PostProcessChain.js",
 		"/D/webgl/gg-webgl/techniques/BaseTechnique.js",
-		"/D/webgl/gg-webgl/geometries/Geometry.js",
 		"/D/webgl/gg-webgl/renderables/TriangleMesh.js",
 		"/D/webgl/gg-webgl/render/screen_filters/VignetteScreenFilter.js",
 		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapDepthPass.js",
-		"/D/webgl/gg-webgl/samples/post_processing.html",
 		"/D/webgl/gg-webgl/techniques/DepthPrePassTechnique.js",
 		"/D/webgl/gg-webgl/samples/screen_pass.js",
 		"/D/webgl/gg-webgl/samples/reflections.html",
@@ -814,12 +790,9 @@
 		"/D/webgl/gg-webgl/cameras/PerspectiveCamera.js",
 		"/D/webgl/gg-webgl/cameras/BaseCamera.js",
 		"/D/webgl/gg-webgl/utils/MathUtils.js",
-		"/D/webgl/gg-webgl/utils/AjaxUtils.js",
 		"/D/webgl/gg-webgl/techniques/ConstantColorTechnique.js",
-		"/D/webgl/gg-webgl/techniques/shadow_mapping/DepthMapDebugOutput.js",
 		"/D/webgl/gg-webgl/cameras/Viewport.js",
 		"/D/webgl/gg-webgl/geometries/CubeGeometry.js",
-		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapPCF.js",
 		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapVSM.js",
 		"/D/webgl/gg-webgl/gl-matrix.js",
 		"/D/webgl/gg-webgl/cube.html",
@@ -827,7 +800,6 @@
 		"/D/webgl/gg-webgl/techniques/particles/ParticlesTechnique.js",
 		"/D/webgl/gg-webgl/techniques/RenderPasses/GaussianBlurPass.js",
 		"/D/webgl/gg-webgl/techniques/shadow_mapping/VSMGaussianBlurPass.js",
-		"/D/webgl/gg-webgl/Light.js",
 		"/D/webgl/gg-webgl/render/RenderQueue.js",
 		"/D/webgl/gg-webgl/renderables/Object3D.js",
 		"/D/webgl/gg-webgl/geometries/ScreenAlignedQuad.js",
@@ -835,7 +807,6 @@
 		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/User/GG_javascript_getset.sublime-snippet",
 		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/SublimeCodeIntel/Base File.sublime-settings",
 		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/SublimeCodeIntel/Default (Windows).sublime-keymap",
-		"/D/webgl/gg-webgl/sample_base.js",
 		"/D/webgl/gg-webgl/scene/Scene.js",
 		"/D/webgl/gg-webgl/techniques/ConstantLightingTechnique.js",
 		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/Alignment/Default (Windows).sublime-keymap",
@@ -870,10 +841,7 @@
 		"/D/webgl/ShaderLib.js",
 		"/D/webgl/cube.html",
 		"/D/webgl/techniques/RenderPasses/BlitPass.js",
-		"/D/webgl/geometries/ScreenAlignedQuad.js",
-		"/D/webgl/utils/ProgramUtils.js",
-		"/D/webgl/GLSLProgram.js",
-		"/D/webgl/techniques/PhongShadingTechnique.js"
+		"/D/webgl/geometries/ScreenAlignedQuad.js"
 	],
 	"find":
 	{
@@ -881,7 +849,7 @@
 	},
 	"find_in_files":
 	{
-		"height": 0.0,
+		"height": 90.0,
 		"where_history":
 		[
 			"*.js",
@@ -893,6 +861,32 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"numPoints",
+			"ParticlesTechnique",
+			"PhongPass",
+			"AdaptiveRenderPass",
+			"SpecularMappingEmbeddableTechnique",
+			"StaticParticleSystem",
+			"ParticlesTechnique",
+			"renderPoints",
+			"attribTexCoords",
+			"attribColors",
+			"colorsBuffer",
+			"mesh.getTexCoordsBuffer()",
+			"attribTexCoords",
+			"sampleTexUnit",
+			"storing",
+			"__locate",
+			"getRenderAttributesMask",
+			"map",
+			".map",
+			"Uniform",
+			"uniform",
+			"pushTexture",
+			"getVariableNameForDiffuseMapAtIndex",
+			"\"u_specularMap\"",
+			"_specularMap).rgb;\",\n			\"	specular *= specularMapIntensity;\"",
+			"TextureStackEntry",
 			"that",
 			"blendModeDarken",
 			"this.blendMode",
@@ -994,33 +988,7 @@
 			"texCoord",
 			"pow(",
 			"filters",
-			"output",
-			"input",
-			"output",
-			"updated",
-			"PostProcessor",
-			"y_rot",
-			"light",
-			"y_rot",
-			"light",
-			"planeMesh",
-			"var",
-			"handleMouseWheel",
-			"assets",
-			"this",
-			"u_inverseView",
-			"toString(",
-			"left",
-			"type=\"text/javascript\"",
-			"4",
-			"15",
-			"getColorAttachment",
-			"17",
-			"m[",
-			"m",
-			"−",
-			"eule",
-			"||"
+			"output"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1054,23 +1022,23 @@
 	"groups":
 	[
 		{
-			"selected": 14,
+			"selected": 1,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "utils/AjaxUtils.js",
+					"file": "techniques/particles/ParticlesTechnique.js",
 					"settings":
 					{
-						"buffer_size": 1987,
+						"buffer_size": 3980,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1059,
-								1059
+								1710,
+								1728
 							]
 						],
 						"settings":
@@ -1079,52 +1047,53 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 585.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 1,
-					"file": "samples/scene_renderer.js",
+					"file": "techniques/particles/StaticPointParticlesTechnique.js",
 					"settings":
 					{
-						"buffer_size": 5367,
+						"buffer_size": 2668,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								776,
-								776
+								991,
+								991
 							]
 						],
 						"settings":
 						{
+							"auto_name": "StaticPointParticlesTechnique",
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 225.0,
+						"translation.y": 234.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 2,
-					"file": "samples/SampleBase.js",
+					"file": "renderables/TriangleMesh.js",
 					"settings":
 					{
-						"buffer_size": 1437,
+						"buffer_size": 3453,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								653,
-								653
+								431,
+								431
 							]
 						],
 						"settings":
@@ -1140,125 +1109,45 @@
 				},
 				{
 					"buffer": 3,
-					"file": "interaction/MouseHandler.js",
+					"file": "buffers/AttributeDataBuffer.js",
 					"settings":
 					{
-						"buffer_size": 2439,
+						"buffer_size": 940,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1356,
-								1356
+								686,
+								686
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
+							"auto_name": "DataBuffer",
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 810.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 4,
-					"file": "samples/scene_renderer.html",
+					"file": "renderables/StaticParticleSystem.js",
 					"settings":
 					{
-						"buffer_size": 871,
+						"buffer_size": 1792,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								415,
-								415
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/HTML/HTML.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 5,
-					"settings":
-					{
-						"buffer_size": 3999,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								668,
-								668
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage",
-							"word_wrap": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 180.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 6,
-					"file": "samples/post_processing.html",
-					"settings":
-					{
-						"buffer_size": 429,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/HTML/HTML.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 7,
-					"file": "samples/post_processing.js",
-					"settings":
-					{
-						"buffer_size": 3224,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								324,
-								324
+								699,
+								699
 							]
 						],
 						"settings":
@@ -1273,73 +1162,19 @@
 					"type": "text"
 				},
 				{
-					"buffer": 8,
-					"file": "techniques/PhongShadingTechnique.js",
-					"settings":
-					{
-						"buffer_size": 3588,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								2308,
-								2308
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 669.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 9,
-					"file": "ShaderLib.js",
-					"settings":
-					{
-						"buffer_size": 6227,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								4540,
-								4540
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 1800.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 10,
+					"buffer": 5,
 					"file": "techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js",
 					"settings":
 					{
-						"buffer_size": 1397,
+						"buffer_size": 1691,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1395,
-								1397
+								918,
+								918
 							]
 						],
 						"settings":
@@ -1354,19 +1189,19 @@
 					"type": "text"
 				},
 				{
-					"buffer": 11,
-					"file": "techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass.js",
+					"buffer": 6,
+					"file": "techniques/RenderPasses/AdaptiveRenderPass.js",
 					"settings":
 					{
-						"buffer_size": 5855,
+						"buffer_size": 3230,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1399,
-								1399
+								1196,
+								1196
 							]
 						],
 						"settings":
@@ -1375,17 +1210,124 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 310.0,
+						"translation.y": 765.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
-					"buffer": 12,
-					"file": "Light.js",
+					"buffer": 7,
+					"file": "techniques/PhongShadingTechnique.js",
 					"settings":
 					{
-						"buffer_size": 1325,
+						"buffer_size": 3598,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1790,
+								1790
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 405.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 8,
+					"file": "techniques/RenderPasses/EmbeddableAdaptiveRenderPass.js",
+					"settings":
+					{
+						"buffer_size": 1553,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1172,
+								1172
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 9,
+					"file": "ProgramSource.js",
+					"settings":
+					{
+						"buffer_size": 11336,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3702,
+								3718
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 1950.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 10,
+					"file": "techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass.js",
+					"settings":
+					{
+						"buffer_size": 4758,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1581,
+								1581
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 225.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 11,
+					"file": "materials/BaseMaterial.js",
+					"settings":
+					{
+						"buffer_size": 3272,
 						"regions":
 						{
 						},
@@ -1400,86 +1342,6 @@
 						{
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
 							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 13,
-					"file": "utils/ProgramUtils.js",
-					"settings":
-					{
-						"buffer_size": 6402,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								4978,
-								4978
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 1449.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 14,
-					"file": "samples/adaptablePrograms.js",
-					"settings":
-					{
-						"buffer_size": 4881,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								4127,
-								4127
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 1530.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 15,
-					"file": "geometries/SphereGeometry.js",
-					"settings":
-					{
-						"buffer_size": 2619,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								709,
-								709
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -1540,8 +1402,68 @@
 		"selected_items":
 		[
 			[
+				"ba",
+				"gg-webgl/materials/BaseMaterial.js"
+			],
+			[
 				"pr",
+				"gg-webgl/ProgramSource.js"
+			],
+			[
+				"spe",
+				"gg-webgl/techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js"
+			],
+			[
+				"pro",
 				"gg-webgl/utils/ProgramUtils.js"
+			],
+			[
+				"nam",
+				"gg-webgl/Naming.js"
+			],
+			[
+				"renp",
+				"gg-webgl/techniques/RenderPasses/RenderPass.js"
+			],
+			[
+				"pho",
+				"gg-webgl/techniques/PhongShadingTechnique.js"
+			],
+			[
+				"sha",
+				"gg-webgl/ShaderLib.js"
+			],
+			[
+				"dif",
+				"gg-webgl/techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass.js"
+			],
+			[
+				"ps",
+				"gg-webgl/ProgramSource.js"
+			],
+			[
+				"pou",
+				"gg-webgl/utils/ProgramUtils.js"
+			],
+			[
+				"sa",
+				"gg-webgl/ShaderLib.js"
+			],
+			[
+				"de",
+				"gg-webgl/scene/DefaultSceneRenderer.js"
+			],
+			[
+				"prou",
+				"gg-webgl/utils/ProgramUtils.js"
+			],
+			[
+				"li",
+				"gg-webgl/Light.js"
+			],
+			[
+				"def",
+				"gg-webgl/scene/DefaultSceneRenderer.js"
 			],
 			[
 				"lig",
@@ -1554,18 +1476,6 @@
 			[
 				"diff",
 				"gg-webgl/techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass.js"
-			],
-			[
-				"dif",
-				"gg-webgl/techniques/DiffuseTextureStackEmbeddableTechnique.js"
-			],
-			[
-				"spe",
-				"gg-webgl/techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js"
-			],
-			[
-				"pho",
-				"gg-webgl/techniques/PhongShadingTechnique.js"
 			],
 			[
 				"m",
@@ -1582,10 +1492,6 @@
 			[
 				"ph",
 				"techniques/PhongShadingTechnique.js"
-			],
-			[
-				"pro",
-				"ProgramSource.js"
 			],
 			[
 				"te",
@@ -1606,10 +1512,6 @@
 			[
 				"bui",
 				"build.py"
-			],
-			[
-				"sha",
-				"ShaderLib.js"
 			],
 			[
 				"bam",
@@ -1648,10 +1550,6 @@
 				"build.py"
 			],
 			[
-				"prou",
-				"utils/ProgramUtils.js"
-			],
-			[
 				"pu",
 				"utils/ProgramUtils.js"
 			],
@@ -1666,10 +1564,6 @@
 			[
 				"vig",
 				"render/screen_filters/VignetteScreenFilter.js"
-			],
-			[
-				"def",
-				"scene/DefaultSceneRenderer.js"
 			],
 			[
 				"depthprepasstechnique",
@@ -1700,10 +1594,6 @@
 				"samples/SampleBase.js"
 			],
 			[
-				"de",
-				"scene/DefaultSceneRenderer.js"
-			],
-			[
 				"p",
 				"ProgramSource.js"
 			],
@@ -1732,20 +1622,12 @@
 				"materials/BaseMaterial.js"
 			],
 			[
-				"li",
-				"Light.js"
-			],
-			[
 				"gl",
 				"GLSLProgram.js"
 			],
 			[
 				"prs",
 				"ProgramSource.js"
-			],
-			[
-				"nam",
-				"Naming.js"
 			],
 			[
 				"pp",
@@ -1760,20 +1642,12 @@
 				"techniques/RenderPasses/RenderPass.js"
 			],
 			[
-				"renp",
-				"techniques/RenderPasses/RenderPass.js"
-			],
-			[
 				"rend",
 				"samples/scene_renderer.js"
 			],
 			[
 				"phon",
 				"techniques/PhongShadingTechnique.js"
-			],
-			[
-				"sa",
-				"geometries/ScreenAlignedQuad.js"
 			],
 			[
 				"per",

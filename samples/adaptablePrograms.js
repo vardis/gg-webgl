@@ -4,12 +4,10 @@ AdaptableProgramSample = function (spec) {
 	this.camera        = null;
 	this.material = null;
 	this.light = null;
-	this.context = null;
+	this.renderContext = null;
 	this.mouseHandler  = null;
 	this.y_rot         = 0.0;
 	this.blendMode = "ADD";
-	this.initialized = false;
-	this.assetsLoaded = false;
 	GG.SampleBase.call(this, spec);
 };
 
@@ -84,12 +82,8 @@ AdaptableProgramSample.prototype.initializeWithAssetsLoaded = function () {
 	this.mouseHandler = new GG.MouseHandler();
 	this.mouseHandler.setCamera(this.camera);
 
-	this.context = new GG.RenderContext({ camera : this.camera, light : this.light });
+	this.renderContext = new GG.RenderContext({ camera : this.camera, light : this.light });
 	this.initialized = true;
-};
-
-AdaptableProgramSample.prototype.initialize = function () {	
-	this.initializeAssets();		
 };
 
 AdaptableProgramSample.prototype.getBlendMode = function () {
@@ -118,11 +112,7 @@ AdaptableProgramSample.prototype.updateBlendMode = function () {
 	this.material.diffuseTextureStack.getAt(1).blendMode = this.getBlendMode();
 };
 
-AdaptableProgramSample.prototype.update = function () {	 
-	if (this.assetsLoaded && !this.initialized) {
-		this.initializeWithAssetsLoaded();
-	}
-
+AdaptableProgramSample.prototype.update = function () {
 	if (this.initialized) {
 
         this.y_rot += GG.clock.deltaTime() * 0.001;
@@ -143,19 +133,17 @@ AdaptableProgramSample.prototype.update = function () {
 };
 
 AdaptableProgramSample.prototype.draw = function () {
-	if (this.initialized) {
-		var vp = this.camera.getViewport();
-		gl.viewport(0, 0, vp.getWidth(), vp.getHeight());
-		gl.clearColor(vp.getClearColor()[0], vp.getClearColor()[1], vp.getClearColor[2], 1.0);
-		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-		
-		gl.enable(gl.DEPTH_TEST);
-		gl.depthFunc(gl.LEQUAL);
+    var vp = this.camera.getViewport();
+    gl.viewport(0, 0, vp.getWidth(), vp.getHeight());
+    gl.clearColor(vp.getClearColor()[0], vp.getClearColor()[1], vp.getClearColor[2], 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-		gl.cullFace(gl.BACK);
-		gl.frontFace(gl.CCW);
-		gl.enable(gl.CULL_FACE);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
 
-		this.technique.render(this.sphere, this.context);
-	}
+    gl.cullFace(gl.BACK);
+    gl.frontFace(gl.CCW);
+    gl.enable(gl.CULL_FACE);
+
+    this.technique.render(this.sphere, this.renderContext);
 };

@@ -69,7 +69,12 @@ GG.Renderer.prototype.renderMesh = function (mesh, program, options) {
 		mesh.getColorsBufer().streamAttribute(attribColor);
 	}
 
-	options = options || {};
+    var attribTangent = program[GG.GLSLProgram.BuiltInAttributes.attribTangent];
+    if (attribTangent != undefined) {
+        mesh.getTangentsBuffer().streamAttribute(attribTangent);
+    }
+
+    options = options || {};
 	var mode = gl.TRIANGLES;
 	if ('mode' in options ) {
 		mode = options.mode;

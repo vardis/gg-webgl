@@ -10,7 +10,10 @@ GG.BaseMaterial = function(spec) {
 	
 	this.specularMap = new GG.TextureUnit({ 'texture' : spec.specularMap, 'unit' : GG.TEX_UNIT_SPECULAR_MAP });
 	this.alphaMap    = new GG.TextureUnit({ 'texture' : spec.alphaMap, 'unit' : GG.TEX_UNIT_ALPHA_MAP });
-	this.lightMap    = spec.lightMap;
+	this.normalMap   = new GG.TextureUnit({ 'texture' : spec.normalMap, 'unit' : GG.TEX_UNIT_NORMAL_MAP });
+
+    this.normalMapScale = 1.0;
+
 	this.glowMap     = spec.glowMap;
 
 	this.diffuseTextureStack = new GG.TextureStack();
@@ -70,6 +73,10 @@ GG.BaseMaterial.prototype.setAlphaMap = function (texture) {
     return this;
 };
 
+GG.BaseMaterial.prototype.setNormalMap = function (texture) {
+    this.normalMap = new GG.TextureUnit({ 'texture' : texture, 'unit' : GG.TEX_UNIT_NORMAL_MAP});
+    return this;
+};
 
 GG.BaseMaterial.prototype.pickTechnique = function() {
 	if (this.wireframe) {

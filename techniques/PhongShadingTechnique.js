@@ -13,6 +13,7 @@ GG.PhongPass = function(spec) {
 	this.diffuseTexturingPass = new GG.DiffuseTextureStackEmbeddableRenderPass();
 	this.specularMapPass = new GG.SpecularMappingEmbeddableTechnique();
     this.alphaMapPass = new GG.AlphaMappingEmbeddableRenderPass();
+    this.normalMapPass = new GG.NormalMappingEmbeddableRenderPass();
 	this.createProgram(null);	
 };
 
@@ -29,14 +30,17 @@ GG.PhongPass.prototype.createProgram = function(material) {
 		.texCoord0()
 		.varying('vec3', 'v_normal')
 		.varying('vec4', 'v_viewPos')
-		.varying('vec3', 'v_viewVector')
 		.varying('vec2', 'v_texCoords')
 		.addMainBlock([
 			"	vec4 viewPos = u_matModelView*a_position;",
 			"	gl_Position = u_matProjection*viewPos;",
 			"	gl_Position.z -= 0.0001;",
+            "#ifdef " + GG.Naming.DefUseTangentSpace,
+            "   v_normal = a_normal;",
+            "#else",
 			"	v_normal = u_matNormals * a_normal;",
-			"	v_viewVector = -viewPos.xyz; //(u_matInverseView * vec4(0.0, 0.0, 0.0, 1.0) - viewPos).xyz;",		
+            "#endif",
+			"	//v_viewVector = -viewPos.xyz; //(u_matInverseView * vec4(0.0, 0.0, 0.0, 1.0) - viewPos).xyz;",
 			"	v_viewPos = viewPos;",
 			"	v_texCoords = a_texCoords;"
 			].join('\n'));	
@@ -46,31 +50,44 @@ GG.PhongPass.prototype.createProgram = function(material) {
 		.varying('vec3', 'v_normal')
 		.varying('vec4', 'v_viewPos')
 		.varying('vec2', 'v_texCoords')
-		.varying('vec3', 'v_viewVector')
 		.uniformViewMatrix()
 		.uniformLight()
 		.uniformMaterial()
 		.addDecl('phong.lightIrradiance', GG.ShaderLib.phong.lightIrradiance)
 		.addMainInitBlock([
+            "#ifdef " + GG.Naming.DefUseTangentSpace,
+            "   vec3 N = sampleNormalMap();",
+            "#else",
 			"	vec3 N = normalize(v_normal);",
-			"	vec3 V = normalize(v_viewVector);",		
-			"	vec3 diffuse = u_material.diffuse;",
-			"	vec3 specular = vec3(0.0);"
+            "#endif",
+			"	vec3 V = normalize(-v_viewPos.xyz);",
+			"	vec3 diffuse = vec3(0.0);",
+			"	vec3 specular = vec3(0.0);",
+            "   float " + GG.Naming.VarAlphaOutput + " = 1.0;"
 			].join('\n'))
 		.addMainBlock([			
 			"	vec3 L;",
 			"	if (u_light.type == 1.0) {",
 			"		L = normalize((u_matView*vec4(-u_light.direction, 0.0)).xyz);",
 			"	} else {",
-			"	   L = normalize(u_matView*vec4(u_light.position, 1.0) - v_viewPos).xyz;",			
+			"	   L = normalize(u_matView*vec4(u_light.position, 1.0) - v_viewPos).xyz;",
 			"	}",
 			"	lightIrradiance(N, V, L, u_light, u_material, diffuse, specular);"			
 		].join('\n'))
 		.finalColor(
-			"	gl_FragColor = vec4(u_material.ambient" +
-                " + u_material.diffuse*diffuse" +
-                " + u_material.specular*specular" +
-                ", " + GG.Naming.VarAlphaOutput + ");"
+
+            "	gl_FragColor = vec4(u_material.ambient" +
+            " + u_material.diffuse*diffuse" +
+            " + u_material.specular*specular" +
+            ", " + GG.Naming.VarAlphaOutput + ");"
+            /*
+        [
+            "#ifdef " + GG.Naming.DefUseTangentSpace,
+                "gl_FragColor = vec4(N, 1.0);",
+            "#else",
+                "gl_FragColor = vec4(1.0);",
+            "#endif\n"].join('\n')
+            */
 			//"gl_FragColor = vec4(specular, 1.0);"
 			);
     //TODO: Add light ambient and object emissive
@@ -78,6 +95,7 @@ GG.PhongPass.prototype.createProgram = function(material) {
 		this.diffuseTexturingPass.adaptShadersToMaterial(vs, fs, material);
 		this.specularMapPass.adaptShadersToMaterial(vs, fs, material);
         this.alphaMapPass.adaptShadersToMaterial(vs, fs, material);
+        this.normalMapPass.adaptShadersToMaterial(vs, fs, material);
 	}
 	this.vertexShader = vs.toString();
 	this.fragmentShader = fs.toString();	
@@ -89,12 +107,14 @@ GG.PhongPass.prototype.__setCustomUniforms = function(renderable, ctx, program) 
 	this.diffuseTexturingPass.__setCustomUniforms(renderable, ctx, program);
 	this.specularMapPass.__setCustomUniforms(renderable, ctx, program);
     this.alphaMapPass.__setCustomUniforms(renderable, ctx, program);
+    this.normalMapPass.__setCustomUniforms(renderable, ctx, program);
 };
 
 GG.PhongPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
 	this.diffuseTexturingPass.__setCustomRenderState(renderable, ctx, program);
 	this.specularMapPass.__setCustomRenderState(renderable, ctx, program);
     this.alphaMapPass.__setCustomRenderState(renderable, ctx, program);
+    this.normalMapPass.__setCustomRenderState(renderable, ctx, program);
 };
 
 GG.PhongPass.prototype.createShadersForMaterial = function (material) {
@@ -104,5 +124,6 @@ GG.PhongPass.prototype.createShadersForMaterial = function (material) {
 GG.PhongPass.prototype.hashMaterial = function (material) {
 	return this.diffuseTexturingPass.hashMaterial(material)
         + this.specularMapPass.hashMaterial(material)
-        + this.alphaMapPass.hashMaterial(material);
+        + this.alphaMapPass.hashMaterial(material)
+        + this.normalMapPass.hashMaterial(material);
 };

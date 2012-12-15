@@ -83,6 +83,64 @@ GG.Geometry.fromThreeJsJSON = function (jsonObj) {
     return new GG.Geometry(spec);
 };
 
+//TODO: add a buildIndexBuffer method
+
+GG.Geometry.prototype.calculateTangents = function() {
+    if (this.indices) {
+        // case of triangle lists only
+        this.tangents = new Float32Array(this.normals.length);
+
+        for (var i = 0; i < this.indices.length - 1; i += 3) {
+            var i1 = this.indices[i];
+            var i2 = this.indices[i+1];
+            var i3 = this.indices[i+2];
+
+            var v1 = this.vertices.subarray(i1*3, i1*3+3);
+            var v2 = this.vertices.subarray(i2*3, i2*3+3);
+            var v3 = this.vertices.subarray(i3*3, i3*3+3);
+
+            var vertexUV1 = this.texCoords.subarray(i1*2, i1*2+2);
+            var vertexUV2 = this.texCoords.subarray(i2*2, i2*2+2);
+            var vertexUV3 = this.texCoords.subarray(i3*2, i3*2+2);
+
+            var e1 = vec3.create();
+            vec3.subtract(v2, v1, e1);
+
+            var st1 = [0, 0];
+            st1[0] = vertexUV2[0] - vertexUV1[0];
+            st1[1] = vertexUV2[1] - vertexUV1[1];
+
+            var e2 = vec3.create();
+            vec3.subtract(v3, v1, e2);
+
+            var st2 = [0, 0];
+            st2[0] = vertexUV3[0] - vertexUV1[0];
+            st2[1] = vertexUV3[1] - vertexUV1[1];
+
+            var coef = 1 / (st1[0] * st2[1] - st2[0] * st1[1]);
+            var tangent = vec3.create();
+
+            tangent[0] = coef * ((e1[0] * st2[1]) + (e2[0] * -st1[1]));
+            tangent[1] = coef * ((e1[1] * st2[1]) + (e2[1] * -st1[1]));
+            tangent[2] = coef * ((e1[2] * st2[1]) + (e2[2] * -st1[1]));
+
+            var tang1 = this.tangents.subarray(i1*3, i1*3+3);
+            var tang2 = this.tangents.subarray(i2*3, i2*3+3);
+            var tang3 = this.tangents.subarray(i3*3, i3*3+3);
+            vec3.add(tang1, tangent);
+            vec3.add(tang2, tangent);
+            vec3.add(tang3, tangent);
+        }
+        for (var i = 0; i < this.indices.length - 1; i++) {
+            var tangent = this.tangents.subarray(i*3, i*3+3);
+            vec3.normalize(tangent);
+        }
+        return this.tangents;
+    } else {
+        return null;
+    }
+};
+
 GG.Geometry.prototype.calculateFlatNormals = function() {
 	if (this.indices) {
 		// case of triangle lists only

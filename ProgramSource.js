@@ -1,6 +1,7 @@
 /**
  * precision
- * pragmas
+ * extensions
+ * defines
  * attributes
  * uniforms
  * varyings
@@ -33,6 +34,8 @@
 GG.ProgramSource = function (spec) {
 	this.shaderType             = 'vertex';
 	this.fpPrecision            = 'highp';
+    this.extensions             = {};
+    this.preprocessorDefs       = [];
 	this.typeDeclarations       = {};
 	this.declarations           = {};
 	this.uniforms               = {};
@@ -61,6 +64,16 @@ GG.ProgramSource.prototype.asFragmentShader = function() {
 GG.ProgramSource.prototype.floatPrecision = function(value) {
 	this.fpPrecision = value;
 	return this;
+};
+
+GG.ProgramSource.prototype.enableExtension = function(name) {
+    this.extensions[name] = true;
+    return this;
+};
+
+GG.ProgramSource.prototype.disableExtension = function(name) {
+    this.extensions[name] = false;
+    return this;
 };
 
 GG.ProgramSource.prototype.attribute = function(type, name) {
@@ -118,6 +131,11 @@ GG.ProgramSource.prototype.uniformTexUnit = function(uniformName) {
 	this.uniform('TexUnitParams_t', uniformName);
     this.uniform('sampler2D', GG.Naming.textureUnitUniformMap(uniformName))
 	return this;
+};
+
+GG.ProgramSource.prototype.preprocessorDefinition = function(name) {
+    this.preprocessorDefs.push(name);
+    return this;
 };
 
 GG.ProgramSource.prototype.addDecl = function(name, block) {
@@ -206,6 +224,11 @@ GG.ProgramSource.prototype.texCoord0 = function() {
 	return this;
 };
 
+GG.ProgramSource.prototype.tangent = function() {
+    this.attribute('vec3', GG.GLSLProgram.BuiltInAttributes.attribTangent);
+    return this;
+};
+
 GG.ProgramSource.prototype.color = function() {
 	this.attribute('vec3', GG.GLSLProgram.BuiltInAttributes.attribColor);
 	return this;
@@ -264,6 +287,13 @@ GG.ProgramSource.prototype.toString = function() {
 		glsl += 'precision ' + this.fpPrecision + ' float;\n';
 	} 
 
+    for ( k in this.extensions) {
+        glsl += '#extension ' + k + " : " + (this.extensions[k] ? 'enable' : 'disable') + '\n';
+    }
+
+    for (var i = 0; i < this.preprocessorDefs.length; i++) {
+        glsl += '#define ' + this.preprocessorDefs[i] + ' 1\n';
+    }
 	glsl += '// Begin - Attributes\n';
 	for (var attr in this.attributes) {
 		glsl += 'attribute ' + this.attributes[attr] + ' ' + attr + ';\n';
@@ -335,83 +365,3 @@ GG.ProgramSource.prototype.toString = function() {
 
 	return glsl;
 };
-
-/*
-pg.attribute(GG.ATTRIB_POS).attribute(GG.ATTRIB_NOR)
-  .uniform(GG.UNIFORM_VIEW_MATRIX)
-  .uniform(GG.UNIFORM_MODEL_MATRIX)
-  .uniform(GG.UNIFORM_PROJECTION_MATRIX)
-  .varying('v_normal')
-  .varying('v_viewPos')
-  .main.addBlock([
-  	'v_viewPos = u_matView * u_matModel * a_position',
-  	'v_normal = u_matNormal * a_normal;'
-  	].join('\n'));
-
-var vertexShader = pg.toString();
-
-var pointLights = [...];
-pg.precision('mediump')
-  .uniformPointLights(pointLights.length)
-  .uniform(GG.UNIFORM_VIEW_MATRIX)
-  .uniformMaterial('u_phongMaterial')
-  .varying('v_normal')
-  .varying('v_viewPos')
-  .addDecl(GG.ShaderLib.blocks['directionalLightIrradiance'])
-  .addMainInitBlock([
-		"	vec3 N = normalize(v_normal);",
-		"	vec3 V = normalize(v_viewVector);",		
-		"	vec3 diffuse = vec3(0.0);",
-		"	vec3 specular = vec3(0.0);",
-		"	vec3 L;"
-  	].join('\n'));
-
-for (var i = 0; i < pointLights.length; i++) {
-	pg.addMainBlock([
-		"	L = normalize(u_matView*vec4(u_spotLights[INDEX].position, 1.0) - v_viewPos).xyz;",
-		"	spotLightIrradiance(N, V, L, u_spotLights[INDEX], diffuse, specular);"
-		].join('\n').replace(/INDEX/g, i),
-		'phong_light_' + i
-	);
-}  
-pg.addMainBlock(GG.ShaderLib.parameterizedBlocks('gammaColor', 'gl_FragColor'))
-  .addMainBlock(
-  	"gl_FragColor = u_matAmbient + u_matDiffuse*vec4(diffuse, 1.0) + u_matSpecular*vec4(specular, 1.0);",
-	);
-
-fragmentShader = pg.toString();
-
-
-i.Getting attributes and uniform locations
-
-Using the ProgramSource and iterating the respective fields
-
-ProgramUtils.getAttributeLocations(pg.listAttributesNames())
-ProgramUtils.getUniformLocations(pg.listUniformsNames())
-
-ii. Point light uniforms 
-
-Use a utility method like ProgramUtils.pointLightsUniforms(numLights).
-It can detect them automatically as the uniform name is standardized.
-
-iii Material uniforms
-
-iv. Setting uniforms
-
-The list of uniform names can be retrieved from the ProgramSource:
-pg.listUniformsNames()
-
-or through introspection:
-
-gl.getActiveUniform(program, location),
-
-where location ranges between 0 and the total number of uniforms used in the program.
-The returned value contains the name of the uniform.
-
-To set a material: ProgramUtils.setMaterialUniforms('u_material', a_material_instance);
-
-To set the lights: ProgramUtils.setPointLights('u_pointLights', array_of_lights)
-
-
-
-*/

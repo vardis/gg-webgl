@@ -18,22 +18,8 @@
 
 		<script src="scene_renderer.js"></script>
 
-		<script>
-		
-		function init () {
-			new SceneRendererSample().start();
-
-			var gui = new dat.GUI();
-			gui.add(window.sample.redLight.shadowCamera, 'near', 0.0, 10.0);
-			gui.add(window.sample.redLight.shadowCamera, 'far', 0.0, 1000.0);
-			gui.add(window.sample.redLight.shadowCamera, 'right', 0.0, 1000.0);
-			gui.add(window.sample.redLight.shadowCamera, 'top', 0.0, 1000.0);
-		}
-		</script>
-		
-		
 	</head>
-	<body onload="init();">		
+	<body onload="new SceneRendererSample().start();">
 		<canvas id="c" style="border: none;" width="640" height="480"></canvas>		
 	</body>
 </html>
