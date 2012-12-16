@@ -108,6 +108,56 @@ GG.Naming = {
 GG.Naming.textureUnitUniformMap = function (basename) {
     return basename + '_map';
 };
+/**
+ * Stores a color in RGBA format.
+ * @param r
+ * @param g
+ * @param b
+ * @param a
+ * @constructor
+ */
+GG.Color = function(r, g, b, a) {
+    this.r = r;
+    this.g = g;
+    this.b = b;
+    this.a = a == undefined ? 1.0 : a;
+};
+
+GG.Color.prototype.constructor = GG.Color;
+
+GG.Color.fromHSV = function(hue, saturation, value) {
+    var chroma = saturation * value;
+    var h = hue / 60.0;
+    var x = chroma*(1 - Math.abs((h % 2) - 1));
+    var m = value - chroma;
+
+    var r, g, b;
+    if (h >= 0 && h < 1) {
+        r = chroma; g = x; b = 0;
+    } else if (h >= 1 && h < 2) {
+        r = x; g = chroma; b = 0;
+    } else if (h >= 2 && h < 3) {
+        r = 0; g = chroma; b = x;
+    } else if (h >= 3 && h < 4) {
+        r = 0; g = x; b = chroma;
+    } else if (h >= 4 && h < 5) {
+        r = x; g = 0; b = chroma;
+    } else if (h >= 5 && h < 6) {
+        r = chroma; g = 0; b = x;
+    } else {
+        r = g = b = 0;
+    }
+    //return new GG.Color(r + m, g + m, b + m, 1.0);
+    return new GG.Color(255*(r + m), 255*(g + m), 256*(b + m), 1.0);
+};
+
+GG.Color.prototype.rgb = function() {
+    return [this.r, this.g, this.b];
+};
+
+GG.Color.prototype.rgba = function() {
+    return [this.r, this.g, this.b, this.a];
+};
 GG.MouseInput = function() {
     this.mouseDownHandlers   = [];
     this.mouseUpHandlers     = [];
@@ -1667,27 +1717,100 @@ GG.ScreenAlignedQuad.prototype = new GG.Geometry();
 GG.ScreenAlignedQuad.prototype.constructor = GG.ScreenAlignedQuad;
 /**
  * A buffer that provides the data for a vertex attribute.
+ * The input specfication objects can contain the following fields:
+ *  -arrayData: an array that contains the actual data of the buffer
+ *  -itemSize: the number of components of each datum
+ *  -itemType: one of gl.FLOAT, gl.BYTE, gl.UNSIGNED_BYTE, gl.SHORT, gl.UNSIGNED_SHORT, gl.FIXED
+ *  -normalize: indicates whether the data should be normalized when streamed for an attribute
+ *  -usageType: one of gl.STATIC_DRAW, gl.STREAM_DRAW, gl.DYNAMIC_DRAW
  */
 GG.AttributeDataBuffer = function (spec) {
-	spec           = spec || {};
-	this.arrayData = spec.arrayData;
-	this.itemSize  = spec.itemSize;
-	this.itemType  = spec.itemType;
-	this.stride    = spec.stride != undefined ? spec.stride : 0;
-	this.normalize = spec.normalize != undefined ? spec.normalize : false;
-	this.usageType = spec.usageType != undefined ? spec.usageType : gl.STATIC_DRAW;
+    spec = spec || {};
+    this.arrayData = spec.arrayData;
+    this.itemSize = spec.itemSize;
+    this.itemType = spec.itemType;
+    this.stride = spec.stride != undefined ? spec.stride : 0;
+    this.normalize = spec.normalize != undefined ? spec.normalize : false;
+    this.usageType = spec.usageType != undefined ? spec.usageType : gl.STATIC_DRAW;
 
-	this.glBuffer  = gl.createBuffer(1);
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);			
-	gl.bufferData(gl.ARRAY_BUFFER, this.arrayData, this.usageType);	
+    this.glBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);
+
+    if (this.arrayData == null) {
+        this.itemCount = spec.itemCount;
+        if (this.itemCount == null) throw "dataLength must be defined";
+        this.arrayData = this.allocateDataArray();
+    } else {
+        this.itemCount = this.arrayData.length;
+    }
+
+    gl.bufferData(gl.ARRAY_BUFFER, this.arrayData, this.usageType);
 };
 
 GG.AttributeDataBuffer.prototype.constructor = GG.AttributeDataBuffer;
 
-GG.AttributeDataBuffer.prototype.streamAttribute = function(attrib) {
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);
-	gl.enableVertexAttribArray(attrib);
-	gl.vertexAttribPointer(attrib, this.itemSize, this.itemType, this.normalized, this.stride, 0);
+GG.AttributeDataBuffer.newEmptyDataBuffer = function() {
+    return new GG.AttributeDataBuffer({
+        itemCount : 0, itemSize : 1, itemType : gl.BYTE
+    });
+};
+
+GG.AttributeDataBuffer.prototype.destroy = function() {
+    if (gl.isBuffer(this.glBuffer)) gl.deleteBuffer(this.glBuffer);
+};
+
+GG.AttributeDataBuffer.prototype.streamAttribute = function (attrib) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);
+    gl.enableVertexAttribArray(attrib);
+    gl.vertexAttribPointer(attrib, this.itemSize, this.itemType, this.normalize, this.stride, 0);
+};
+
+GG.AttributeDataBuffer.prototype.allocateDataArray = function () {
+    var size = this.itemCount * this.itemSize;
+    var arrayData = null;
+    switch (this.itemType) {
+        case gl.BYTE:
+            arrayData = new ArrayBuffer(size);
+            break;
+        case gl.UNSIGNED_BYTE:
+            arrayData = new Uint8Array(size);
+            break;
+        case gl.FLOAT:
+            arrayData = new Float32Array(size);
+            break;
+        case gl.SHORT:
+            arrayData = new Int16Array(size);
+            break;
+        case gl.UNSIGNED_SHORT:
+            arrayData = new Uint16Array(size);
+            break;
+        case gl.FIXED:
+            arrayData = new Uint32Array(size);
+            break;
+        default:
+            throw "Unrecognized itemType";
+    }
+    return arrayData;
+};
+
+GG.AttributeDataBuffer.prototype.getItemCount = function () {
+    return this.itemCount;
+};
+
+GG.AttributeDataBuffer.prototype.getData = function () {
+    return this.arrayData;
+};
+
+GG.AttributeDataBuffer.prototype.getElementAt = function (index) {
+    return this.arrayData.subarray(index*this.itemSize, (index+1)*this.itemSize);
+};
+
+GG.AttributeDataBuffer.prototype.updateData = function (typedArray) {
+    this.arrayData.set(typedArray);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);
+    gl.bufferSubData(this.glBuffer, 0, this.arrayData);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
 };
 GG.Object3D = function (spec) {
     spec = spec || {};
@@ -1967,33 +2090,29 @@ GG.TriangleMesh = function(geometry, material, spec) {
 	
 	this.geometry                     = geometry;
 	this.material                     = material;	
-	
-	this.positionsBuffer              = gl.createBuffer(1);
-	this.positionsBuffer.size         = this.geometry.getVertices().length / 3;	
-	this.positionsBuffer.numTriangles = this.geometry.getVertices().length / 3;	
-	this.positionsBuffer.itemSize     = 3;
-	this.positionsBuffer.itemType     = gl.FLOAT;
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.positionsBuffer);	
-	gl.bufferData(gl.ARRAY_BUFFER, this.geometry.getVertices(), gl.STATIC_DRAW);
-	
-	this.normalsBuffer                = gl.createBuffer(1);
-	this.normalsBuffer.size           = this.geometry.getNormals().length / 3;
-	this.normalsBuffer.itemSize       = 3;
-	this.normalsBuffer.itemType       = gl.FLOAT;
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.normalsBuffer);			
-	gl.bufferData(gl.ARRAY_BUFFER, this.geometry.getNormals(), gl.STATIC_DRAW);
-	
-	this.texCoordsBuffer              = gl.createBuffer(1);
-	this.texCoordsBuffer.size         = this.geometry.getTexCoords().length / 2;
-	this.texCoordsBuffer.itemSize     = 2;
-	this.texCoordsBuffer.itemType     = gl.FLOAT;
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordsBuffer);			
-	gl.bufferData(gl.ARRAY_BUFFER, this.geometry.getTexCoords(), gl.STATIC_DRAW);	
 
-	if (this.geometry.getColors != null) {
-		this.colorsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getColors(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    if (this.geometry.getVertices() != null) {
+        this.positionsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getVertices(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    } else {
+        this.positionsBuffer = null;
+    }
+
+    if (this.geometry.getNormals() != null) {
+        this.normalsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getNormals(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    } else {
+        this.normalsBuffer = null;
+    }
+
+    if (this.geometry.getTexCoords() != null) {
+        this.texCoordsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTexCoords(), 'itemSize' : 2, 'itemType' : gl.FLOAT });
+    } else {
+        this.texCoordsBuffer = null;
+    }
+
+	if (this.geometry.getColors() != null) {
+		this.colorsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getColors(), 'itemSize' : 3, 'itemType' : gl.UNSIGNED_BYTE });
 	} else {
-		this.colorsBuffer = null;
+		this.colorsBuffer = GG.AttributeDataBuffer.newEmptyDataBuffer();
 	}
 
     if (this.geometry.getTangents() != null) {
@@ -2043,6 +2162,15 @@ GG.TriangleMesh.prototype.getIndexBuffer = function() {
 	return this.indexBuffer;
 };
 
+GG.TriangleMesh.prototype.getVertexCount = function() {
+    return this.positionsBuffer != null ? this.positionsBuffer.getItemCount() : 0;
+};
+
+GG.TriangleMesh.prototype.setColorData = function(typedArray) {
+    if (this.colorsBuffer != null) this.colorsBuffer.destroy();
+    this.colorsBuffer = new GG.AttributeDataBuffer({normalize : true, arrayData : typedArray, itemSize : 3, itemType : gl.UNSIGNED_BYTE, itemCount : this.getVertexCount() });
+};
+
 GG.TriangleMesh.prototype.getFlatNormalsBuffer = function() {
 	if (this.flatNormalsBuffer === undefined) {
 		var flatNormals = this.geometry.getFlatNormals();
@@ -2050,12 +2178,7 @@ GG.TriangleMesh.prototype.getFlatNormalsBuffer = function() {
 			flatNormals = this.geometry.calculateFlatNormals();
 		}
 		if (flatNormals) {
-			this.flatNormalsBuffer                = gl.createBuffer(1);
-			this.flatNormalsBuffer.size           = this.geometry.getFlatNormals().length / 3;
-			this.flatNormalsBuffer.itemSize       = 3;
-			this.flatNormalsBuffer.itemType       = gl.FLOAT;
-			gl.bindBuffer(gl.ARRAY_BUFFER, this.flatNormalsBuffer);			
-			gl.bufferData(gl.ARRAY_BUFFER, this.geometry.getFlatNormals(), gl.STATIC_DRAW);
+            this.flatNormalsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getFlatNormals(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
 		} else {
 			return null;
 		}
@@ -3483,6 +3606,9 @@ GG.RenderPass.MESH = 1;
 GG.RenderPass.prototype.createGpuProgram = function() {
 	// create the gpu program if it is not linked already
 	if (!this.program) {
+        if (this.vertexShader == null || this.fragmentShader == null) {
+            this.__createShaders();
+        }
 		this.program = GG.ProgramUtils.createProgram(this.vertexShader, this.fragmentShader);
 	}
 
@@ -3569,6 +3695,11 @@ GG.RenderPass.prototype.setProgram = function(program) {
 };
 
 // no-op default implementations
+/**
+ * Called when the gpu program is about to be initialized and if the vertexShader and/or fragmentShader
+ * fields are not set yet.
+ */
+GG.RenderPass.prototype.__createShaders = function() {};
 GG.RenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__setCustomAttributes = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__renderGeometry = function(renderable, ctx, program) {};
@@ -4117,26 +4248,14 @@ GG.BaseTechnique.prototype.render = function(renderable, ctx) {
 GG.ConstantColorTechnique = function (spec) {
     spec = spec || {};
     spec.passes = [ new GG.ConstantColorPass() ];
-
     GG.BaseTechnique.call(this, spec);
 };
 
 GG.ConstantColorTechnique.prototype = new GG.BaseTechnique();
 GG.ConstantColorTechnique.prototype.constructor = GG.ConstantColorTechnique;
 
-
-GG.ConstantColorTechnique.prototype.getTexture = function() {
-    return this.passes[0].texture;
-};
-
-GG.ConstantColorTechnique.prototype.setTexture = function(texture) {
-    this.passes[0].texture = texture;
-    return this;
-};
-
 GG.ConstantColorPass = function(spec) {
 	spec = spec || {};
-
 	spec.vertexShader = [
 		"attribute vec4 a_position;",
 		"uniform mat4 u_matModelView;",
@@ -4165,6 +4284,43 @@ GG.ConstantColorPass.prototype.__setCustomUniforms = function(renderable, ctx, p
 	gl.uniform3fv(program.u_color, renderable.getMaterial().diffuse);		
 };
 
+GG.VertexColorsTechnique = function(spec) {
+    spec        = spec || {};
+    spec.passes = [ new GG.VertexColorsPass() ];
+    GG.BaseTechnique.call(this, spec);
+};
+
+GG.VertexColorsTechnique.prototype = new GG.BaseTechnique();
+GG.VertexColorsTechnique.prototype.constructor = GG.VertexColorsTechnique;
+
+GG.VertexColorsPass = function(spec) {
+    spec = spec || {};
+    GG.RenderPass.call(this, spec);
+};
+
+GG.VertexColorsPass.prototype = new GG.RenderPass();
+GG.VertexColorsPass.prototype.constructor = GG.VertexColorsPass;
+
+GG.VertexColorsPass.prototype.__createShaders = function() {
+    var vs = new GG.ProgramSource();
+    vs.position()
+        .color()
+        .uniformModelViewMatrix()
+        .uniformProjectionMatrix()
+        .varying('vec3', GG.Naming.VaryingColor)
+        .addMainBlock([
+        "	gl_Position = u_matProjection*u_matModelView*a_position;",
+        GG.Naming.VaryingColor + " = " + GG.Naming.AttributeColor + ";"
+    ].join('\n'));
+
+    var fs = new GG.ProgramSource();
+    fs.asFragmentShader()
+        .varying('vec3', GG.Naming.VaryingColor)
+        .finalColor("gl_FragColor = vec4(" + GG.Naming.VaryingColor + ", 1.0);");
+
+    this.vertexShader = vs.toString();
+    this.fragmentShader = fs.toString();
+};
 /**
  * Renders an object without shading, colors are fecthed from a single 2D texture.
  * Note that objects rendered using this technique must have texture coordinates 
@@ -4431,7 +4587,7 @@ GG.PhongPass.prototype.createProgram = function(material) {
 			"	v_texCoords = a_texCoords;"
 			].join('\n'));	
 
-	fs = new GG.ProgramSource();
+	var fs = new GG.ProgramSource();
 	fs.asFragmentShader()
 		.varying('vec3', 'v_normal')
 		.varying('vec4', 'v_viewPos')
@@ -5454,29 +5610,23 @@ GG.Renderer.prototype.renderMesh = function (mesh, program, options) {
 
 	var attribPosition = program[GG.GLSLProgram.BuiltInAttributes.attribPosition];
 	if (attribPosition != undefined) {
-		gl.bindBuffer(gl.ARRAY_BUFFER, mesh.getPositionsBuffer());
-		gl.enableVertexAttribArray(attribPosition);
-		gl.vertexAttribPointer(attribPosition, mesh.getPositionsBuffer().itemSize, mesh.getPositionsBuffer().itemType, false, 0, 0);
+        mesh.getPositionsBuffer().streamAttribute(attribPosition);
 	}
 
 	var attribNormal = program[GG.GLSLProgram.BuiltInAttributes.attribNormal];
 	if (attribNormal != undefined) {
 		var normalsBuffer = mesh.getMaterial().flatShade ? mesh.getFlatNormalsBuffer() : mesh.getNormalsBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-		gl.enableVertexAttribArray(attribNormal);
-		gl.vertexAttribPointer(attribNormal, normalsBuffer.itemSize, normalsBuffer.itemType, false, 0, 0);
+        normalsBuffer.streamAttribute(attribNormal);
 	}
 
 	var attribTexCoords = program[GG.GLSLProgram.BuiltInAttributes.attribTexCoords];
 	if (attribTexCoords != undefined) {
-		gl.bindBuffer(gl.ARRAY_BUFFER, mesh.getTexCoordsBuffer());
-		gl.enableVertexAttribArray(attribTexCoords);
-		gl.vertexAttribPointer(attribTexCoords, mesh.getTexCoordsBuffer().itemSize, mesh.getTexCoordsBuffer().itemType, false, 0, 0);
+        mesh.getTexCoordsBuffer().streamAttribute(attribTexCoords)
 	}
 
 	var attribColor = program[GG.GLSLProgram.BuiltInAttributes.attribColor];
 	if (attribColor != undefined) {
-		mesh.getColorsBufer().streamAttribute(attribColor);
+		mesh.getColorsBuffer().streamAttribute(attribColor);
 	}
 
     var attribTangent = program[GG.GLSLProgram.BuiltInAttributes.attribTangent];

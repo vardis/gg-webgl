@@ -45,7 +45,7 @@ GG.PhongPass.prototype.createProgram = function(material) {
 			"	v_texCoords = a_texCoords;"
 			].join('\n'));	
 
-	fs = new GG.ProgramSource();
+	var fs = new GG.ProgramSource();
 	fs.asFragmentShader()
 		.varying('vec3', 'v_normal')
 		.varying('vec4', 'v_viewPos')

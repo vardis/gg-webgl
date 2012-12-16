@@ -44,29 +44,23 @@ GG.Renderer.prototype.renderMesh = function (mesh, program, options) {
 
 	var attribPosition = program[GG.GLSLProgram.BuiltInAttributes.attribPosition];
 	if (attribPosition != undefined) {
-		gl.bindBuffer(gl.ARRAY_BUFFER, mesh.getPositionsBuffer());
-		gl.enableVertexAttribArray(attribPosition);
-		gl.vertexAttribPointer(attribPosition, mesh.getPositionsBuffer().itemSize, mesh.getPositionsBuffer().itemType, false, 0, 0);
+        mesh.getPositionsBuffer().streamAttribute(attribPosition);
 	}
 
 	var attribNormal = program[GG.GLSLProgram.BuiltInAttributes.attribNormal];
 	if (attribNormal != undefined) {
 		var normalsBuffer = mesh.getMaterial().flatShade ? mesh.getFlatNormalsBuffer() : mesh.getNormalsBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-		gl.enableVertexAttribArray(attribNormal);
-		gl.vertexAttribPointer(attribNormal, normalsBuffer.itemSize, normalsBuffer.itemType, false, 0, 0);
+        normalsBuffer.streamAttribute(attribNormal);
 	}
 
 	var attribTexCoords = program[GG.GLSLProgram.BuiltInAttributes.attribTexCoords];
 	if (attribTexCoords != undefined) {
-		gl.bindBuffer(gl.ARRAY_BUFFER, mesh.getTexCoordsBuffer());
-		gl.enableVertexAttribArray(attribTexCoords);
-		gl.vertexAttribPointer(attribTexCoords, mesh.getTexCoordsBuffer().itemSize, mesh.getTexCoordsBuffer().itemType, false, 0, 0);
+        mesh.getTexCoordsBuffer().streamAttribute(attribTexCoords)
 	}
 
 	var attribColor = program[GG.GLSLProgram.BuiltInAttributes.attribColor];
 	if (attribColor != undefined) {
-		mesh.getColorsBufer().streamAttribute(attribColor);
+		mesh.getColorsBuffer().streamAttribute(attribColor);
 	}
 
     var attribTangent = program[GG.GLSLProgram.BuiltInAttributes.attribTangent];

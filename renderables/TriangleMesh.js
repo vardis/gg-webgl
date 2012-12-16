@@ -7,33 +7,29 @@ GG.TriangleMesh = function(geometry, material, spec) {
 	
 	this.geometry                     = geometry;
 	this.material                     = material;	
-	
-	this.positionsBuffer              = gl.createBuffer(1);
-	this.positionsBuffer.size         = this.geometry.getVertices().length / 3;	
-	this.positionsBuffer.numTriangles = this.geometry.getVertices().length / 3;	
-	this.positionsBuffer.itemSize     = 3;
-	this.positionsBuffer.itemType     = gl.FLOAT;
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.positionsBuffer);	
-	gl.bufferData(gl.ARRAY_BUFFER, this.geometry.getVertices(), gl.STATIC_DRAW);
-	
-	this.normalsBuffer                = gl.createBuffer(1);
-	this.normalsBuffer.size           = this.geometry.getNormals().length / 3;
-	this.normalsBuffer.itemSize       = 3;
-	this.normalsBuffer.itemType       = gl.FLOAT;
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.normalsBuffer);			
-	gl.bufferData(gl.ARRAY_BUFFER, this.geometry.getNormals(), gl.STATIC_DRAW);
-	
-	this.texCoordsBuffer              = gl.createBuffer(1);
-	this.texCoordsBuffer.size         = this.geometry.getTexCoords().length / 2;
-	this.texCoordsBuffer.itemSize     = 2;
-	this.texCoordsBuffer.itemType     = gl.FLOAT;
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordsBuffer);			
-	gl.bufferData(gl.ARRAY_BUFFER, this.geometry.getTexCoords(), gl.STATIC_DRAW);	
 
-	if (this.geometry.getColors != null) {
-		this.colorsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getColors(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    if (this.geometry.getVertices() != null) {
+        this.positionsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getVertices(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    } else {
+        this.positionsBuffer = null;
+    }
+
+    if (this.geometry.getNormals() != null) {
+        this.normalsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getNormals(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    } else {
+        this.normalsBuffer = null;
+    }
+
+    if (this.geometry.getTexCoords() != null) {
+        this.texCoordsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTexCoords(), 'itemSize' : 2, 'itemType' : gl.FLOAT });
+    } else {
+        this.texCoordsBuffer = null;
+    }
+
+	if (this.geometry.getColors() != null) {
+		this.colorsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getColors(), 'itemSize' : 3, 'itemType' : gl.UNSIGNED_BYTE });
 	} else {
-		this.colorsBuffer = null;
+		this.colorsBuffer = GG.AttributeDataBuffer.newEmptyDataBuffer();
 	}
 
     if (this.geometry.getTangents() != null) {
@@ -83,6 +79,15 @@ GG.TriangleMesh.prototype.getIndexBuffer = function() {
 	return this.indexBuffer;
 };
 
+GG.TriangleMesh.prototype.getVertexCount = function() {
+    return this.positionsBuffer != null ? this.positionsBuffer.getItemCount() : 0;
+};
+
+GG.TriangleMesh.prototype.setColorData = function(typedArray) {
+    if (this.colorsBuffer != null) this.colorsBuffer.destroy();
+    this.colorsBuffer = new GG.AttributeDataBuffer({normalize : true, arrayData : typedArray, itemSize : 3, itemType : gl.UNSIGNED_BYTE, itemCount : this.getVertexCount() });
+};
+
 GG.TriangleMesh.prototype.getFlatNormalsBuffer = function() {
 	if (this.flatNormalsBuffer === undefined) {
 		var flatNormals = this.geometry.getFlatNormals();
@@ -90,12 +95,7 @@ GG.TriangleMesh.prototype.getFlatNormalsBuffer = function() {
 			flatNormals = this.geometry.calculateFlatNormals();
 		}
 		if (flatNormals) {
-			this.flatNormalsBuffer                = gl.createBuffer(1);
-			this.flatNormalsBuffer.size           = this.geometry.getFlatNormals().length / 3;
-			this.flatNormalsBuffer.itemSize       = 3;
-			this.flatNormalsBuffer.itemType       = gl.FLOAT;
-			gl.bindBuffer(gl.ARRAY_BUFFER, this.flatNormalsBuffer);			
-			gl.bufferData(gl.ARRAY_BUFFER, this.geometry.getFlatNormals(), gl.STATIC_DRAW);
+            this.flatNormalsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getFlatNormals(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
 		} else {
 			return null;
 		}

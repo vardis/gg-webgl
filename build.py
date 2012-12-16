@@ -3,6 +3,7 @@ import sys
 GG_files = [
 	'GG_init.js',
 	'Naming.js',
+	'materials/Color.js',
 	'input/MouseInput.js',
 	'input/KeyboardInput.js',
 	'animation/Clock.js',
@@ -51,6 +52,7 @@ GG_files = [
 	'techniques/RenderPasses/NormalMappingEmbeddableRenderPass.js',
 	'techniques/BaseTechnique.js',
 	'techniques/ConstantColorTechnique.js',
+	'techniques/VertexColorsTechnique.js',
 	'techniques/TexturedShadelessTechnique.js',
 	'techniques/CubemapTechnique.js',
 	'techniques/ReflectiveTechnique.js',

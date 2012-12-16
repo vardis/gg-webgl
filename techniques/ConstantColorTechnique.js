@@ -1,26 +1,14 @@
 GG.ConstantColorTechnique = function (spec) {
     spec = spec || {};
     spec.passes = [ new GG.ConstantColorPass() ];
-
     GG.BaseTechnique.call(this, spec);
 };
 
 GG.ConstantColorTechnique.prototype = new GG.BaseTechnique();
 GG.ConstantColorTechnique.prototype.constructor = GG.ConstantColorTechnique;
 
-
-GG.ConstantColorTechnique.prototype.getTexture = function() {
-    return this.passes[0].texture;
-};
-
-GG.ConstantColorTechnique.prototype.setTexture = function(texture) {
-    this.passes[0].texture = texture;
-    return this;
-};
-
 GG.ConstantColorPass = function(spec) {
 	spec = spec || {};
-
 	spec.vertexShader = [
 		"attribute vec4 a_position;",
 		"uniform mat4 u_matModelView;",

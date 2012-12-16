@@ -1,11 +1,10 @@
 NormalMappingSample = function (spec) {
     this.camera        = null;
-    this.jsonMesh      = null;
+    this.sphereMesh      = null;
     this.y_rot         = 0.0;
     this.mouseHandler  = null;
     this.light         = null;
     this.technique     = null;
-    this.loaded        = false;
 
     GG.SampleBase.call(this, spec);
 };
@@ -49,8 +48,8 @@ NormalMappingSample.prototype.initializeWithAssetsLoaded = function () {
 
     var geom = new GG.SphereGeometry(2.0, 64, 64);
     geom.calculateTangents();
-    this.jsonMesh          = new GG.TriangleMesh(geom);
-    this.jsonMesh.material = this.teapotMat;
+    this.sphereMesh          = new GG.TriangleMesh(geom);
+    this.sphereMesh.material = this.teapotMat;
 
     this.light = new GG.Light({
         name : 'red',
@@ -72,7 +71,7 @@ NormalMappingSample.prototype.update = function () {
         this.light.position[1] = 3.0;
         this.light.position[2] = 15.0*Math.sin(0.5*this.y_rot);
 
-        this.jsonMesh.setPosition([0.0, 0.0, -2.0]);
+        this.sphereMesh.setPosition([0.0, 0.0, -2.0]);
         //this.jsonMesh.setRotation([0.0, this.y_rot, 0.0]);
 
         this.y_rot += GG.clock.deltaTime() * 0.001;
@@ -92,5 +91,5 @@ NormalMappingSample.prototype.draw = function () {
     gl.frontFace(gl.CCW);
     gl.enable(gl.CULL_FACE);
 
-    this.technique.render(this.jsonMesh, this.renderContext);
+    this.technique.render(this.sphereMesh, this.renderContext);
 };

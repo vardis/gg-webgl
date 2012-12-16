@@ -1,6 +1,6 @@
 PostProcessSample = function (spec) {
     this.camera = null;
-    this.jsonMesh = null;
+    this.sphereMesh = null;
     this.planeMesh = null;
     this.y_rot = 0.0;
     this.mouseHandler = null;
@@ -18,11 +18,11 @@ PostProcessSample.prototype.initializeAssets = function () {
     this.testScene = new GG.Scene();
     var that = this;
     GG.Loader.loadJSON('teapot', '../assets/models/teapot.js', function (jsonObj) {
-        that.jsonMesh = new GG.TriangleMesh(GG.Geometry.fromJSON(jsonObj));
+        that.sphereMesh = new GG.TriangleMesh(GG.Geometry.fromJSON(jsonObj));
 
         that.teapotMat = new GG.PhongMaterial();
-        that.jsonMesh.material = that.teapotMat;
-        that.testScene.addObject(that.jsonMesh);
+        that.sphereMesh.material = that.teapotMat;
+        that.testScene.addObject(that.sphereMesh);
         that.assetsLoaded = true;
     });
 };
@@ -87,9 +87,9 @@ PostProcessSample.prototype.update = function () {
         this.light.position[1] = 5.0;
         this.light.position[2] = 15.0 * Math.sin(0.5 * this.y_rot);
 
-        this.jsonMesh.setScale([0.3, 0.3, 0.3]);
-        this.jsonMesh.setPosition([0.0, 5.0, -6.0]);
-        this.jsonMesh.setRotation([this.y_rot, this.y_rot, 0.0]);
+        this.sphereMesh.setScale([0.3, 0.3, 0.3]);
+        this.sphereMesh.setPosition([0.0, 5.0, -6.0]);
+        this.sphereMesh.setRotation([this.y_rot, this.y_rot, 0.0]);
 
         this.planeMesh.setScale([100.0, 100.0, 1.0]);
         this.planeMesh.setPosition([0.0, -14.0, 0.0]);

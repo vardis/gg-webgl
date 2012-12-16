@@ -44,6 +44,9 @@ GG.RenderPass.MESH = 1;
 GG.RenderPass.prototype.createGpuProgram = function() {
 	// create the gpu program if it is not linked already
 	if (!this.program) {
+        if (this.vertexShader == null || this.fragmentShader == null) {
+            this.__createShaders();
+        }
 		this.program = GG.ProgramUtils.createProgram(this.vertexShader, this.fragmentShader);
 	}
 
@@ -130,6 +133,11 @@ GG.RenderPass.prototype.setProgram = function(program) {
 };
 
 // no-op default implementations
+/**
+ * Called when the gpu program is about to be initialized and if the vertexShader and/or fragmentShader
+ * fields are not set yet.
+ */
+GG.RenderPass.prototype.__createShaders = function() {};
 GG.RenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__setCustomAttributes = function(renderable, ctx, program) {};
 GG.RenderPass.prototype.__renderGeometry = function(renderable, ctx, program) {};

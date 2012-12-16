@@ -47,11 +47,11 @@ SceneRendererSample.prototype.initializeAssets = function () {
     this.testScene = new GG.Scene();
 
     GG.Loader.loadJSON('teapot', '../assets/models/teapot.js', function (jsonObj) {
-            that.jsonMesh = new GG.TriangleMesh(GG.Geometry.fromJSON(jsonObj));
-            that.jsonMesh.setPosition([0.0, 1.0, 15.0]);
-            that.jsonMesh.setScale([0.5, 0.5, 0.5]);
-            that.jsonMesh.material = new GG.PhongMaterial();
-            that.testScene.addObject(that.jsonMesh);
+            that.sphereMesh = new GG.TriangleMesh(GG.Geometry.fromJSON(jsonObj));
+            that.sphereMesh.setPosition([0.0, 1.0, 15.0]);
+            that.sphereMesh.setScale([0.5, 0.5, 0.5]);
+            that.sphereMesh.material = new GG.PhongMaterial();
+            that.testScene.addObject(that.sphereMesh);
             that.assetsLoaded = true;
         },
         function () {
