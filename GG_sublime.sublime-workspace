@@ -520,100 +520,10 @@
 	"buffers":
 	[
 		{
-			"file": "techniques/particles/ParticlesTechnique.js",
-			"settings":
-			{
-				"buffer_size": 3980,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "techniques/particles/StaticPointParticlesTechnique.js",
-			"settings":
-			{
-				"buffer_size": 2668,
-				"line_ending": "Windows",
-				"name": "StaticPointParticlesTechnique"
-			}
-		},
-		{
-			"file": "renderables/TriangleMesh.js",
-			"settings":
-			{
-				"buffer_size": 3453,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "buffers/AttributeDataBuffer.js",
-			"settings":
-			{
-				"buffer_size": 940,
-				"line_ending": "Windows",
-				"name": "DataBuffer"
-			}
-		},
-		{
 			"file": "renderables/StaticParticleSystem.js",
 			"settings":
 			{
-				"buffer_size": 1792,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js",
-			"settings":
-			{
-				"buffer_size": 1691,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "techniques/RenderPasses/AdaptiveRenderPass.js",
-			"settings":
-			{
-				"buffer_size": 3230,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "techniques/PhongShadingTechnique.js",
-			"settings":
-			{
-				"buffer_size": 3598,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "techniques/RenderPasses/EmbeddableAdaptiveRenderPass.js",
-			"settings":
-			{
-				"buffer_size": 1553,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "ProgramSource.js",
-			"settings":
-			{
-				"buffer_size": 11336,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass.js",
-			"settings":
-			{
-				"buffer_size": 4758,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "materials/BaseMaterial.js",
-			"settings":
-			{
-				"buffer_size": 3272,
+				"buffer_size": 1785,
 				"line_ending": "Windows"
 			}
 		}
@@ -714,25 +624,30 @@
 	},
 	"file_history":
 	[
+		"/D/webgl/gg-webgl/techniques/particles/ParticlesTechnique.js",
+		"/D/webgl/gg-webgl/techniques/particles/StaticPointParticlesTechnique.js",
+		"/D/webgl/gg-webgl/renderables/TriangleMesh.js",
+		"/D/webgl/gg-webgl/buffers/AttributeDataBuffer.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/AdaptiveRenderPass.js",
+		"/D/webgl/gg-webgl/techniques/PhongShadingTechnique.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/EmbeddableAdaptiveRenderPass.js",
+		"/D/webgl/gg-webgl/ProgramSource.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass.js",
+		"/D/webgl/gg-webgl/materials/BaseMaterial.js",
 		"/D/webgl/gg-webgl/sample_base.js",
 		"/D/webgl/gg-webgl/render/Renderer.js",
 		"/D/webgl/gg-webgl/geometries/Geometry.js",
 		"/D/webgl/gg-webgl/techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass - Copy.js",
 		"/D/webgl/gg-webgl/materials/TextureStack.js",
 		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapTechnique.js",
-		"/D/webgl/gg-webgl/materials/BaseMaterial.js",
 		"/D/webgl/gg-webgl/utils/ProgramUtils.js",
-		"/D/webgl/gg-webgl/ProgramSource.js",
-		"/D/webgl/gg-webgl/techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js",
-		"/D/webgl/gg-webgl/techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass.js",
 		"/D/webgl/gg-webgl/ShaderLib.js",
 		"/D/webgl/gg-webgl/techniques/RenderPasses/RenderPass.js",
 		"/D/webgl/gg-webgl/GG_init.js",
 		"/D/webgl/gg-webgl/samples/adaptablePrograms.js",
-		"/D/webgl/gg-webgl/techniques/RenderPasses/AdaptiveRenderPass.js",
 		"/D/webgl/gg-webgl/textures/Texture.js",
 		"/D/webgl/gg-webgl/Naming.js",
-		"/D/webgl/gg-webgl/techniques/PhongShadingTechnique.js",
 		"/D/webgl/gg-webgl/techniques/RenderPasses/ScreenPass.js",
 		"/D/webgl/gg-webgl/scene/DefaultSceneRenderer.js",
 		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapSimple.js",
@@ -762,7 +677,6 @@
 		"/D/webgl/gg-webgl/render/RenderContext.js",
 		"/D/webgl/gg-webgl/render/PostProcessChain.js",
 		"/D/webgl/gg-webgl/techniques/BaseTechnique.js",
-		"/D/webgl/gg-webgl/renderables/TriangleMesh.js",
 		"/D/webgl/gg-webgl/render/screen_filters/VignetteScreenFilter.js",
 		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapDepthPass.js",
 		"/D/webgl/gg-webgl/techniques/DepthPrePassTechnique.js",
@@ -797,7 +711,6 @@
 		"/D/webgl/gg-webgl/gl-matrix.js",
 		"/D/webgl/gg-webgl/cube.html",
 		"/D/webgl/gg-webgl/renderables/StaticParticleSystem.js",
-		"/D/webgl/gg-webgl/techniques/particles/ParticlesTechnique.js",
 		"/D/webgl/gg-webgl/techniques/RenderPasses/GaussianBlurPass.js",
 		"/D/webgl/gg-webgl/techniques/shadow_mapping/VSMGaussianBlurPass.js",
 		"/D/webgl/gg-webgl/render/RenderQueue.js",
@@ -838,10 +751,7 @@
 		"/D/webgl/techniques/RenderPass.js",
 		"/D/webgl/techniques/ScreenPass.js",
 		"/D/webgl/build.py",
-		"/D/webgl/ShaderLib.js",
-		"/D/webgl/cube.html",
-		"/D/webgl/techniques/RenderPasses/BlitPass.js",
-		"/D/webgl/geometries/ScreenAlignedQuad.js"
+		"/D/webgl/ShaderLib.js"
 	],
 	"find":
 	{
@@ -849,7 +759,7 @@
 	},
 	"find_in_files":
 	{
-		"height": 90.0,
+		"height": 0.0,
 		"where_history":
 		[
 			"*.js",
@@ -1022,329 +932,33 @@
 	"groups":
 	[
 		{
-			"selected": 1,
+			"selected": 0,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "techniques/particles/ParticlesTechnique.js",
-					"settings":
-					{
-						"buffer_size": 3980,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1710,
-								1728
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 585.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "techniques/particles/StaticPointParticlesTechnique.js",
-					"settings":
-					{
-						"buffer_size": 2668,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								991,
-								991
-							]
-						],
-						"settings":
-						{
-							"auto_name": "StaticPointParticlesTechnique",
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 234.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "renderables/TriangleMesh.js",
-					"settings":
-					{
-						"buffer_size": 3453,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								431,
-								431
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "buffers/AttributeDataBuffer.js",
-					"settings":
-					{
-						"buffer_size": 940,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								686,
-								686
-							]
-						],
-						"settings":
-						{
-							"auto_name": "DataBuffer",
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 4,
 					"file": "renderables/StaticParticleSystem.js",
 					"settings":
 					{
-						"buffer_size": 1792,
+						"buffer_size": 1785,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								699,
-								699
+								726,
+								726
 							]
 						],
 						"settings":
 						{
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
 						"translation.y": 45.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 5,
-					"file": "techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js",
-					"settings":
-					{
-						"buffer_size": 1691,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								918,
-								918
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 6,
-					"file": "techniques/RenderPasses/AdaptiveRenderPass.js",
-					"settings":
-					{
-						"buffer_size": 3230,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1196,
-								1196
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 765.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 7,
-					"file": "techniques/PhongShadingTechnique.js",
-					"settings":
-					{
-						"buffer_size": 3598,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1790,
-								1790
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 405.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 8,
-					"file": "techniques/RenderPasses/EmbeddableAdaptiveRenderPass.js",
-					"settings":
-					{
-						"buffer_size": 1553,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1172,
-								1172
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 9,
-					"file": "ProgramSource.js",
-					"settings":
-					{
-						"buffer_size": 11336,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								3702,
-								3718
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 1950.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 10,
-					"file": "techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass.js",
-					"settings":
-					{
-						"buffer_size": 4758,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1581,
-								1581
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 225.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 11,
-					"file": "materials/BaseMaterial.js",
-					"settings":
-					{
-						"buffer_size": 3272,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"

@@ -22,6 +22,10 @@ var GG = {
 
 	init : function () {
 		GG.renderer = new GG.Renderer();
+        GG.mouseInput = new GG.MouseInput();
+        GG.mouseInput.initialize();
+        GG.keyboardInput = new GG.KeyboardInput();
+        GG.keyboardInput.initialize();
 	}
 	
 };

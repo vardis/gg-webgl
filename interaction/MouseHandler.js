@@ -5,98 +5,95 @@ GG.MouseHandler = function() {
 	this.camera     = null;
 	this.rotX       = 0.0;
 	this.rotY       = 0.0;
-	
-	var that        = this;
-	this.handleMouseDown = function (event) {
-		that.mouseDown  = true;
-		that.lastMouseX = event.clientX;
-		that.lastMouseY = event.clientY;
-	};
 
-	this.handleMouseUp = function (event) {
-		that.mouseDown = false;
-	};
+    var self = this;
+    this.mouseDownCallback = function(x, y) {
+        self.handleMouseDown(x, y);
+    }
+    this.mouseUpCallback = function(x, y) {
+        self.handleMouseUp(x, y);
+    }
+    this.mouseMoveCallback = function(x, y) {
+        self.handleMouseMove(x, y);
+    }
+    this.mouseWheelCallback = function(deltaY) {
+        self.handleMouseWheel(deltaY);
+    }
+    this.keyDownCallback = function(keyCode) {
+        self.handleKeyDown(keyCode);
+    };
 
-	this.handleKeyDown = function (event) {
-		switch (event.keyCode) {
-			case 37: 	// left
-			that.camera.right(-0.2);
-			console.log("left");
-			break;
-
-			case 39: 	// right
-			that.camera.right(0.2);
-			console.log("right");
-			break;
-
-			case 38: 	// up
-			that.camera.forward(-0.2);
-			console.log("forward");
-			break;
-
-			case 40: 	// down
-			that.camera.forward(0.2);
-			console.log("backwards");
-			break;		
-
-			case 33: 	// page up
-			that.camera.elevate(0.2);
-			break;
-
-			case 34: 	// page down
-			that.camera.elevate(-0.2);
-			break;
-
-			default: console.log('key is: ' + event.keyCode); break;
-		}
-	};
-
-	this.handleMouseMove = function (event) {
-		if (!that.mouseDown) {
-		  return;
-		}
-		var newX   = event.clientX;
-		var newY   = event.clientY;
-		
-		var deltaX = newX - that.lastMouseX;
-		that.rotY  += deltaX;
-		
-		var deltaY = newY - that.lastMouseY;
-		that.rotX  += deltaY;
-
-		that.camera.setRotation([that.rotX, that.rotY, 0.0]);
-		
-		that.lastMouseX = newX;
-		that.lastMouseY = newY;
-	};
-
-	this.handleMouseWheel = function (event) {
-		var delta = event.wheelDeltaY * 0.01;
-		that.camera.zoom(delta);
-	};
-	
-	GG.canvas.onmousedown = this.handleMouseDown;
-	GG.canvas.onmousewheel = this.handleMouseWheel;
-    document.onmouseup = this.handleMouseUp;
-    document.onmousemove = this.handleMouseMove;
-    document.onkeydown = this.handleKeyDown;
-    document.onkeyup = this.handleKeyUp;
-
-    // http://www.sitepoint.com/html5-javascript-mouse-wheel/
-    if (GG.canvas.addEventListener) {
-		// IE9, Chrome, Safari, Opera
-		GG.canvas.addEventListener("mousewheel", this.handleMouseWheel, false);
-		// Firefox
-		GG.canvas.addEventListener("DOMMouseScroll", this.handleMouseWheel, false);
-	} else {
-		// IE 6/7/8
-		GG.canvas.attachEvent("onmousewheel", this.handleMouseWheel);
-	}
+	GG.mouseInput.onMouseDown(this.mouseDownCallback);
+    GG.mouseInput.onMouseUp(this.mouseUpCallback);
+    GG.mouseInput.onMouseMove(this.mouseMoveCallback);
+    GG.mouseInput.onMouseWheel(this.mouseWheelCallback);
+    GG.keyboardInput.onKeyDown(this.keyDownCallback);
 };
-
 
 GG.MouseHandler.prototype.constructor = GG.MouseHandler;
 
+GG.MouseHandler.prototype.handleMouseDown = function (x, y) {
+    this.mouseDown  = true;
+    this.lastMouseX = x;
+    this.lastMouseY = y;
+};
+
+GG.MouseHandler.prototype.handleMouseUp = function (x, y) {
+    this.mouseDown = false;
+};
+
+GG.MouseHandler.prototype.handleMouseMove = function (x, y) {
+    if (!this.mouseDown) {
+        return;
+    }
+    this.rotY  += x - this.lastMouseX;
+    this.rotX  += y - this.lastMouseY;
+
+    this.camera.setRotation([this.rotX, this.rotY, 0.0]);
+
+    this.lastMouseX = x;
+    this.lastMouseY = y;
+};
+
+GG.MouseHandler.prototype.handleMouseWheel = function (deltaY) {
+    var delta = deltaY * 0.01;
+    this.camera.zoom(delta);
+};
+
+GG.MouseHandler.prototype.handleKeyDown = function(keyCode) {
+    switch (keyCode) {
+        case GG.KEYS.LEFT:
+            this.camera.right(-0.2);
+            console.log("left");
+            break;
+
+        case GG.KEYS.RIGHT:
+            this.camera.right(0.2);
+            console.log("right");
+            break;
+
+        case GG.KEYS.UP:
+            this.camera.forward(-0.2);
+            console.log("forward");
+            break;
+
+        case GG.KEYS.DOWN:
+            this.camera.forward(0.2);
+            console.log("backwards");
+            break;
+
+        case GG.KEYS.PAGE_UP:
+            this.camera.elevate(0.2);
+            break;
+
+        case GG.KEYS.PAGE_DOWN:
+            this.camera.elevate(-0.2);
+            break;
+
+        default: break;
+    }
+};
+    
 GG.MouseHandler.prototype.getCamera = function () {
     return this.camera;
 };

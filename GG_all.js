@@ -23,6 +23,10 @@ var GG = {
 
 	init : function () {
 		GG.renderer = new GG.Renderer();
+        GG.mouseInput = new GG.MouseInput();
+        GG.mouseInput.initialize();
+        GG.keyboardInput = new GG.KeyboardInput();
+        GG.keyboardInput.initialize();
 	}
 	
 };
@@ -104,6 +108,305 @@ GG.Naming = {
 GG.Naming.textureUnitUniformMap = function (basename) {
     return basename + '_map';
 };
+GG.MouseInput = function() {
+    this.mouseDownHandlers   = [];
+    this.mouseUpHandlers     = [];
+    this.clickHandlers       = [];
+    this.doubleClickHandlers = [];
+    this.wheelHandlers       = [];
+    this.moveHandlers        = [];
+};
+
+GG.MouseInput.prototype.constructor = GG.MouseInput;
+
+GG.MouseInput.prototype.initialize = function() {
+    var self = this;
+
+    this.handleMouseDown = function (event) {
+        self.invokeHandlers(event, self.mouseDownHandlers);
+    };
+
+    this.handleMouseUp = function (event) {
+        self.invokeHandlers(event, self.mouseUpHandlers);
+    };
+
+    //TODO: check if this is cross browser
+    this.handleMouseWheel = function (event) {
+        self.wheelHandlers.forEach(function(h) {
+            h(event.detail ? -120*event.detail : event.wheelDeltaY);
+        });
+    };
+
+    this.handleMouseClick = function (event) {
+        self.invokeHandlers(event, self.clickHandlers);
+    };
+
+    this.handleMouseDoubleClick = function (event) {
+        self.invokeHandlers(event, self.doubleClickHandlers);
+    };
+
+    this.handleMouseMove = function (event) {
+        self.invokeHandlers(event, self.moveHandlers);
+    };
+
+    GG.canvas.addEventListener('mousedown', this.handleMouseDown, false);
+    GG.canvas.addEventListener('mouseup', this.handleMouseUp, false);
+    GG.canvas.addEventListener('mouseclick', this.handleMouseClick, false);
+    GG.canvas.addEventListener('mousedblclick', this.handleMouseDoubleClick, false);
+    GG.canvas.addEventListener('mousemove', this.handleMouseMove, false);
+
+    GG.canvas.addEventListener('mousewheel', this.handleMouseWheel, false);
+    // Firefox
+    GG.canvas.addEventListener('DOMMouseScroll', this.handleMouseWheel, false);
+};
+
+GG.MouseInput.prototype.getCanvasLocalCoordsFromEvent = function (event) {
+    var x, y;
+    var offsetLeft = GG.canvas.offsetLeft, offsetTop = GG.canvas.offsetTop;
+
+    if (event.pageX || event.pageY) {
+        x = event.pageX;
+        y = event.pageY;
+    } else {
+        var body_scrollLeft = document.body.scrollLeft,
+            element_scrollLeft = document.documentElement.scrollLeft,
+            body_scrollTop = document.body.scrollTop,
+            element_scrollTop = document.documentElement.scrollTop;
+        x = event.clientX + body_scrollLeft + element_scrollLeft;
+        y = event.clientY + body_scrollTop + element_scrollTop;
+    }
+    x -= offsetLeft;
+    y -= offsetTop;
+    return [x, y];
+};
+
+GG.MouseInput.prototype.invokeHandlers = function (event, handlers) {
+    var canvasCoords = this.getCanvasLocalCoordsFromEvent(event);
+    handlers.forEach(function(h) {
+        h(canvasCoords[0], canvasCoords[1]);
+    });
+    //TODO: signal that default processing should be skipped
+};
+
+GG.MouseInput.prototype.onMouseMove = function(callback) {
+    this.moveHandlers.push(callback);
+};
+
+GG.MouseInput.prototype.removeOnMouseMove = function(callback) {
+    this.moveHandlers.splice(this.moveHandlers.indexOf(callback), 1);
+};
+
+GG.MouseInput.prototype.onMouseDown = function(callback) {
+    this.mouseDownHandlers.push(callback);
+};
+
+GG.MouseInput.prototype.removeOnMouseDown = function(callback) {
+    this.mouseDownHandlers.splice(this.mouseDownHandlers.indexOf(callback), 1);
+};
+
+GG.MouseInput.prototype.onMouseUp = function(callback) {
+    this.mouseUpHandlers.push(callback);
+};
+
+GG.MouseInput.prototype.removeOnMouseUp = function(callback) {
+    this.mouseUpHandlers.splice(this.mouseUpHandlers.indexOf(callback), 1);
+};
+
+GG.MouseInput.prototype.onMouseWheel = function(callback) {
+    this.wheelHandlers.push(callback);
+};
+
+GG.MouseInput.prototype.removeOnMouseWheel = function(callback) {
+    this.wheelHandlers.splice(this.wheelHandlers.indexOf(callback), 1);
+};
+
+GG.MouseInput.prototype.onMouseClick = function(callback) {
+    this.clickHandlers.push(callback);
+};
+
+GG.MouseInput.prototype.removeOnMouseClick = function(callback) {
+    this.clickHandlers.splice(this.clickHandlers.indexOf(callback), 1);
+};
+
+GG.MouseInput.prototype.onMouseDoubleClick = function(callback) {
+    this.doubleClickHandlers.push(callback);
+};
+
+GG.MouseInput.prototype.removeOnMouseDoubleClick = function(callback) {
+    this.doubleClickHandlers.splice(this.doubleClickHandlers.indexOf(callback), 1);
+};
+
+GG.KeyboardInput = function () {
+    this.keyDownHandlers = [];
+    this.keyUpHandlers = [];
+};
+
+GG.KeyboardInput.prototype.constructor = GG.KeyboardInput;
+
+GG.KeyboardInput.prototype.initialize = function () {
+    var self = this;
+
+    this.handleKeyDown = function (event) {
+        self.invokeHandlers(event, self.keyDownHandlers);
+    };
+
+    this.handleKeyUp = function (event) {
+        self.invokeHandlers(event, self.keyUpHandlers);
+    };
+
+    window.addEventListener('keydown', this.handleKeyDown, false);
+    window.addEventListener('keyup', this.handleKeyUp, false);
+};
+
+GG.KeyboardInput.prototype.invokeHandlers = function (event, handlers) {
+    handlers.forEach(function (h) {
+        h(event.keyCode);
+    });
+};
+
+GG.KeyboardInput.prototype.onKeyDown = function (callback) {
+    this.keyDownHandlers.push(callback);
+};
+
+GG.KeyboardInput.prototype.removeOnKeyDow = function (callback) {
+    this.keyDownHandlers.splice(this.keyDownHandlers.indexOf(callback), 1);
+};
+
+GG.KeyboardInput.prototype.onKeyUp = function (callback) {
+    this.keyUpHandlers.push(callback);
+};
+
+GG.KeyboardInput.prototype.removeOnKeyUp = function (callback) {
+    this.keyUpHandlers.splice(this.keyUpHandlers.indexOf(callback), 1);
+};
+
+/**
+ * A list of JavaScript key codes to reference by name.
+ * From 'Foundation HTML5 Animation with JavaScript': http://amzn.com/1430236655?tag=html5anim-20
+ */
+GG.KEYS = {
+    BACKSPACE:8,
+    TAB:9,
+    ENTER:13,
+    COMMAND:15,
+    SHIFT:16,
+    CONTROL:17,
+    ALTERNATE:18,
+    PAUSE:19,
+    CAPS_LOCK:20,
+    NUMPAD:21,
+    ESCAPE:27,
+    SPACE:32,
+    PAGE_UP:33,
+    PAGE_DOWN:34,
+    END:35,
+    HOME:36,
+
+    //arrows
+    LEFT:37,
+    UP:38,
+    RIGHT:39,
+    DOWN:40,
+
+    INSERT:45,
+    DELETE:46,
+
+    //numbers
+    NUMBER_0:48,
+    NUMBER_1:49,
+    NUMBER_2:50,
+    NUMBER_3:51,
+    NUMBER_4:52,
+    NUMBER_5:53,
+    NUMBER_6:54,
+    NUMBER_7:55,
+    NUMBER_8:56,
+    NUMBER_9:57,
+
+    //letters
+    A:65,
+    B:66,
+    C:67,
+    D:68,
+    E:69,
+    F:70,
+    G:71,
+    H:72,
+    I:73,
+    J:74,
+    K:75,
+    L:76,
+    M:77,
+    N:78,
+    O:79,
+    P:80,
+    Q:81,
+    R:82,
+    S:83,
+    T:84,
+    U:85,
+    V:86,
+    W:87,
+    X:88,
+    Y:89,
+    Z:90,
+
+    LEFT_WINDOW_KEY:91,
+    RIGHT_WINDOW_KEY:92,
+    SELECT_KEY:93,
+
+    //number pad
+    NUMPAD_0:96,
+    NUMPAD_1:97,
+    NUMPAD_2:98,
+    NUMPAD_3:99,
+    NUMPAD_4:100,
+    NUMPAD_5:101,
+    NUMPAD_6:102,
+    NUMPAD_7:103,
+    NUMPAD_8:104,
+    NUMPAD_9:105,
+    NUMPAD_MULTIPLY:106,
+    NUMPAD_ADD:107,
+    NUMPAD_ENTER:108,
+    NUMPAD_SUBTRACT:109,
+    NUMPAD_DECIMAL:110,
+    NUMPAD_DIVIDE:111,
+
+    //function keys
+    F1:112,
+    F2:113,
+    F3:114,
+    F4:115,
+    F5:116,
+    F6:117,
+    F7:118,
+    F8:119,
+    F9:120,
+    F10:121,
+    F11:122,
+    F12:123,
+    F13:124,
+    F14:125,
+    F15:126,
+
+    NUM_LOCK:144,
+    SCROLL_LOCK:145,
+
+    //punctuation
+    SEMICOLON:186,
+    EQUAL:187,
+    COMMA:188,
+    MINUS:189,
+    PERIOD:190,
+    SLASH:191,
+    BACKQUOTE:192,
+    LEFTBRACKET:219,
+    BACKSLASH:220,
+    RIGHTBRACKET:221,
+    QUOTE:222
+};
+
 GG.Clock = function() {
 	this.startTime   = new Date();
 	this.pauseTime   = null;
@@ -5215,98 +5518,95 @@ GG.MouseHandler = function() {
 	this.camera     = null;
 	this.rotX       = 0.0;
 	this.rotY       = 0.0;
-	
-	var that        = this;
-	this.handleMouseDown = function (event) {
-		that.mouseDown  = true;
-		that.lastMouseX = event.clientX;
-		that.lastMouseY = event.clientY;
-	};
 
-	this.handleMouseUp = function (event) {
-		that.mouseDown = false;
-	};
+    var self = this;
+    this.mouseDownCallback = function(x, y) {
+        self.handleMouseDown(x, y);
+    }
+    this.mouseUpCallback = function(x, y) {
+        self.handleMouseUp(x, y);
+    }
+    this.mouseMoveCallback = function(x, y) {
+        self.handleMouseMove(x, y);
+    }
+    this.mouseWheelCallback = function(deltaY) {
+        self.handleMouseWheel(deltaY);
+    }
+    this.keyDownCallback = function(keyCode) {
+        self.handleKeyDown(keyCode);
+    };
 
-	this.handleKeyDown = function (event) {
-		switch (event.keyCode) {
-			case 37: 	// left
-			that.camera.right(-0.2);
-			console.log("left");
-			break;
-
-			case 39: 	// right
-			that.camera.right(0.2);
-			console.log("right");
-			break;
-
-			case 38: 	// up
-			that.camera.forward(-0.2);
-			console.log("forward");
-			break;
-
-			case 40: 	// down
-			that.camera.forward(0.2);
-			console.log("backwards");
-			break;		
-
-			case 33: 	// page up
-			that.camera.elevate(0.2);
-			break;
-
-			case 34: 	// page down
-			that.camera.elevate(-0.2);
-			break;
-
-			default: console.log('key is: ' + event.keyCode); break;
-		}
-	};
-
-	this.handleMouseMove = function (event) {
-		if (!that.mouseDown) {
-		  return;
-		}
-		var newX   = event.clientX;
-		var newY   = event.clientY;
-		
-		var deltaX = newX - that.lastMouseX;
-		that.rotY  += deltaX;
-		
-		var deltaY = newY - that.lastMouseY;
-		that.rotX  += deltaY;
-
-		that.camera.setRotation([that.rotX, that.rotY, 0.0]);
-		
-		that.lastMouseX = newX;
-		that.lastMouseY = newY;
-	};
-
-	this.handleMouseWheel = function (event) {
-		var delta = event.wheelDeltaY * 0.01;
-		that.camera.zoom(delta);
-	};
-	
-	GG.canvas.onmousedown = this.handleMouseDown;
-	GG.canvas.onmousewheel = this.handleMouseWheel;
-    document.onmouseup = this.handleMouseUp;
-    document.onmousemove = this.handleMouseMove;
-    document.onkeydown = this.handleKeyDown;
-    document.onkeyup = this.handleKeyUp;
-
-    // http://www.sitepoint.com/html5-javascript-mouse-wheel/
-    if (GG.canvas.addEventListener) {
-		// IE9, Chrome, Safari, Opera
-		GG.canvas.addEventListener("mousewheel", this.handleMouseWheel, false);
-		// Firefox
-		GG.canvas.addEventListener("DOMMouseScroll", this.handleMouseWheel, false);
-	} else {
-		// IE 6/7/8
-		GG.canvas.attachEvent("onmousewheel", this.handleMouseWheel);
-	}
+	GG.mouseInput.onMouseDown(this.mouseDownCallback);
+    GG.mouseInput.onMouseUp(this.mouseUpCallback);
+    GG.mouseInput.onMouseMove(this.mouseMoveCallback);
+    GG.mouseInput.onMouseWheel(this.mouseWheelCallback);
+    GG.keyboardInput.onKeyDown(this.keyDownCallback);
 };
-
 
 GG.MouseHandler.prototype.constructor = GG.MouseHandler;
 
+GG.MouseHandler.prototype.handleMouseDown = function (x, y) {
+    this.mouseDown  = true;
+    this.lastMouseX = x;
+    this.lastMouseY = y;
+};
+
+GG.MouseHandler.prototype.handleMouseUp = function (x, y) {
+    this.mouseDown = false;
+};
+
+GG.MouseHandler.prototype.handleMouseMove = function (x, y) {
+    if (!this.mouseDown) {
+        return;
+    }
+    this.rotY  += x - this.lastMouseX;
+    this.rotX  += y - this.lastMouseY;
+
+    this.camera.setRotation([this.rotX, this.rotY, 0.0]);
+
+    this.lastMouseX = x;
+    this.lastMouseY = y;
+};
+
+GG.MouseHandler.prototype.handleMouseWheel = function (deltaY) {
+    var delta = deltaY * 0.01;
+    this.camera.zoom(delta);
+};
+
+GG.MouseHandler.prototype.handleKeyDown = function(keyCode) {
+    switch (keyCode) {
+        case GG.KEYS.LEFT:
+            this.camera.right(-0.2);
+            console.log("left");
+            break;
+
+        case GG.KEYS.RIGHT:
+            this.camera.right(0.2);
+            console.log("right");
+            break;
+
+        case GG.KEYS.UP:
+            this.camera.forward(-0.2);
+            console.log("forward");
+            break;
+
+        case GG.KEYS.DOWN:
+            this.camera.forward(0.2);
+            console.log("backwards");
+            break;
+
+        case GG.KEYS.PAGE_UP:
+            this.camera.elevate(0.2);
+            break;
+
+        case GG.KEYS.PAGE_DOWN:
+            this.camera.elevate(-0.2);
+            break;
+
+        default: break;
+    }
+};
+    
 GG.MouseHandler.prototype.getCamera = function () {
     return this.camera;
 };
