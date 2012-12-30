@@ -3,7 +3,7 @@ GG.DefaultSceneRenderer = function (spec) {
 	this.scene           = spec.scene;
 	this.camera          = spec.camera;
 	this.programCache    = {};
-	this.shadowTechnique = new GG.ShadowMapTechnique({ shadowType : GG.SHADOW_MAPPING });
+	this.shadowTechnique = new GG.ShadowMapTechnique({ shadowType : GG.SHADOW_MAPPING_VSM });
 	this.dbg             = new GG.DepthMapDebugOutput();	
 	/*
 	this.backgroundQueue = new GG.RenderQueue({ name : 'background', priority : 0 });

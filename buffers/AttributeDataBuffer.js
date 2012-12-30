@@ -24,7 +24,7 @@ GG.AttributeDataBuffer = function (spec) {
         if (this.itemCount == null) throw "dataLength must be defined";
         this.arrayData = this.allocateDataArray();
     } else {
-        this.itemCount = this.arrayData.length;
+        this.itemCount = this.arrayData.length / this.itemSize;
     }
 
     gl.bufferData(gl.ARRAY_BUFFER, this.arrayData, this.usageType);

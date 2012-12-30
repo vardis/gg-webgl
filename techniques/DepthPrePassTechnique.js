@@ -32,10 +32,7 @@ GG.DepthPrePassTechnique.Pass = function (spec) {
 GG.DepthPrePassTechnique.Pass.prototype             = new GG.RenderPass();
 GG.DepthPrePassTechnique.Pass.prototype.constructor = GG.DepthPrePassTechnique.Pass;
 
-GG.DepthPrePassTechnique.Pass.prototype.getRenderPrimitive = function(renderable) {
-	if (renderable.material == null) {
-		console.log('error');
-	}
+GG.DepthPrePassTechnique.Pass.prototype.getRenderPrimitive = function(renderable) {	
 	var t = renderable.material.getTechnique();
 
 	//TODO: Handle renderables with multiple render passes

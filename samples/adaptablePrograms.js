@@ -16,7 +16,7 @@ AdaptableProgramSample.prototype.constructor = AdaptableProgramSample;
 
 AdaptableProgramSample.prototype.initializeAssets = function () {
 	this.material = new GG.BaseMaterial();
-	this.material.shininess = 60;
+	this.material.shininess = 30;
 
 	var self = this;	
 	GG.Loader.loadImage('earth', '../assets/textures/earth.png', function (reqId, image) {		
@@ -38,7 +38,7 @@ AdaptableProgramSample.prototype.initializeAssets = function () {
 			flipY : false 
 		});		
 		self.material.setSpecularMap(specularMap);
-        self.material.setAlphaMap(specularMap);
+        //self.material.setAlphaMap(specularMap);
 		self.assetsLoaded = true;
 	});
 
@@ -113,6 +113,8 @@ AdaptableProgramSample.prototype.updateBlendMode = function () {
 };
 
 AdaptableProgramSample.prototype.update = function () {
+	GG.SampleBase.prototype.update.call(this);
+
 	if (this.initialized) {
 
         this.y_rot += GG.clock.deltaTime() * 0.001;

@@ -16,7 +16,7 @@ GG.SpecularMappingEmbeddableTechnique.prototype.adaptShadersToMaterial = functio
 			.uniformTexUnit(this.BASE_UNIFORM_NAME)
 			.addPostProcessBlock([
 			"	vec3 specularMapIntensity = sampleTexUnit("
-                + GG.Naming.textureUnitUniformMap(this.BASE_UNIFORM_NAME) + ", " + this.BASE_UNIFORM_NAME + ").rgb;",
+                + GG.Naming.textureUnitUniformMap(this.BASE_UNIFORM_NAME) + ", " + this.BASE_UNIFORM_NAME + ", v_texCoords).rgb;",
 			"	specular *= specularMapIntensity;"
 			].join('\n'));
 	}

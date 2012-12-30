@@ -21,6 +21,7 @@ GG.KeyboardInput.prototype.initialize = function () {
 };
 
 GG.KeyboardInput.prototype.invokeHandlers = function (event, handlers) {
+    event.preventDefault();
     handlers.forEach(function (h) {
         h(event.keyCode);
     });

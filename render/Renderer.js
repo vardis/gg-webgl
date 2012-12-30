@@ -40,57 +40,58 @@ GG.Renderer.prototype.prepareNextFrame = function () {
 	return this;
 };
 
-GG.Renderer.prototype.renderMesh = function (mesh, program, options) {		
+GG.Renderer.prototype.render = function (renderable, program, options) {		
 
 	var attribPosition = program[GG.GLSLProgram.BuiltInAttributes.attribPosition];
 	if (attribPosition != undefined) {
-        mesh.getPositionsBuffer().streamAttribute(attribPosition);
+        renderable.getPositionsBuffer().streamAttribute(attribPosition);
 	}
 
 	var attribNormal = program[GG.GLSLProgram.BuiltInAttributes.attribNormal];
 	if (attribNormal != undefined) {
-		var normalsBuffer = mesh.getMaterial().flatShade ? mesh.getFlatNormalsBuffer() : mesh.getNormalsBuffer();
+		var normalsBuffer = renderable.getMaterial().flatShade ? renderable.getFlatNormalsBuffer() : renderable.getNormalsBuffer();
         normalsBuffer.streamAttribute(attribNormal);
 	}
 
 	var attribTexCoords = program[GG.GLSLProgram.BuiltInAttributes.attribTexCoords];
 	if (attribTexCoords != undefined) {
-        mesh.getTexCoordsBuffer().streamAttribute(attribTexCoords)
+        renderable.getTexCoordsBuffer().streamAttribute(attribTexCoords)
 	}
 
 	var attribColor = program[GG.GLSLProgram.BuiltInAttributes.attribColor];
 	if (attribColor != undefined) {
-		mesh.getColorsBuffer().streamAttribute(attribColor);
+		renderable.getColorsBuffer().streamAttribute(attribColor);
 	}
 
     var attribTangent = program[GG.GLSLProgram.BuiltInAttributes.attribTangent];
     if (attribTangent != undefined) {
-        mesh.getTangentsBuffer().streamAttribute(attribTangent);
+        renderable.getTangentsBuffer().streamAttribute(attribTangent);
     }
 
     options = options || {};
-	var mode = gl.TRIANGLES;
+	var mode = renderable.getMode();
 	if ('mode' in options ) {
-		mode = options.mode;
+		mode = options.mode != null ? options.mode : mode;
 	}
-	if (mesh.getIndexBuffer() != undefined) {
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.getIndexBuffer());
-		gl.drawElements(mode, mesh.getIndexBuffer().numItems, mesh.getIndexBuffer().itemType, 0);
+
+	var glMode = this.translateRenderMode(mode);
+	if (renderable.getIndexBuffer() != undefined) {
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, renderable.getIndexBuffer());
+		gl.drawElements(glMode, renderable.getIndexBuffer().numItems, renderable.getIndexBuffer().itemType, 0);
 	} else {
-		gl.drawArrays(mode, 0, mesh.getPositionsBuffer().size);
+		gl.drawArrays(glMode, 0, renderable.getPositionsBuffer().itemCount);
 	}	
 };
 
-GG.Renderer.prototype.renderPoints = function (program, vertexBuffer, colorBuffer) {
-	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-	gl.enableVertexAttribArray(program.attribPosition);
-	gl.vertexAttribPointer(program.attribPosition, vertexBuffer.itemSize, vertexBuffer.itemType, false, 0, 0);
-
-	if (colorBuffer != null) {
-		gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-		gl.enableVertexAttribArray(program.attribColors);
-		gl.vertexAttribPointer(program.attribColors, colorBuffer.itemSize, colorBuffer.itemType, false, 0, 0);
+GG.Renderer.prototype.translateRenderMode = function (mode) {
+	switch (mode) {
+		case GG.RENDER_POINTS: return gl.POINTS;
+		case GG.RENDER_LINES: return gl.LINES;
+		case GG.RENDER_LINE_LOOP: return gl.LINE_LOOP;
+		case GG.RENDER_LINE_STRIP: return gl.LINE_STRIP;
+		case GG.RENDER_TRIANGLES: 
+		default:
+			return gl.TRIANGLES;
 	}
+}
 
-	gl.drawArrays(gl.POINTS, 0, vertexBuffer.size);
-};

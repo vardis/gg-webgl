@@ -1,23 +1,23 @@
 GG.PhongShadingTechnique = function(spec) {
-	spec        = spec || {};
+	spec = spec || {};
 	spec.passes = [new GG.PhongPass()];
 
 	GG.BaseTechnique.call(this, spec);
 };
 
-GG.PhongShadingTechnique.prototype             = new GG.BaseTechnique();
+GG.PhongShadingTechnique.prototype = new GG.BaseTechnique();
 GG.PhongShadingTechnique.prototype.constructor = GG.PhongShadingTechnique;
 
 GG.PhongPass = function(spec) {	
 	GG.RenderPass.call(this, spec);
 	this.diffuseTexturingPass = new GG.DiffuseTextureStackEmbeddableRenderPass();
-	this.specularMapPass      = new GG.SpecularMappingEmbeddableTechnique();
-	this.alphaMapPass         = new GG.AlphaMappingEmbeddableRenderPass();
-	this.normalMapPass        = new GG.NormalMappingEmbeddableRenderPass();
+	this.specularMapPass = new GG.SpecularMappingEmbeddableTechnique();
+    this.alphaMapPass = new GG.AlphaMappingEmbeddableRenderPass();
+    this.normalMapPass = new GG.NormalMappingEmbeddableRenderPass();
 	this.createProgram(null);	
 };
 
-GG.PhongPass.prototype             = new GG.AdaptiveRenderPass();
+GG.PhongPass.prototype = new GG.AdaptiveRenderPass();
 GG.PhongPass.prototype.constructor = GG.PhongPass;
 
 GG.PhongPass.prototype.createProgram = function(material) {
@@ -30,42 +30,38 @@ GG.PhongPass.prototype.createProgram = function(material) {
 		.texCoord0()
 		.varying('vec3', 'v_normal')
 		.varying('vec4', 'v_viewPos')
-		.varying('vec2', 'v_texCoords')		
+		.varying('vec2', 'v_texCoords')
 		.addMainBlock([
 			"	vec4 viewPos = u_matModelView*a_position;",
 			"	gl_Position = u_matProjection*viewPos;",
 			"	gl_Position.z -= 0.0001;",
-            "#ifdef " + GG.Naming.DefUseTangentSpace,
-            "   v_normal = a_normal;",
-            "#else",
 			"	v_normal = u_matNormals * a_normal;",
-            "#endif",
 			"	//v_viewVector = -viewPos.xyz; //(u_matInverseView * vec4(0.0, 0.0, 0.0, 1.0) - viewPos).xyz;",
 			"	v_viewPos = viewPos;",
 			"	v_texCoords = a_texCoords;"
 			].join('\n'));	
 
-	var fs = new GG.ProgramSource();
+	fs = new GG.ProgramSource();
 	fs.asFragmentShader()
 		.varying('vec3', 'v_normal')
 		.varying('vec4', 'v_viewPos')
-		.varying('vec2', GG.Naming.VaryingTexCoords)
+		.varying('vec2', 'v_texCoords')
 		.uniformViewMatrix()
 		.uniformLight()
 		.uniformMaterial()
 		.addDecl('phong.lightIrradiance', GG.ShaderLib.phong.lightIrradiance)
-		.declareAlphaOutput()
 		.addMainInitBlock([
-            "#ifdef " + GG.Naming.DefUseTangentSpace,
-            "   vec3 N = sampleNormalMap();",
-            "#else",
 			"	vec3 N = normalize(v_normal);",
-            "#endif",
 			"	vec3 V = normalize(-v_viewPos.xyz);",
 			"	vec3 diffuse = vec3(0.0);",
-			"   vec3 " + GG.Naming.VarDiffuseBaseColor + " = u_material.diffuse;",
 			"	vec3 specular = vec3(0.0);",
+            "   float " + GG.Naming.VarAlphaOutput + " = 1.0;"
 			].join('\n'))
+        .addMainBlock([
+            "#ifdef " + GG.Naming.DefUseTangentSpace,
+            "   N = derivativeNormalMapping(-v_viewPos.xyz, N, v_texCoords);",
+            "#endif"
+        ].join('\n'))
 		.addMainBlock([			
 			"	vec3 L;",
 			"	if (u_light.type == 1.0) {",
@@ -76,12 +72,11 @@ GG.PhongPass.prototype.createProgram = function(material) {
 			"	lightIrradiance(N, V, L, u_light, u_material, diffuse, specular);"			
 		].join('\n'))
 		.finalColor(
-	
             "	gl_FragColor = vec4(u_material.ambient" +
-            " + baseColor*diffuse" +
+            " + u_material.diffuse*diffuse" +
             " + u_material.specular*specular" +
-            ", " + GG.Naming.VarAlphaOutput + ");"   
-                 
+            ", " + GG.Naming.VarAlphaOutput + ");"
+			//"gl_FragColor = vec4(specular, 1.0);"
 			);
     //TODO: Add light ambient and object emissive
 	if (material != null) {
@@ -90,7 +85,7 @@ GG.PhongPass.prototype.createProgram = function(material) {
         this.alphaMapPass.adaptShadersToMaterial(vs, fs, material);
         this.normalMapPass.adaptShadersToMaterial(vs, fs, material);
 	}
-	this.vertexShader   = vs.toString();
+	this.vertexShader = vs.toString();
 	this.fragmentShader = fs.toString();	
 };
 

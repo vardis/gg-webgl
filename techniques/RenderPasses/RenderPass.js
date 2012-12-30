@@ -88,9 +88,9 @@ GG.RenderPass.prototype.setRenderState = function(renderable, renderContext) {
 GG.RenderPass.prototype.submitGeometryForRendering = function(renderable, renderContext) {
 	if (renderable && this.renderableType == GG.RenderPass.MESH) {
 		var options = {
-			mode : this.getRenderPrimitive(renderable)
+			mode : this.overrideRenderPrimitive(renderable)
 		};
-		renderContext.renderer.renderMesh(renderable, this.program, options);
+		renderContext.renderer.render(renderable, this.program, options);
 	} else {
 		this.callback.__renderGeometry(renderable);
 	}
@@ -147,6 +147,6 @@ GG.RenderPass.prototype.__locateCustomUniforms = function(program) {};
 /**
  * Subclasses can override this method in order to render lines or points, fans, strips, etc.
  */
-GG.RenderPass.prototype.getRenderPrimitive = function(renderable) {
-	return gl.TRIANGLES;
+GG.RenderPass.prototype.overrideRenderPrimitive = function(renderable) {
+	return null;
 };

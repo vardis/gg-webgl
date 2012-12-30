@@ -41,9 +41,9 @@ NormalMappingSample.prototype.initializeWithAssetsLoaded = function () {
 
     this.technique = new GG.PhongShadingTechnique();
 
-    this.teapotMat.diffuse   = [1.0, 0.5, 0.1];
+    this.teapotMat.diffuse   = [1.0, 1.0, 1.0];
     this.teapotMat.ambient   = [0.05, 0.05, 0.05];
-    this.teapotMat.shininess = 20.0;
+    this.teapotMat.shininess = 60.0;
     this.teapotMat.normalMapScale = 2.0;
 
     var geom = new GG.SphereGeometry(2.0, 64, 64);
@@ -56,7 +56,7 @@ NormalMappingSample.prototype.initializeWithAssetsLoaded = function () {
         type : GG.LT_POINT,
         position : [0.0, 1.0, 5.0],
         direction : [0.0, 0.0, -0.90],
-        diffuse : [0.30, 0.20, 0.70],
+        diffuse : [0.60, 0.70, 0.70],
         cosCutOff : 0.9
     });
     this.renderContext = new GG.RenderContext({ camera : this.camera, light : this.light });

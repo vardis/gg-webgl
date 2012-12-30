@@ -1,6 +1,5 @@
 GG.SampleBase = function (spec) {
-	spec = spec || {};
-	this.context = spec.context != undefined ? spec.context : "experimental-webgl";
+	spec = spec || {};	
 	this.canvas  = null;
 
     this.assetsLoaded = false;
@@ -11,17 +10,8 @@ GG.SampleBase.prototype.constructor = GG.SampleBase;
 
 GG.SampleBase.prototype.start = function()  {
 	try {
-		this.canvas = document.getElementById("c");		
-		
-		gl = this.canvas.getContext(this.context);
-		GG.context = gl;
-		GG.canvas = this.canvas;
 		GG.init();
-		GG.clock = new GG.Clock();		
 		
-		gl.viewportWidth  = this.canvas.width;
-		gl.viewportHeight = this.canvas.height;
-
 		/**
 		 * Provides requestAnimationFrame in a cross browser way.
 		 */

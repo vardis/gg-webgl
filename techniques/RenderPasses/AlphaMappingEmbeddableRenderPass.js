@@ -13,12 +13,12 @@ GG.AlphaMappingEmbeddableRenderPass.prototype.constructor = GG.AlphaMappingEmbed
 
 GG.AlphaMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {
     if (material.alphaMap.texture != null) {
-        fragmentShader.declareAlphaOutput()
+        fragmentShader
             .addDecl('sampleTexUnit', GG.ShaderLib.blocks.sampleTexUnit)
             .uniformTexUnit(this.BASE_UNIFORM_NAME)
             .addPostProcessBlock([
             GG.Naming.VarAlphaOutput + " = sampleTexUnit("
-                + GG.Naming.textureUnitUniformMap(this.BASE_UNIFORM_NAME) + ", " + this.BASE_UNIFORM_NAME + ").r;"
+                + GG.Naming.textureUnitUniformMap(this.BASE_UNIFORM_NAME) + ", " + this.BASE_UNIFORM_NAME + ", v_texCoords).r;"
         ].join('\n'));
     }
 };

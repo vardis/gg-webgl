@@ -22,6 +22,8 @@ var GG = {
 	},
 
 	init : function () {
+		GG.clock = new GG.Clock();		
+		
 		GG.renderer = new GG.Renderer();
         GG.mouseInput = new GG.MouseInput();
         GG.mouseInput.initialize();
@@ -30,6 +32,23 @@ var GG = {
 	}
 	
 };
+
+var canvas = document.getElementById(window.GG_CANVAS_ID || 'canvasGL');				
+var contextName = window.GG_CONTEXT_NAME || "experimental-webgl";
+var gl = canvas.getContext(contextName);
+
+GG.context = gl;
+GG.canvas = canvas;
+
+gl.viewportWidth  = canvas.width;
+gl.viewportHeight = canvas.height;
+
+
+GG.RENDER_POINTS     = 1;
+GG.RENDER_LINES      = 2;
+GG.RENDER_LINE_LOOP  = 3;
+GG.RENDER_LINE_STRIP = 4;
+GG.RENDER_TRIANGLES  = 5;
 
 GG.MAX_DIFFUSE_TEX_UNITS = 8;
 GG.TEX_UNIT_DIFFUSE_MAP_0  = 0;
@@ -56,9 +75,7 @@ GG.TEX_UNIT_SPECULAR_MAP = GG.TEX_UNIT_NORMAL_MAP    + 1;
 GG.TEX_UNIT_ALPHA_MAP    = GG.TEX_UNIT_SPECULAR_MAP  + 1;
 GG.TEX_UNIT_GLOW_MAP     = GG.TEX_UNIT_ALPHA_MAP     + 1;
 GG.TEX_UNIT_SHADOW_MAP   = GG.TEX_UNIT_GLOW_MAP      + 1;
-GG.TEX_UNIT_ENV_MAP      = GG.TEX_UNIT_SHADOW_MAP    + 1;
-			
-var gl, canvas;
+GG.TEX_UNIT_ENV_MAP      = GG.TEX_UNIT_SHADOW_MAP    + 1;			
 			
 String.prototype.times = function(n) {
     return Array.prototype.join.call({length:n+1}, this);
@@ -100,6 +117,8 @@ GG.Naming = {
     VarSpecularOutput        : 'specular',
     VarAlphaOutput           : 'alpha',
 
+    VarDiffuseBaseColor      : 'baseColor',
+    
     // common preprocessor definition names
     DefUseTangentSpace       : 'USE_TANGENT_SPACE_FOR_LIGHTING'
 
@@ -231,6 +250,7 @@ GG.MouseInput.prototype.getCanvasLocalCoordsFromEvent = function (event) {
 };
 
 GG.MouseInput.prototype.invokeHandlers = function (event, handlers) {
+    event.preventDefault();
     var canvasCoords = this.getCanvasLocalCoordsFromEvent(event);
     handlers.forEach(function(h) {
         h(canvasCoords[0], canvasCoords[1]);
@@ -309,6 +329,7 @@ GG.KeyboardInput.prototype.initialize = function () {
 };
 
 GG.KeyboardInput.prototype.invokeHandlers = function (event, handlers) {
+    event.preventDefault();
     handlers.forEach(function (h) {
         h(event.keyCode);
     });
@@ -456,6 +477,151 @@ GG.KEYS = {
     RIGHTBRACKET:221,
     QUOTE:222
 };
+
+GG.Bezier = function (spec) {
+    this.points = spec.points != null ? spec.points : [];
+    this.tangents = [];
+    this.cp0 = spec.cp0 != null ? spec.cp0 : [0, 0, 0];
+    this.cp1 = spec.cp1 != null ? spec.cp1 : [0, 0, 0];
+    this.cp2 = spec.cp2 != null ? spec.cp2 : [0, 0, 0];
+    this.cp3 = spec.cp3 != null ? spec.cp3 : [0, 0, 0];
+};
+
+GG.Bezier.prototype.constructor = GG.Bezier;
+
+
+
+
+GG.Bezier.prototype.point = function (t) {
+    var t1 = 1 - t;
+    var t2 = t1 * t1;
+    var timeSquared = t * t;
+    var timeCubic = t * timeSquared;
+
+    var pt = [0, 0, 0];
+    pt[0] = t1 * t2 * this.cp0[0] + 3 * t * t2 * this.cp1[0] + 3 * timeSquared * t1 * this.cp2[0] + timeCubic * this.cp3[0];
+    pt[1] = t1 * t2 * this.cp0[1] + 3 * t * t2 * this.cp1[1] + 3 * timeSquared * t1 * this.cp2[1] + timeCubic * this.cp3[1];
+    pt[2] = t1 * t2 * this.cp0[2] + 3 * t * t2 * this.cp1[2] + 3 * timeSquared * t1 * this.cp2[2] + timeCubic * this.cp3[2];
+    return pt;
+};
+
+GG.CatmullRom = function (spec) {
+    spec = spec || {};
+    this.points = spec.points != null ? spec.points : [];
+    this.tangents = [];
+    this.ratios = [];
+    this.cp1 = spec.cp1 != null ? spec.cp1 : [0, 0, 0];
+    this.sharpness = spec.sharpness != null ? spec.sharpness : 0.5;
+};
+
+GG.CatmullRom.prototype.constructor = GG.CatmullRom;
+
+GG.CatmullRom.prototype.addPoint = function (p) {
+    this.points.push(p);
+    this.calculateSegmentsRatios();
+    this.calculateTangents();
+};
+
+GG.CatmullRom.prototype.point = function (t) {
+    // check corner cases, t == 0, t == 1
+    if (t == 0) {
+        return this.points[0];
+    } else if (t == 1.0) {
+        return this.points[this.points.length - 1];
+    } else {
+        var idx = this.getSegmentForTime(t);
+        var start = this.ratios[idx];
+        var end = this.ratios[idx + 1];
+        var segmentTime = (t - start) / (end - start);
+        return this.hermiteInterpolation(idx, segmentTime);   
+    }    
+};
+
+GG.CatmullRom.prototype.hermiteInterpolation = function (segment, t) {
+    var t1 = 1 - t;
+    var t2 = t1 * t1;
+    var timeSquared = t * t;
+    var timeCubic = t * timeSquared;
+
+    var f0 = 2 * timeCubic - 3 * timeSquared + 1;
+    var f1 = timeCubic - 2*timeSquared + t; //t * t2;
+    var f2 = -2*timeCubic + 3*timeSquared; //(3 * timeSquared - 2 * timeSquared);
+    var f3 = timeCubic - timeSquared ; //-timeSquared * t1;
+
+    var cp0 = this.points[segment];
+    var cp1 = this.points[segment + 1];
+    var tangent0 = this.tangents[segment];
+    var tangent1 = this.tangents[segment + 1];
+    var pt = [0, 0, 0];
+    pt[0] = f0 * cp0[0] + f1 * tangent0[0] + f2 * cp1[0] + f3 * tangent1[0];
+    pt[1] = f0 * cp0[1] + f1 * tangent0[1] + f2 * cp1[1] + f3 * tangent1[1];
+    pt[2] = f0 * cp0[2] + f1 * tangent0[2] + f2 * cp1[2] + f3 * tangent1[2];
+    return pt;
+};
+
+GG.CatmullRom.prototype.calculateTangents = function () {
+    if (this.points.length > 2) {
+        for (var i = 0; i < this.points.length; i++) {
+            var t = vec3.create();
+            if (i == 0) {
+                vec3.subtract(this.points[i + 1], this.points[i], t);
+            } else if (i == this.points.length - 1) {
+                vec3.subtract(this.points[i], this.points[i - 1], t);
+            } else {
+                vec3.subtract(this.points[i + 1], this.points[i - 1], t);              
+            }
+            vec3.scale(t, this.sharpness);
+            this.tangents.push(t);
+        }
+    } else {
+        this.tangents = [];
+    }
+};
+
+GG.CatmullRom.prototype.calculateSegmentsRatios = function () {
+    var numPoints = this.points.length;    
+    if (numPoints >= 2) {
+        var total = 0;
+        
+        var segmentsLengths = [];
+        for (var i = 0; i < numPoints; i++) {
+            if (i == 0) {
+                segmentsLengths.push(0);
+            //} else if (i == numPoints - 1) {
+             //   segmentsLengths.push(1);
+            } else {
+                var v = vec3.create();
+                vec3.subtract(this.points[i], this.points[i-1], v);
+                var len = vec3.length(v);
+                total += len;
+                segmentsLengths.push(len);
+            }
+        }
+
+        // set ratio for each curve of the spline
+        this.ratios = [];
+        this.ratios[0] = 0;
+        this.ratios[segmentsLengths.length-1] = 1;
+
+        for (var j = 1; j < segmentsLengths.length-1; j++) {
+            this.ratios[j] = segmentsLengths[j] / total;
+            if (j > 0) {
+                this.ratios[j] += this.ratios[j - 1];
+            }
+        }
+    } else {
+        this.ratios = [];
+    }    
+};
+
+GG.CatmullRom.prototype.getSegmentForTime = function (t) {
+    for (var j = 0; j < this.ratios.length; j++) {
+        if (t < this.ratios[j]) return j-1;
+    }
+    return this.ratios.length - 1;
+};
+
+
 
 GG.Clock = function() {
 	this.startTime   = new Date();
@@ -821,8 +987,8 @@ GG.ShaderLib = new function (argument) {
 			].join('\n'),
 
 			'sampleTexUnit'  : [
-				"vec4 sampleTexUnit(sampler2D map, TexUnitParams_t texUnit) {",
-				"	return texture2D(map, texUnit.offset + (texUnit.scale * v_texCoords));",
+				"vec4 sampleTexUnit(sampler2D map, TexUnitParams_t texUnit, vec2 baseCoords) {",
+				"	return texture2D(map, texUnit.offset + (texUnit.scale * baseCoords));",
 				"}"
 			].join('\n'),
 
@@ -1741,7 +1907,7 @@ GG.AttributeDataBuffer = function (spec) {
         if (this.itemCount == null) throw "dataLength must be defined";
         this.arrayData = this.allocateDataArray();
     } else {
-        this.itemCount = this.arrayData.length;
+        this.itemCount = this.arrayData.length / this.itemSize;
     }
 
     gl.bufferData(gl.ARRAY_BUFFER, this.arrayData, this.usageType);
@@ -1812,32 +1978,127 @@ GG.AttributeDataBuffer.prototype.updateData = function (typedArray) {
     gl.bufferSubData(this.glBuffer, 0, this.arrayData);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 };
-GG.Object3D = function (spec) {
-    spec = spec || {};
-    this.pos = [0.0, 0.0, 0.0];
-    this.rotation = [0.0, 0.0, 0.0];
-    this.scale = [1.0, 1.0, 1.0];
-    this.material = spec.material;
+GG.Object3D = function (geometry, material, spec) {
+    spec               = spec || {};
+    spec.usesColors    = spec.usesColors != undefined ? spec.usesColors : false;
+    spec.usesNormals   = spec.usesNormals != undefined ? spec.usesNormals : false;
+    spec.usesTexCoords = spec.usesTexCoords != undefined ? spec.usesTexCoords : false;
+    spec.usesTangents  = spec.usesTangents != undefined ? spec.usesTangents : false;
+    
+    this.geometry      = geometry;
+    this.material      = material;       
+    this.pos           = [0.0, 0.0, 0.0];
+    this.rotation      = [0.0, 0.0, 0.0];
+    this.scale         = [1.0, 1.0, 1.0];
+    this.renderMode    = GG.RENDER_TRIANGLES;
+
+    if (this.geometry != null && this.geometry.getVertices() != null) {
+        this.positionsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getVertices(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    } else {
+        this.positionsBuffer = null;
+    }
+
+    if (this.geometry != null && spec.usesNormals && this.geometry.getNormals() != null) {
+        this.normalsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getNormals(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    } else {
+        this.normalsBuffer = null;
+    }
+
+    if (this.geometry != null && spec.usesTexCoords && this.geometry.getTexCoords() != null) {
+        this.texCoordsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTexCoords(), 'itemSize' : 2, 'itemType' : gl.FLOAT });
+    } else {
+        this.texCoordsBuffer = null;
+    }
+
+    if (this.geometry != null && spec.usesColors && this.geometry.getColors() != null) {
+        this.colorsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getColors(), 'itemSize' : 3, 'itemType' : gl.UNSIGNED_BYTE });
+    } else {
+        this.colorsBuffer = GG.AttributeDataBuffer.newEmptyDataBuffer();
+    }
+
+    if (this.geometry != null && spec.usesTangents && this.geometry.getTangents() != null) {
+        this.tangentsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTangents(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    } else {
+        this.tangentsBuffer = null;
+    }
+
+
+};
+
+GG.Object3D.prototype.getGeometry = function() {
+    return this.geometry;
+};
+
+GG.Object3D.prototype.getPositionsBuffer = function() {
+    return this.positionsBuffer;
+};
+
+GG.Object3D.prototype.getNormalsBuffer = function() {
+    return this.normalsBuffer;
+};
+
+GG.Object3D.prototype.getTexCoordsBuffer = function() {
+    return this.texCoordsBuffer;
+};
+
+GG.Object3D.prototype.getColorsBuffer = function () {
+    return this.colorsBuffer;
+};
+
+GG.Object3D.prototype.getTangentsBuffer = function () {
+    return this.tangentsBuffer;
+};
+
+GG.Object3D.prototype.getIndexBuffer = function() {
+    return this.indexBuffer;
+};
+
+GG.Object3D.prototype.getVertexCount = function() {
+    return this.positionsBuffer != null ? this.positionsBuffer.getItemCount() : 0;
+};
+
+GG.Object3D.prototype.setColorData = function(typedArray) {
+    if (this.colorsBuffer != null) this.colorsBuffer.destroy();
+    this.colorsBuffer = new GG.AttributeDataBuffer({
+        normalize : true, 
+        arrayData : typedArray, 
+        itemSize : 3, 
+        itemType : gl.UNSIGNED_BYTE, 
+        itemCount : this.getVertexCount() 
+    });
 };
 
 
 GG.Object3D.prototype.getPosition = function () {
     return this.pos;
-},
-    GG.Object3D.prototype.setPosition = function (p) {
-        this.pos = p;
-    },
-    GG.Object3D.prototype.getRotation = function () {
-        return this.rotation;
-    },
-    GG.Object3D.prototype.setRotation = function (o) {
-        this.rotation = o;
-    },
-    GG.Object3D.prototype.setScale = function (s) {
-        this.scale = s;
-    };
+};
+
+GG.Object3D.prototype.setPosition = function (p) {
+    this.pos = p;
+};
+
+GG.Object3D.prototype.getRotation = function () {
+    return this.rotation;
+};
+
+GG.Object3D.prototype.setRotation = function (o) {
+    this.rotation = o;
+};
+
+GG.Object3D.prototype.setScale = function (s) {
+    this.scale = s;
+};
+
 GG.Object3D.prototype.getScale = function () {
     return this.scale;
+};
+
+GG.Object3D.prototype.getMode = function () {
+    return this.mode;
+};
+
+GG.Object3D.prototype.setMode = function () {
+    return this.mode;
 };
 
 GG.Object3D.prototype.getModelMatrix=function() {
@@ -1860,6 +2121,87 @@ GG.Object3D.prototype.setMaterial = function (m) {
 	this.material = m;
 	return this;
 };
+GG.PointMesh = function (geometry, material, spec) {
+	spec = spec || {};
+	GG.Object3D.call(this, geometry, material, { useColors : true, useTexCoords : true });	
+	this.mode = GG.RENDER_POINTS;
+	this.pointSize = spec.pointSize != undefined ? spec.pointSize : 1.0;  
+};
+
+GG.PointMesh.prototype = new GG.Object3D();
+GG.PointMesh.prototype.constructor = GG.PointMesh;
+
+GG.PointMesh.prototype.setPoints = function (pointsArray) {
+	// body...
+};
+
+GG.PointMesh.prototype.getPointSize = function() {
+	return this.pointSize;
+};
+
+GG.PointMesh.prototype.setPointSize = function(sz) {
+	this.pointSize = sz;
+};
+
+/**
+ * Each TriangleMesh is associated with a Geometry that stores the actual vertices,
+ * normals, and the rest vertex attributes. 
+ * Only geometries of triangle lists are supported. 
+ */
+GG.TriangleMesh = function(geometry, material, spec) {
+	spec               = spec || {};
+	spec.usesNormals   = true;
+	spec.usesTexCoords = true;
+	spec.usesColors    = true;
+	spec.usesTangents  = true;
+
+	GG.Object3D.call(this, geometry, material, spec);
+
+	if (this.geometry != null && this.geometry.indices != undefined) {
+        this.indexBuffer          = gl.createBuffer(1);
+        this.indexBuffer.numItems = this.geometry.getIndices().length;
+        this.indexBuffer.itemType = gl.UNSIGNED_SHORT;
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.geometry.getIndices(), gl.STATIC_DRAW);
+    } else {
+        this.indexBuffer = null;
+    }
+};
+
+GG.TriangleMesh.prototype = new GG.Object3D();
+GG.TriangleMesh.prototype.constructor = GG.TriangleMesh;
+
+GG.TriangleMesh.prototype.getFlatNormalsBuffer = function() {
+	if (this.flatNormalsBuffer === undefined) {
+		var flatNormals = this.geometry.getFlatNormals();
+		if (flatNormals === undefined) {
+			flatNormals = this.geometry.calculateFlatNormals();
+		}
+		if (flatNormals) {
+            this.flatNormalsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getFlatNormals(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+		} else {
+			return null;
+		}
+	}
+	return this.flatNormalsBuffer;
+};
+/**
+ * Create a static particle system, i.e. the particles remain stationery
+ * at their original positions.
+ * To determine the initial placement of the particles, a geometry object
+ * must be given as input. Whereby each vertex will specify the position and/or
+ * color of each particle.
+ * Note: The input geometry is expected to be flatten.
+ */
+GG.StaticParticleSystem = function (geometry, material, spec) {
+    spec = spec || {};    
+    GG.PointMesh.call(this, geometry, material, spec);
+};
+
+GG.StaticParticleSystem.prototype = new GG.PointMesh();
+GG.StaticParticleSystem.prototype.constructor = GG.StaticParticleSystem;
+
+
 /**
  * Encapsulates a cubemap texture. 
  * Basic texture attributes are inherited from the Texture2D class.
@@ -2080,160 +2422,6 @@ GG.Texture.createTexture = function (spec) {
 	copySpec = GG.cloneDictionary(spec);
 	copySpec.texture = tex;
 	return new GG.Texture(copySpec);
-};
-/**
- * Each TriangleMesh is associated with a Geomtry that stores the actual vertices,
- * normals, and the rest vertex attributes. 
- * Only geometries of triangle lists are supported. 
- */
-GG.TriangleMesh = function(geometry, material, spec) {
-	
-	this.geometry                     = geometry;
-	this.material                     = material;	
-
-    if (this.geometry.getVertices() != null) {
-        this.positionsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getVertices(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
-    } else {
-        this.positionsBuffer = null;
-    }
-
-    if (this.geometry.getNormals() != null) {
-        this.normalsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getNormals(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
-    } else {
-        this.normalsBuffer = null;
-    }
-
-    if (this.geometry.getTexCoords() != null) {
-        this.texCoordsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTexCoords(), 'itemSize' : 2, 'itemType' : gl.FLOAT });
-    } else {
-        this.texCoordsBuffer = null;
-    }
-
-	if (this.geometry.getColors() != null) {
-		this.colorsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getColors(), 'itemSize' : 3, 'itemType' : gl.UNSIGNED_BYTE });
-	} else {
-		this.colorsBuffer = GG.AttributeDataBuffer.newEmptyDataBuffer();
-	}
-
-    if (this.geometry.getTangents() != null) {
-        this.tangentsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTangents(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
-    } else {
-        this.tangentsBuffer = null;
-    }
-	
-	if (geometry.indices != undefined) {
-		this.indexBuffer          = gl.createBuffer(1);
-		this.indexBuffer.numItems = this.geometry.getIndices().length;
-		this.indexBuffer.itemType = gl.UNSIGNED_SHORT;
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.geometry.getIndices(), gl.STATIC_DRAW);
-	}
-
-};
-
-GG.TriangleMesh.prototype             = new GG.Object3D();
-GG.TriangleMesh.prototype.constructor = GG.TriangleMesh;
-
-GG.TriangleMesh.prototype.getGeometry = function() {
-	return this.geometry;
-};
-
-GG.TriangleMesh.prototype.getPositionsBuffer = function() {
-	return this.positionsBuffer;
-};
-
-GG.TriangleMesh.prototype.getNormalsBuffer = function() {
-	return this.normalsBuffer;
-};
-
-GG.TriangleMesh.prototype.getTexCoordsBuffer = function() {
-	return this.texCoordsBuffer;
-};
-
-GG.TriangleMesh.prototype.getColorsBuffer = function () {
-	return this.colorsBuffer;
-};
-
-GG.TriangleMesh.prototype.getTangentsBuffer = function () {
-    return this.tangentsBuffer;
-};
-
-GG.TriangleMesh.prototype.getIndexBuffer = function() {
-	return this.indexBuffer;
-};
-
-GG.TriangleMesh.prototype.getVertexCount = function() {
-    return this.positionsBuffer != null ? this.positionsBuffer.getItemCount() : 0;
-};
-
-GG.TriangleMesh.prototype.setColorData = function(typedArray) {
-    if (this.colorsBuffer != null) this.colorsBuffer.destroy();
-    this.colorsBuffer = new GG.AttributeDataBuffer({normalize : true, arrayData : typedArray, itemSize : 3, itemType : gl.UNSIGNED_BYTE, itemCount : this.getVertexCount() });
-};
-
-GG.TriangleMesh.prototype.getFlatNormalsBuffer = function() {
-	if (this.flatNormalsBuffer === undefined) {
-		var flatNormals = this.geometry.getFlatNormals();
-		if (flatNormals === undefined) {
-			flatNormals = this.geometry.calculateFlatNormals();
-		}
-		if (flatNormals) {
-            this.flatNormalsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getFlatNormals(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
-		} else {
-			return null;
-		}
-	}
-	return this.flatNormalsBuffer;
-};
-/**
- * Create a static particle system, i.e. the particles remain stationery
- * at their original positions.
- * To determine the initial placement of the particles, a geometry object
- * must be given as input. Whereby each vertex will specify the position and/or
- * color of each particle.
- * Note: The input geometry is expected to be flatten.
- */
-GG.StaticParticleSystem = function (geometry, material, spec) {
-    spec = spec || {};
-    this.material = material;
-    this.pointSize = spec.pointSize != undefined ? spec.pointSize : 1.0;
-
-    this.vertexBuffer = gl.createBuffer(1);
-    this.vertexBuffer.size = geometry.getVertices().length / 3;
-    this.vertexBuffer.itemSize = 3;
-    this.vertexBuffer.itemType = gl.FLOAT;
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, geometry.getVertices(), gl.STATIC_DRAW);
-
-    if (geometry.getColors()) {
-        this.colorsBuffer = gl.createBuffer(1);
-        this.colorsBuffer.size = geometry.getColors().length / 3;
-        this.colorsBuffer.itemType = gl.FLOAT;
-        this.colorsBuffer.itemSize = 3;
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.colorsBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, geometry.getColors(), gl.STATIC_DRAW);
-    } else {
-        this.colorsBuffer = null;
-    }
-};
-
-GG.StaticParticleSystem.prototype = new GG.Object3D();
-GG.StaticParticleSystem.prototype.constructor = GG.StaticParticleSystem;
-
-GG.StaticParticleSystem.prototype.getVertexBuffer = function() {
-	return this.vertexBuffer;
-};
-
-GG.StaticParticleSystem.prototype.getColorsBuffer = function() {
-	return this.colorsBuffer;
-};
-
-GG.StaticParticleSystem.prototype.getPointSize = function() {
-	return this.pointSize;
-};
-
-GG.StaticParticleSystem.prototype.setPointSize = function(sz) {
-	this.pointSize = sz;
 };
 /**
  * A viewport is linked with a camera and defines the portion of the render surface that
@@ -3464,21 +3652,26 @@ GG.BaseMaterial = function(spec) {
 
     this.normalMapScale = 1.0;
 
-	this.glowMap     = spec.glowMap;
-
 	this.diffuseTextureStack = new GG.TextureStack();
 	
-	this.flatShade   = spec.flatShade != undefined ? spec.flatShade : false;
-	this.phongShade  = spec.phongShade != undefined ? spec.phongShade : true;	
-	this.shadeless   = spec.shadeless != undefined ? spec.shadeless : false;
+	this.flatShade       = spec.flatShade != undefined ? spec.flatShade : false;
+	this.phongShade      = spec.phongShade != undefined ? spec.phongShade : true;	
+	this.shadeless       = spec.shadeless != undefined ? spec.shadeless : false;
+	this.useVertexColors = spec.useVertexColors != undefined ? spec.useVertexColors : false;
+
 	this.wireframe   = spec.wireframe != undefined ? spec.wireframe : false;
 	this.wireOffset  = spec.wireOffset != undefined ? spec.wireOffset : 0.001;
 	this.wireWidth   = spec.wireOffset != undefined ? spec.wireOffset : 1.0;
 
 	// environment map to be sampled for reflections
 	this.envMap          = spec.envMap != undefined ? spec.envMap : null;
+
 	// amount of reflectance
 	this.reflectance     = spec.reflectance != undefined ? spec.reflectance : 0.80;
+
+	// controls the reflectance using a texture
+	this.glowMap     = spec.glowMap;
+
 
 	// index of refraction 
 	this.IOR             = spec.IOR != undefined ? spec.IOR : [ 1.0, 1.0, 1.0 ];
@@ -3650,9 +3843,9 @@ GG.RenderPass.prototype.setRenderState = function(renderable, renderContext) {
 GG.RenderPass.prototype.submitGeometryForRendering = function(renderable, renderContext) {
 	if (renderable && this.renderableType == GG.RenderPass.MESH) {
 		var options = {
-			mode : this.getRenderPrimitive(renderable)
+			mode : this.overrideRenderPrimitive(renderable)
 		};
-		renderContext.renderer.renderMesh(renderable, this.program, options);
+		renderContext.renderer.render(renderable, this.program, options);
 	} else {
 		this.callback.__renderGeometry(renderable);
 	}
@@ -3709,8 +3902,8 @@ GG.RenderPass.prototype.__locateCustomUniforms = function(program) {};
 /**
  * Subclasses can override this method in order to render lines or points, fans, strips, etc.
  */
-GG.RenderPass.prototype.getRenderPrimitive = function(renderable) {
-	return gl.TRIANGLES;
+GG.RenderPass.prototype.overrideRenderPrimitive = function(renderable) {
+	return null;
 };
 
 /**
@@ -3737,7 +3930,7 @@ GG.ScreenPass.prototype.__renderGeometry = function(renderable) {
 	if (this.screenQuad == null) {
 		this.screenQuad = new GG.TriangleMesh(new GG.ScreenAlignedQuad());
 	}	
-	GG.renderer.renderMesh(this.screenQuad, this.program);
+	GG.renderer.render(this.screenQuad, this.program);
 };
 
 GG.ScreenPass.prototype.__setCustomUniforms = function(renderable, renderContext, program) {
@@ -3979,19 +4172,19 @@ GG.DiffuseTextureStackEmbeddableRenderPass.prototype.evaluateTextureStack = func
 		codeListing.push(this.sampleDiffuseMapAtIndex(i, uniformName));
 		codeListing.push(this.blendDiffuseMapAtIndex(i, textureStack.getAt(i).blendMode, programSource));		
 	}
-	codeListing.push("	diffuse = " + this.getSampleVariableNameForMap(stackLen - 1) + ".rgb;");		
+	codeListing.push(GG.Naming.VarDiffuseBaseColor + "	= " + this.getSampleVariableNameForMap(stackLen - 1) + ".rgb;");		
 	programSource.addTexturingBlock(codeListing.join('\n'));
 };
 
 GG.DiffuseTextureStackEmbeddableRenderPass.prototype.sampleDiffuseMapAtIndex = function (index, uniformName) {
 	var colorVar = this.getSampleVariableNameForMap(index);		
 	return "	vec3 " + colorVar + " = sampleTexUnit("
-        + GG.Naming.textureUnitUniformMap(uniformName) + ", " + uniformName + ").rgb;";
+        + GG.Naming.textureUnitUniformMap(uniformName) + ", " + uniformName + ", v_texCoords).rgb;";
 };
 
 GG.DiffuseTextureStackEmbeddableRenderPass.prototype.blendDiffuseMapAtIndex = function (index, blendMode, programSource) {
 	var sourceColorVar = this.getSampleVariableNameForMap(index);		
-	var destColorVar = index > 0 ? this.getSampleVariableNameForMap(index - 1) : 'diffuse';
+	var destColorVar = index > 0 ? this.getSampleVariableNameForMap(index - 1) : GG.Naming.VarDiffuseBaseColor;
 	var func = this.declareBlendingFunction(blendMode, programSource);	
 	if (func != null) {
 		return sourceColorVar + " = " + func + "(" + destColorVar + ", " + sourceColorVar + ");";
@@ -4086,7 +4279,7 @@ GG.SpecularMappingEmbeddableTechnique.prototype.adaptShadersToMaterial = functio
 			.uniformTexUnit(this.BASE_UNIFORM_NAME)
 			.addPostProcessBlock([
 			"	vec3 specularMapIntensity = sampleTexUnit("
-                + GG.Naming.textureUnitUniformMap(this.BASE_UNIFORM_NAME) + ", " + this.BASE_UNIFORM_NAME + ").rgb;",
+                + GG.Naming.textureUnitUniformMap(this.BASE_UNIFORM_NAME) + ", " + this.BASE_UNIFORM_NAME + ", v_texCoords).rgb;",
 			"	specular *= specularMapIntensity;"
 			].join('\n'));
 	}
@@ -4124,12 +4317,12 @@ GG.AlphaMappingEmbeddableRenderPass.prototype.constructor = GG.AlphaMappingEmbed
 
 GG.AlphaMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {
     if (material.alphaMap.texture != null) {
-        fragmentShader.declareAlphaOutput()
+        fragmentShader
             .addDecl('sampleTexUnit', GG.ShaderLib.blocks.sampleTexUnit)
             .uniformTexUnit(this.BASE_UNIFORM_NAME)
             .addPostProcessBlock([
             GG.Naming.VarAlphaOutput + " = sampleTexUnit("
-                + GG.Naming.textureUnitUniformMap(this.BASE_UNIFORM_NAME) + ", " + this.BASE_UNIFORM_NAME + ").r;"
+                + GG.Naming.textureUnitUniformMap(this.BASE_UNIFORM_NAME) + ", " + this.BASE_UNIFORM_NAME + ", v_texCoords).r;"
         ].join('\n'));
     }
 };
@@ -4181,7 +4374,7 @@ GG.NormalMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function
                 "   vec3 B = cross(N, T);",
                 "   mat3 tangentToWorld = mat3(T, B, N);",
                 "   mat3 tangentToView =  tangentToWorld;",
-                "   vec3 surfaceNormal = sampleTexUnit(" + GG.Naming.textureUnitUniformMap(this.BASE_UNIFORM_NAME) + ", " + this.BASE_UNIFORM_NAME + ").xyz * 2.0 - 1.0;",
+                "   vec3 surfaceNormal = sampleTexUnit(" + GG.Naming.textureUnitUniformMap(this.BASE_UNIFORM_NAME) + ", " + this.BASE_UNIFORM_NAME + ", v_texCoords).xyz * 2.0 - 1.0;",
                 "   return normalize(tangentToView * surfaceNormal);",
                 "}"
         ].join('\n'));
@@ -4541,25 +4734,25 @@ GG.ReflectiveTechnique.ReflectivePass.prototype.__setCustomRenderState = functio
 };
 
 GG.PhongShadingTechnique = function(spec) {
-	spec = spec || {};
+	spec        = spec || {};
 	spec.passes = [new GG.PhongPass()];
 
 	GG.BaseTechnique.call(this, spec);
 };
 
-GG.PhongShadingTechnique.prototype = new GG.BaseTechnique();
+GG.PhongShadingTechnique.prototype             = new GG.BaseTechnique();
 GG.PhongShadingTechnique.prototype.constructor = GG.PhongShadingTechnique;
 
 GG.PhongPass = function(spec) {	
 	GG.RenderPass.call(this, spec);
 	this.diffuseTexturingPass = new GG.DiffuseTextureStackEmbeddableRenderPass();
-	this.specularMapPass = new GG.SpecularMappingEmbeddableTechnique();
-    this.alphaMapPass = new GG.AlphaMappingEmbeddableRenderPass();
-    this.normalMapPass = new GG.NormalMappingEmbeddableRenderPass();
+	this.specularMapPass      = new GG.SpecularMappingEmbeddableTechnique();
+	this.alphaMapPass         = new GG.AlphaMappingEmbeddableRenderPass();
+	this.normalMapPass        = new GG.NormalMappingEmbeddableRenderPass();
 	this.createProgram(null);	
 };
 
-GG.PhongPass.prototype = new GG.AdaptiveRenderPass();
+GG.PhongPass.prototype             = new GG.AdaptiveRenderPass();
 GG.PhongPass.prototype.constructor = GG.PhongPass;
 
 GG.PhongPass.prototype.createProgram = function(material) {
@@ -4572,7 +4765,7 @@ GG.PhongPass.prototype.createProgram = function(material) {
 		.texCoord0()
 		.varying('vec3', 'v_normal')
 		.varying('vec4', 'v_viewPos')
-		.varying('vec2', 'v_texCoords')
+		.varying('vec2', 'v_texCoords')		
 		.addMainBlock([
 			"	vec4 viewPos = u_matModelView*a_position;",
 			"	gl_Position = u_matProjection*viewPos;",
@@ -4591,11 +4784,12 @@ GG.PhongPass.prototype.createProgram = function(material) {
 	fs.asFragmentShader()
 		.varying('vec3', 'v_normal')
 		.varying('vec4', 'v_viewPos')
-		.varying('vec2', 'v_texCoords')
+		.varying('vec2', GG.Naming.VaryingTexCoords)
 		.uniformViewMatrix()
 		.uniformLight()
 		.uniformMaterial()
 		.addDecl('phong.lightIrradiance', GG.ShaderLib.phong.lightIrradiance)
+		.declareAlphaOutput()
 		.addMainInitBlock([
             "#ifdef " + GG.Naming.DefUseTangentSpace,
             "   vec3 N = sampleNormalMap();",
@@ -4604,8 +4798,8 @@ GG.PhongPass.prototype.createProgram = function(material) {
             "#endif",
 			"	vec3 V = normalize(-v_viewPos.xyz);",
 			"	vec3 diffuse = vec3(0.0);",
+			"   vec3 " + GG.Naming.VarDiffuseBaseColor + " = u_material.diffuse;",
 			"	vec3 specular = vec3(0.0);",
-            "   float " + GG.Naming.VarAlphaOutput + " = 1.0;"
 			].join('\n'))
 		.addMainBlock([			
 			"	vec3 L;",
@@ -4617,20 +4811,12 @@ GG.PhongPass.prototype.createProgram = function(material) {
 			"	lightIrradiance(N, V, L, u_light, u_material, diffuse, specular);"			
 		].join('\n'))
 		.finalColor(
-
+	
             "	gl_FragColor = vec4(u_material.ambient" +
-            " + u_material.diffuse*diffuse" +
+            " + baseColor*diffuse" +
             " + u_material.specular*specular" +
-            ", " + GG.Naming.VarAlphaOutput + ");"
-            /*
-        [
-            "#ifdef " + GG.Naming.DefUseTangentSpace,
-                "gl_FragColor = vec4(N, 1.0);",
-            "#else",
-                "gl_FragColor = vec4(1.0);",
-            "#endif\n"].join('\n')
-            */
-			//"gl_FragColor = vec4(specular, 1.0);"
+            ", " + GG.Naming.VarAlphaOutput + ");"   
+                 
 			);
     //TODO: Add light ambient and object emissive
 	if (material != null) {
@@ -4639,7 +4825,7 @@ GG.PhongPass.prototype.createProgram = function(material) {
         this.alphaMapPass.adaptShadersToMaterial(vs, fs, material);
         this.normalMapPass.adaptShadersToMaterial(vs, fs, material);
 	}
-	this.vertexShader = vs.toString();
+	this.vertexShader   = vs.toString();
 	this.fragmentShader = fs.toString();	
 };
 
@@ -4717,7 +4903,7 @@ GG.WireframeTechnique.WireframePass.prototype.__setCustomRenderState = function(
 };
 
 
-GG.WireframeTechnique.WireframePass.prototype.getRenderPrimitive = function(renderable) {
+GG.WireframeTechnique.WireframePass.prototype.overrideRenderPrimitive = function(renderable) {
 	return gl.LINES;
 };
 GG.DepthPrePassTechnique = function (spec) {
@@ -4754,170 +4940,89 @@ GG.DepthPrePassTechnique.Pass = function (spec) {
 GG.DepthPrePassTechnique.Pass.prototype             = new GG.RenderPass();
 GG.DepthPrePassTechnique.Pass.prototype.constructor = GG.DepthPrePassTechnique.Pass;
 
-GG.DepthPrePassTechnique.Pass.prototype.getRenderPrimitive = function(renderable) {
-	if (renderable.material == null) {
-		console.log('error');
-	}
+GG.DepthPrePassTechnique.Pass.prototype.getRenderPrimitive = function(renderable) {	
 	var t = renderable.material.getTechnique();
 
 	//TODO: Handle renderables with multiple render passes
 	return t.passes[0].getRenderPrimitive(renderable);
 };
-/**
- * Simple particles rendering using points for each particle.
- * You can also specify a single texture and the attenuation factor.
- * 
- * psTechnique = new GG.ParticlesTechnique(texMap, 1.0);
- * psTechnique.initialize();
- * psTechnique.render(aParticleSystem);
- */
-GG.ParticlesTechnique = function(spec) {
+GG.StaticPointParticlesTechnique = function(spec) {
 	spec = spec || {};
+	spec.passes = [new GG.StaticPointParticlesRenderPass()];
+
 	GG.BaseTechnique.call(this, spec);
-
-	this.texture = spec.texture;
-	this.distanceAttenuation = spec.attenuation != undefined ? spec.attenuation : 1.0;
-
-	// stores compiled programs for different configurations of the techniques
-	// and the particle system that is to be rendered
-	this.programCache = [];
-
-	this.vertexShader = [
-		"attribute vec4 a_position;",
-		
-		"#ifdef USE_COLORS",
-		"attribute vec3 a_color;",
-		"varying vec3 v_color;",
-		"#endif",
-
-		"uniform mat4 u_matModelView;",
-		"uniform mat4 u_matProjection;",
-		"uniform float u_pointSize;",
-
-		"void main() {",
-		"	vec4 viewPos = u_matModelView * a_position;",
-		"	gl_Position = u_matProjection * viewPos;",
-		"	gl_PointSize = u_pointSize / (1.0 + length(viewPos.xyz));",
-
-		"#ifdef USE_COLORS",
-		"	v_colr = a_color;",
-		"#endif",
-		"}"
-	].join("\n");
-	
-	this.fragmentShader = [
-		"precision mediump float;",	
-
-		"#ifdef USE_COLORS",		
-		"varying vec3 v_color;",
-		"#endif",		
-
-		"#ifdef USE_MAP",
-		"uniform sampler2D u_texture;",
-		"#endif",
-
-		"void main() {",
-			"#ifdef USE_COLORS",
-			"gl_FragColor = vec4(v_color, 1.0);",
-			"#endif",
-
-			"#ifdef USE_MAP",
-			"gl_FragColor = gl_FragColor * texture2D(u_texture, gl_PointCoord);",
-			"#endif",
-
-			"#ifdef NO_COLORS_OR_MAP",
-			"gl_FragColor = vec4(1.0);",
-			"#endif",
-		"}"
-	].join("\n");
-	
 };
 
-GG.ParticlesTechnique.prototype = new GG.BaseTechnique();
-GG.ParticlesTechnique.prototype.constructor = GG.ParticlesTechnique;
+GG.StaticPointParticlesTechnique.prototype = new GG.BaseTechnique();
+GG.StaticPointParticlesTechnique.prototype.constructor = GG.StaticPointParticlesTechnique;
 
-GG.ParticlesTechnique.prototype.initialize = function() {
-
+GG.StaticPointParticlesRenderPass = function (spec) {
+	this.diffuseTexturingPass = new GG.DiffuseTextureStackEmbeddableRenderPass();
 };
 
-GG.ParticlesTechnique.prototype.destroy = function() {
-	GG.BaseTechnique.prototype.destroy();
-	
-	this.programs.forEach(function(prog) {
-		gl.deleteProgram(prog);
-	});
+GG.StaticPointParticlesRenderPass.prototype = new GG.AdaptiveRenderPass();
+GG.StaticPointParticlesRenderPass.prototype.constructor = GG.StaticPointParticlesRenderPass;
+
+GG.StaticPointParticlesRenderPass.prototype.createShadersForMaterial = function (material) {	
+	var vs = this.createVertexShader(material);
+	var fs = this.createFragmentShader(material);
+
+	this.diffuseTexturingPass.adaptShadersToMaterial(vs, fs, material);
+
+	this.vertexShader   = vs.toString();
+	this.fragmentShader = fs.toString();
 };
 
-GG.ParticlesTechnique.prototype.render = function(ps) {
-	program = this.getSuitableProgram(ps);	
+GG.StaticPointParticlesRenderPass.prototype.createVertexShader = function (material) {
+	var vs = new GG.ProgramSource();
+	vs.position()		
+  		.uniformModelViewMatrix()
+		.uniformProjectionMatrix()
+		.uniform('float', 'u_pointSize')		
+		.addMainBlock([			
+			"	vec4 viewPos = u_matModelView * a_position;",
+			"	gl_Position = u_matProjection * viewPos;",
+			"	gl_PointSize = u_pointSize / (1.0 + length(viewPos.xyz));"
+    ].join('\n'));
 
-	if (program.uniformTexture != null) {
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(this.texture);
-		gl.uniform1i(program.uniformTexture, 0);
+	if (material.useVertexColors) {
+		vs
+			.color()
+			.varying('vec3', 'v_color')
+			.addMainBlock("	v_color = a_color;");		
 	}
-	if (!program.uniformSize) {		
-		program.uniformSize = gl.getUniformLocation(program, "u_pointSize");
-	}
-	gl.uniform1f(program.uniformSize, ps.getPointSize());
-
-	if (!program.uniformMV) {	
-		program.uniformMV = gl.getUniformLocation(program, "u_matModelView");		
-	}
-	var MV = mat4.create();
-	mat4.multiply(this.renderer.getViewMatrix(), ps.getModelMatrix(), MV);
-	gl.uniformMatrix4fv(program.uniformMV, false, MV);
-
-	if (!program.uniformProjection) {	
-		program.uniformProjection = gl.getUniformLocation(program, "u_matProjection");		
-	}
-	gl.uniformMatrix4fv(program.uniformProjection, false, this.renderer.getProjectionMatrix());
-
-	this.renderer.renderPoints(program, ps.getVertexBuffer(), ps.getColorsBuffer());
-
-	gl.useProgram(null);
+	return vs;
 };
 
-GG.ParticlesTechnique.prototype.getSuitableProgram = function(ps) {
-
-	var vs = this.vertexShader;
-	var fs = this.fragmentShader;
-	var progKey = 1;
-	var instr = "";
-
-	if (this.texture != null) {
-		progKey += 2;
-		vs = "#define USE_MAP\n" + vs;
-		fs = "#define USE_MAP\n" + fs;
-
-		instr += 'prog.uniformTexture = gl.getUniformLocation(prog, "u_texture");';
-	}
-
-	if (ps.getColorsBuffer() != null) {
-		progKey += 4;
-		vs = "#define USE_COLORS\n" + vs;
-		fs = "#define USE_COLORS\n" + fs;
-		instr += 'prog.attribColor = gl.getAttribLocation(prog, "a_color");';
-	}
-
-	if (this.texture == null && ps.getColorsBuffer() == null) {
-		progKey += 8;
-		vs = "#define NO_COLORS_OR_MAP\n" + vs;
-		fs = "#define NO_COLORS_OR_MAP\n" + fs;
-	}
-
-	var prog = this.programCache[progKey];
-	if (prog == null) {
-		prog = this.programCache[progKey] = this.createProgram(vs, fs);
-	}
+GG.StaticPointParticlesRenderPass.prototype.createFragmentShader = function (material) {
+	var fs = new GG.ProgramSource().asFragmentShader();
 	
-	gl.useProgram(prog);
-	
-	prog.attribPosition = gl.getAttribLocation(prog, "a_position");
-	
-	eval(instr);
+	if (material.useVertexColors) {
+		fs.varying('vec3', GG.Naming.VaryingColor);
+		fs.addMainInitBlock('vec3 '  + GG.Naming.VarDiffuseBaseColor + ' = ' + GG.Naming.VaryingColor + ';');
+	} else {
+		fs.uniform('vec3', 'u_materialDiffuse')
+			.addMainInitBlock('vec3 '  + GG.Naming.VarDiffuseBaseColor + ' = u_materialDiffuse;');
+	} 
+	fs.addMainInitBlock('vec2 ' + GG.Naming.VaryingTexCoords + ' = gl_PointCoord;');
+	fs.finalColor('gl_FragColor = vec4(' + GG.Naming.VarDiffuseBaseColor + ', 1.0);');
+	return fs;
+};
 
-	return prog;
+GG.StaticPointParticlesRenderPass.prototype.hashMaterial = function (material) {
+	return material.useVertexColors + this.diffuseTexturingPass.hashMaterial(material);
+};
+
+GG.StaticPointParticlesRenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	if (!renderable.material.useVertexColors) {
+		gl.uniform3fv(program.u_materialDiffuse, renderable.material.diffuse);
+	}
+	gl.uniform1f(program.u_pointSize, renderable.pointSize);
+	this.diffuseTexturingPass.__setCustomUniforms(renderable, ctx, program);
+};
+
+GG.StaticPointParticlesRenderPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
+	this.diffuseTexturingPass.__setCustomRenderState(renderable, ctx, program);	
 };
 
 GG.ShadowMapDepthPass = function (spec) {
@@ -5159,7 +5264,9 @@ GG.ShadowMapPCF = function (spec) {
 			"mat4 scaleBias = mat4(0.5, 0.0, 0.0, 0.0,0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.5, 0.5, 0.5, 1.0);",
 			"v_posLightPerspective = scaleBias * u_matLightProjection * v_lightViewPos;",
 			"v_normal = u_matNormals * a_normal;",
-			"gl_Position = u_matProjection * u_matView * u_matModel * a_position;"
+        "vec4 test = a_position;",
+        "test.z += 0.03;",
+			"gl_Position = u_matProjection * u_matView * u_matModel * test;"
 			].join('\n'));
 	spec['vertexShader'] = pg.toString();
 
@@ -5205,7 +5312,7 @@ GG.ShadowMapPCF = function (spec) {
 			"		}",
 			"	}",
 			"	average = passed / samples;",
-			"}",
+			"} else { average = 1.0; }",
 			"gl_FragColor = vec4(vec3(average), 1.0);"
 			
 		].join('\n'));
@@ -5374,7 +5481,7 @@ GG.ShadowMapVSM = function (spec) {
 			].join('\n'))
 		.addMainBlock([
 			"vec2 lightUV = v_posLightPerspective.xy / v_posLightPerspective.w;",
-			"if (!(lightUV.s < 0.0 || lightUV.t < 0.0 || lightUV.s > 1.0 || lightUV.t > 1.0)) {", 
+			"if (v_posLightPerspective.w > 0.0 && !(lightUV.s < 0.0 || lightUV.t < 0.0 || lightUV.s > 1.0 || lightUV.t > 1.0)) {",
 			"	float lightDistance = length(v_lightViewPos.xyz);",
 			// normalize the distance
 			"	lightDistance *= 1.0 / u_lightSpaceDepthRange;",
@@ -5385,7 +5492,7 @@ GG.ShadowMapVSM = function (spec) {
 			// the 2nd moment of distribution is the squared expected value
 			"	float M2 = libUnpackVec2ToFloat(moments.zw);",
 			"	float sf = ChebychevInequality(M1, M2, lightDistance);",
-			"	gl_FragColor = sf;",			
+			"	gl_FragColor = vec4(vec3(sf), 1.0);",
 			"}"
 		].join('\n'));
 	spec['fragmentShader'] = pg.toString();
@@ -5433,7 +5540,7 @@ GG.ShadowMapVSM.prototype.postShadowMapConstruct = function() {
 		this.blurPass = new GG.VSMGaussianBlurPass({
 			filterSize : this.options.vsmBlurringSize != undefined ? this.options.vsmBlurringSize : 4			
 		});
-		this.blurPass.initialize();
+		//this.blurPass.initialize();
 	}	
 
 	// render at 1st color attachment reading from this.shadowMap
@@ -5606,60 +5713,61 @@ GG.Renderer.prototype.prepareNextFrame = function () {
 	return this;
 };
 
-GG.Renderer.prototype.renderMesh = function (mesh, program, options) {		
+GG.Renderer.prototype.render = function (renderable, program, options) {		
 
 	var attribPosition = program[GG.GLSLProgram.BuiltInAttributes.attribPosition];
 	if (attribPosition != undefined) {
-        mesh.getPositionsBuffer().streamAttribute(attribPosition);
+        renderable.getPositionsBuffer().streamAttribute(attribPosition);
 	}
 
 	var attribNormal = program[GG.GLSLProgram.BuiltInAttributes.attribNormal];
 	if (attribNormal != undefined) {
-		var normalsBuffer = mesh.getMaterial().flatShade ? mesh.getFlatNormalsBuffer() : mesh.getNormalsBuffer();
+		var normalsBuffer = renderable.getMaterial().flatShade ? renderable.getFlatNormalsBuffer() : renderable.getNormalsBuffer();
         normalsBuffer.streamAttribute(attribNormal);
 	}
 
 	var attribTexCoords = program[GG.GLSLProgram.BuiltInAttributes.attribTexCoords];
 	if (attribTexCoords != undefined) {
-        mesh.getTexCoordsBuffer().streamAttribute(attribTexCoords)
+        renderable.getTexCoordsBuffer().streamAttribute(attribTexCoords)
 	}
 
 	var attribColor = program[GG.GLSLProgram.BuiltInAttributes.attribColor];
 	if (attribColor != undefined) {
-		mesh.getColorsBuffer().streamAttribute(attribColor);
+		renderable.getColorsBuffer().streamAttribute(attribColor);
 	}
 
     var attribTangent = program[GG.GLSLProgram.BuiltInAttributes.attribTangent];
     if (attribTangent != undefined) {
-        mesh.getTangentsBuffer().streamAttribute(attribTangent);
+        renderable.getTangentsBuffer().streamAttribute(attribTangent);
     }
 
     options = options || {};
-	var mode = gl.TRIANGLES;
+	var mode = renderable.getMode();
 	if ('mode' in options ) {
-		mode = options.mode;
+		mode = options.mode != null ? options.mode : mode;
 	}
-	if (mesh.getIndexBuffer() != undefined) {
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.getIndexBuffer());
-		gl.drawElements(mode, mesh.getIndexBuffer().numItems, mesh.getIndexBuffer().itemType, 0);
+
+	var glMode = this.translateRenderMode(mode);
+	if (renderable.getIndexBuffer() != undefined) {
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, renderable.getIndexBuffer());
+		gl.drawElements(glMode, renderable.getIndexBuffer().numItems, renderable.getIndexBuffer().itemType, 0);
 	} else {
-		gl.drawArrays(mode, 0, mesh.getPositionsBuffer().size);
+		gl.drawArrays(glMode, 0, renderable.getPositionsBuffer().itemCount);
 	}	
 };
 
-GG.Renderer.prototype.renderPoints = function (program, vertexBuffer, colorBuffer) {
-	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-	gl.enableVertexAttribArray(program.attribPosition);
-	gl.vertexAttribPointer(program.attribPosition, vertexBuffer.itemSize, vertexBuffer.itemType, false, 0, 0);
-
-	if (colorBuffer != null) {
-		gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-		gl.enableVertexAttribArray(program.attribColors);
-		gl.vertexAttribPointer(program.attribColors, colorBuffer.itemSize, colorBuffer.itemType, false, 0, 0);
+GG.Renderer.prototype.translateRenderMode = function (mode) {
+	switch (mode) {
+		case GG.RENDER_POINTS: return gl.POINTS;
+		case GG.RENDER_LINES: return gl.LINES;
+		case GG.RENDER_LINE_LOOP: return gl.LINE_LOOP;
+		case GG.RENDER_LINE_STRIP: return gl.LINE_STRIP;
+		case GG.RENDER_TRIANGLES: 
+		default:
+			return gl.TRIANGLES;
 	}
+}
 
-	gl.drawArrays(gl.POINTS, 0, vertexBuffer.size);
-};
 
 GG.MouseHandler = function() {
 	this.mouseDown  = false;
@@ -5870,7 +5978,7 @@ GG.DefaultSceneRenderer = function (spec) {
 	this.scene           = spec.scene;
 	this.camera          = spec.camera;
 	this.programCache    = {};
-	this.shadowTechnique = new GG.ShadowMapTechnique({ shadowType : GG.SHADOW_MAPPING });
+	this.shadowTechnique = new GG.ShadowMapTechnique({ shadowType : GG.SHADOW_MAPPING_VSM });
 	this.dbg             = new GG.DepthMapDebugOutput();	
 	/*
 	this.backgroundQueue = new GG.RenderQueue({ name : 'background', priority : 0 });
@@ -6038,91 +6146,3 @@ GG.DefaultSceneRenderer.prototype.renderDepthPrePass = function (visibleObjects,
 	}
 	
 };
-
-GG.SampleBase = function (spec) {
-	spec = spec || {};
-	this.context = spec.context != undefined ? spec.context : "experimental-webgl";
-	this.canvas  = null;
-
-    this.assetsLoaded = false;
-    this.initialized  = false;
-};
-
-GG.SampleBase.prototype.constructor = GG.SampleBase;
-
-GG.SampleBase.prototype.start = function()  {
-	try {
-		this.canvas = document.getElementById("c");		
-		
-		gl = this.canvas.getContext(this.context);
-		GG.context = gl;
-		GG.canvas = this.canvas;
-		GG.init();
-		GG.clock = new GG.Clock();		
-		
-		gl.viewportWidth  = this.canvas.width;
-		gl.viewportHeight = this.canvas.height;
-
-		/**
-		 * Provides requestAnimationFrame in a cross browser way.
-		 */
-		window.requestAnimFrame = (function() {
-
-		  return window.requestAnimationFrame ||
-				 window.webkitRequestAnimationFrame ||
-				 window.mozRequestAnimationFrame ||
-				 window.oRequestAnimationFrame ||
-				 window.msRequestAnimationFrame ||
-				 function(/* function FrameRequestCallback */ callback, /* DOMElement Element */ element) {
-				   window.setTimeout(callback, 1000/60);
-				 };
-		})();
-
-		window.sample = this;
-
-		this.initialize();
-
-		this.tick();
-
-	} catch (e) {
-		alert("error " + e);
-	}
-};
-
-GG.SampleBase.prototype.initialize = function () {
-    this.initializeAssets();
-};
-
-GG.SampleBase.prototype.initializeAssets = function () {
-    // define in subclass
-};
-
-GG.SampleBase.prototype.initializeWithAssetsLoaded = function () {
-	// define in subclass
-};
-
-GG.SampleBase.prototype.draw = function () {
-    // define in subclass
-};
-
-GG.SampleBase.prototype.update = function () {
-    if (this.assetsLoaded && !this.initialized) {
-        this.initializeWithAssetsLoaded();
-    }
-};
-
-GG.SampleBase.prototype.drawWithCondition = function () {
-    if (this.initialized) {
-        this.draw();
-    }
-};
-
-GG.SampleBase.prototype.tick = function () {
-	GG.clock.tick();	
-	
-	window.sample.update();
-	window.sample.drawWithCondition();
-	requestAnimFrame(window.sample.tick);
-};
-			
-

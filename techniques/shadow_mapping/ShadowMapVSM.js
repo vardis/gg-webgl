@@ -57,7 +57,7 @@ GG.ShadowMapVSM = function (spec) {
 			].join('\n'))
 		.addMainBlock([
 			"vec2 lightUV = v_posLightPerspective.xy / v_posLightPerspective.w;",
-			"if (!(lightUV.s < 0.0 || lightUV.t < 0.0 || lightUV.s > 1.0 || lightUV.t > 1.0)) {", 
+			"if (v_posLightPerspective.w > 0.0 && !(lightUV.s < 0.0 || lightUV.t < 0.0 || lightUV.s > 1.0 || lightUV.t > 1.0)) {",
 			"	float lightDistance = length(v_lightViewPos.xyz);",
 			// normalize the distance
 			"	lightDistance *= 1.0 / u_lightSpaceDepthRange;",
@@ -68,7 +68,7 @@ GG.ShadowMapVSM = function (spec) {
 			// the 2nd moment of distribution is the squared expected value
 			"	float M2 = libUnpackVec2ToFloat(moments.zw);",
 			"	float sf = ChebychevInequality(M1, M2, lightDistance);",
-			"	gl_FragColor = sf;",			
+			"	gl_FragColor = vec4(vec3(sf), 1.0);",
 			"}"
 		].join('\n'));
 	spec['fragmentShader'] = pg.toString();
@@ -116,7 +116,7 @@ GG.ShadowMapVSM.prototype.postShadowMapConstruct = function() {
 		this.blurPass = new GG.VSMGaussianBlurPass({
 			filterSize : this.options.vsmBlurringSize != undefined ? this.options.vsmBlurringSize : 4			
 		});
-		this.blurPass.initialize();
+		//this.blurPass.initialize();
 	}	
 
 	// render at 1st color attachment reading from this.shadowMap

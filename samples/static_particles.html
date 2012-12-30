@@ -2,12 +2,24 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<script src="../externals/gl-matrix.js"></script>		
+
+		<script src="../externals/gl-matrix.js"></script>	
+						
 	</head>
-	<body onload="new PostProcessSample().start();">		
+	<body onload="init();">
+		
 		<canvas id="canvasGL" style="border: none;" width="640" height="480"></canvas>
 	</body>
+
 	<script src="../GG_all.js"></script>
 	<script src="SampleBase.js"></script>
-	<script src="post_processing.js"></script>
+	<script src="static_particles.js"></script>
+	
+	<script>
+	
+	function init () {
+		new StaticParticlesSample().start();			
+	}
+	</script>
+
 </html>

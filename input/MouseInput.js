@@ -71,6 +71,7 @@ GG.MouseInput.prototype.getCanvasLocalCoordsFromEvent = function (event) {
 };
 
 GG.MouseInput.prototype.invokeHandlers = function (event, handlers) {
+    event.preventDefault();
     var canvasCoords = this.getCanvasLocalCoordsFromEvent(event);
     handlers.forEach(function(h) {
         h(canvasCoords[0], canvasCoords[1]);

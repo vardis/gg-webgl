@@ -46,6 +46,6 @@ GG.WireframeTechnique.WireframePass.prototype.__setCustomRenderState = function(
 };
 
 
-GG.WireframeTechnique.WireframePass.prototype.getRenderPrimitive = function(renderable) {
+GG.WireframeTechnique.WireframePass.prototype.overrideRenderPrimitive = function(renderable) {
 	return gl.LINES;
 };

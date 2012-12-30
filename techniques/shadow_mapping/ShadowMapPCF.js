@@ -21,7 +21,9 @@ GG.ShadowMapPCF = function (spec) {
 			"mat4 scaleBias = mat4(0.5, 0.0, 0.0, 0.0,0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.5, 0.5, 0.5, 1.0);",
 			"v_posLightPerspective = scaleBias * u_matLightProjection * v_lightViewPos;",
 			"v_normal = u_matNormals * a_normal;",
-			"gl_Position = u_matProjection * u_matView * u_matModel * a_position;"
+        "vec4 test = a_position;",
+        "test.z += 0.03;",
+			"gl_Position = u_matProjection * u_matView * u_matModel * test;"
 			].join('\n'));
 	spec['vertexShader'] = pg.toString();
 
@@ -67,7 +69,7 @@ GG.ShadowMapPCF = function (spec) {
 			"		}",
 			"	}",
 			"	average = passed / samples;",
-			"}",
+			"} else { average = 1.0; }",
 			"gl_FragColor = vec4(vec3(average), 1.0);"
 			
 		].join('\n'));

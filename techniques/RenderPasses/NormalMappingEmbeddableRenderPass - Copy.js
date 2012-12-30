@@ -8,28 +8,28 @@ GG.NormalMappingEmbeddableRenderPass.prototype.constructor = GG.NormalMappingEmb
 
 GG.NormalMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {
     if (material.normalMap.texture != null) {
-
-        vertexShader
-            .tangent()
-            .varying('vec3', 'v_tangent')
-            .addMainBlock("v_tangent = a_tangent;");
-
+        gl.getExtension("OES_standard_derivatives");
         fragmentShader
+            .enableExtension('GL_OES_standard_derivatives')
             .preprocessorDefinition(GG.Naming.DefUseTangentSpace)
             .addDecl('sampleTexUnit', GG.ShaderLib.blocks.sampleTexUnit)
             .uniformTexUnit(this.BASE_UNIFORM_NAME)
             .uniform('float', 'u_normalMapScale')
-            .uniformNormalsMatrix()
-            .varying('vec3', 'v_tangent')
-            .addDecl('sampleNormalMap', [
-                "vec3 sampleNormalMap() {",
-                "   vec3 N = normalize(v_normal);",
-                "   vec3 T = normalize(v_tangent);",
-                "   vec3 B = cross(N, T);",
-                "   mat3 tangentToWorld = mat3(T, B, N);",
-                "   mat3 tangentToView =  tangentToWorld;",
+            .addDecl('derivativeNormalMapping', [
+                "vec3 derivativeNormalMapping(vec3 viewPos, vec3 geometricNormal, vec2 texCoords) {",
+
+                "   vec3 q0 = dFdx(viewPos.xyz);",
+                "   vec3 q1 = dFdy(viewPos.xyz);",
+                "   vec2 st0 = dFdx(texCoords.st);",
+                "   vec2 st1 = dFdy(texCoords.st);",
+
+                "   vec3 S = normalize(q0*st1.t - q1*st0.t);",
+                "   vec3 T = normalize(-q0*st1.s + q1*st0.s);",
                 "   vec3 surfaceNormal = sampleTexUnit(" + GG.Naming.textureUnitUniformMap(this.BASE_UNIFORM_NAME) + ", " + this.BASE_UNIFORM_NAME + ", v_texCoords).xyz * 2.0 - 1.0;",
-                "   return normalize(tangentToView * surfaceNormal);",
+                "   surfaceNormal.xy = u_normalMapScale * surfaceNormal.xy;",
+                "   mat3 tangentToViewSpace = mat3(S, T, geometricNormal);",
+                "   return normalize(tangentToViewSpace * surfaceNormal);",
+
                 "}"
         ].join('\n'));
     }

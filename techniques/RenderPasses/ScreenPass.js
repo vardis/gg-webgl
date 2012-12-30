@@ -22,7 +22,7 @@ GG.ScreenPass.prototype.__renderGeometry = function(renderable) {
 	if (this.screenQuad == null) {
 		this.screenQuad = new GG.TriangleMesh(new GG.ScreenAlignedQuad());
 	}	
-	GG.renderer.renderMesh(this.screenQuad, this.program);
+	GG.renderer.render(this.screenQuad, this.program);
 };
 
 GG.ScreenPass.prototype.__setCustomUniforms = function(renderable, renderContext, program) {

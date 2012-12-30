@@ -31,6 +31,8 @@ GG.Naming = {
     VarSpecularOutput        : 'specular',
     VarAlphaOutput           : 'alpha',
 
+    VarDiffuseBaseColor      : 'baseColor',
+    
     // common preprocessor definition names
     DefUseTangentSpace       : 'USE_TANGENT_SPACE_FOR_LIGHTING'
 

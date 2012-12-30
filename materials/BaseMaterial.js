@@ -14,21 +14,26 @@ GG.BaseMaterial = function(spec) {
 
     this.normalMapScale = 1.0;
 
-	this.glowMap     = spec.glowMap;
-
 	this.diffuseTextureStack = new GG.TextureStack();
 	
-	this.flatShade   = spec.flatShade != undefined ? spec.flatShade : false;
-	this.phongShade  = spec.phongShade != undefined ? spec.phongShade : true;	
-	this.shadeless   = spec.shadeless != undefined ? spec.shadeless : false;
+	this.flatShade       = spec.flatShade != undefined ? spec.flatShade : false;
+	this.phongShade      = spec.phongShade != undefined ? spec.phongShade : true;	
+	this.shadeless       = spec.shadeless != undefined ? spec.shadeless : false;
+	this.useVertexColors = spec.useVertexColors != undefined ? spec.useVertexColors : false;
+
 	this.wireframe   = spec.wireframe != undefined ? spec.wireframe : false;
 	this.wireOffset  = spec.wireOffset != undefined ? spec.wireOffset : 0.001;
 	this.wireWidth   = spec.wireOffset != undefined ? spec.wireOffset : 1.0;
 
 	// environment map to be sampled for reflections
 	this.envMap          = spec.envMap != undefined ? spec.envMap : null;
+
 	// amount of reflectance
 	this.reflectance     = spec.reflectance != undefined ? spec.reflectance : 0.80;
+
+	// controls the reflectance using a texture
+	this.glowMap     = spec.glowMap;
+
 
 	// index of refraction 
 	this.IOR             = spec.IOR != undefined ? spec.IOR : [ 1.0, 1.0, 1.0 ];

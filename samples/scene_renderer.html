@@ -2,24 +2,13 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-
-		<script src="../externals/gl-matrix.js"></script>
-		<script>
-			var GG = {
-				version : "1.0",
-				context : null
-			};
-			
-		</script>
-		
+		<script src="../externals/gl-matrix.js"></script>		
 		<script type="text/javascript" src="../externals/dat.gui.min.js"></script>
-
-		<script src="../GG_all.js"></script>
-
-		<script src="scene_renderer.js"></script>
-
 	</head>
 	<body onload="new SceneRendererSample().start();">
-		<canvas id="c" style="border: none;" width="640" height="480"></canvas>		
+		<canvas id="canvasGL" style="border: none;" width="640" height="480"></canvas>		
 	</body>
+	<script src="../GG_all.js"></script>
+	<script src="SampleBase.js"></script>
+	<script src="scene_renderer.js"></script>
 </html>

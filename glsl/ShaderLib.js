@@ -179,8 +179,8 @@ GG.ShaderLib = new function (argument) {
 			].join('\n'),
 
 			'sampleTexUnit'  : [
-				"vec4 sampleTexUnit(sampler2D map, TexUnitParams_t texUnit) {",
-				"	return texture2D(map, texUnit.offset + (texUnit.scale * v_texCoords));",
+				"vec4 sampleTexUnit(sampler2D map, TexUnitParams_t texUnit, vec2 baseCoords) {",
+				"	return texture2D(map, texUnit.offset + (texUnit.scale * baseCoords));",
 				"}"
 			].join('\n'),
 

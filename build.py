@@ -6,6 +6,8 @@ GG_files = [
 	'materials/Color.js',
 	'input/MouseInput.js',
 	'input/KeyboardInput.js',
+	'splines/Bezier.js',
+	'splines/CatmullRom.js',
 	'animation/Clock.js',
 	'utils/AjaxUtils.js',
 	'utils/Loader.js',
@@ -19,10 +21,11 @@ GG_files = [
 	'geometries/ScreenAlignedQuad.js',
 	'buffers/AttributeDataBuffer.js',
 	'renderables/Object3D.js',
-	'textures/TextureCubemap.js',
-	'textures/Texture.js',
+	'renderables/PointMesh.js',
 	'renderables/TriangleMesh.js',	
-	'renderables/StaticParticleSystem.js',
+	'renderables/StaticParticleSystem.js',	
+	'textures/TextureCubemap.js',
+	'textures/Texture.js',	
 	'cameras/Viewport.js',
 	'cameras/BaseCamera.js',
 	'cameras/PerspectiveCamera.js',
@@ -59,7 +62,7 @@ GG_files = [
 	'techniques/PhongShadingTechnique.js',
 	'techniques/WireframeTechnique.js',
 	'techniques/DepthPrePassTechnique.js',
-	'techniques/particles/ParticlesTechnique.js',
+	'techniques/particles/StaticPointParticlesTechnique.js',
 	'techniques/shadow_mapping/ShadowMapDepthPass.js',
 	'techniques/shadow_mapping/DepthMapDebugOutput.js',
 	'techniques/shadow_mapping/ShadowMapSimple.js',
@@ -70,8 +73,7 @@ GG_files = [
 	'render/Renderer.js',	
 	'interaction/MouseHandler.js',
 	'scene/Scene.js',
-	'scene/DefaultSceneRenderer.js',
-	'samples/SampleBase.js'
+	'scene/DefaultSceneRenderer.js'
 ]
 
 def merge(files):
