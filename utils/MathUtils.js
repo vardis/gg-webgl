@@ -42,8 +42,11 @@ GG.MathUtils = function() {
 				b = Math.atan2(mat[4], mat[5]) ;
 			}
 			return [h, p, b];
-		}
+		},
 
+		isPowerOf2 : function (val) {
+			return (val & (val - 1)) === 0;
+		}
 	}
 }();
 

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="../externals/gl-matrix.js"></script>
+    
+    <script type="text/javascript">
+
+        function doit() {
+            var canvas = document.getElementById('canvas2d');
+            var ctx = canvas.getContext('2d');
+
+            ctx.beginPath();
+            ctx.moveTo(5, 100);
+            ctx.bezierCurveTo(10, 10, 100, 200, 200, 200);
+            ctx.bezierCurveTo(50, 250, 370, 80, 20, 200);
+           // ctx.closePath();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.fillStyle = '#00f';
+            ctx.rect(5, 300, 4, 4);
+            ctx.rect(10, 210, 4, 4);
+            ctx.rect(100, 400, 4, 4);
+            ctx.rect(200, 400, 4, 4);
+            ctx.rect(50, 450, 4, 4);
+            ctx.rect(370, 280, 4, 4);
+            ctx.rect(20, 400, 4, 4);
+            ctx.stroke();
+
+            var bz = new GG.Bezier();
+            bz.addCurve(
+                [5, 300, 0],
+                [10, 210, 0],
+                [100, 400, 0],
+                [200, 400, 0]);
+            bz.addCurve(
+                [200, 400, 0],
+                [50, 450, 0],
+                [370, 280, 0],
+                [20, 400, 0]
+            );
+
+            ctx.beginPath();
+            var  p = bz.point(0);
+            ctx.moveTo(p[0], p[1]);
+            var iterations = 150.0;
+
+            for (var i = 0; i < iterations; i++) {
+                var  p = bz.point(i/iterations);
+                ctx.lineTo(p[0], p[1]);
+            }
+            ctx.stroke();
+
+            var cm = new GG.CatmullRom();
+            cm.addPoint([5, 300, 0]);
+            cm.addPoint([10, 210, 0]);
+            cm.addPoint([100, 400, 0]);
+            cm.addPoint([200, 400, 0]);
+            cm.addPoint([50, 450, 0]);
+            cm.addPoint([370, 280, 0]);
+            cm.addPoint([20, 400, 0]);
+
+            var  p = cm.point(0);
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#0000ff';
+            ctx.moveTo(p[0], p[1]);
+            var iterations = 150.0;
+
+            //ctx.strokeStyle = '#00f';
+            for (var i = 0; i < iterations; i++) {
+                var  p = cm.point(i/iterations);
+                ctx.lineTo(p[0], p[1]);
+            }
+            ctx.stroke();
+        }
+    </script>
+    <title></title>
+</head>
+<body onload="doit();">
+    <canvas width="600" height="480" id="canvasGL" style="display:none">
+        No canvas?
+        </canvas>
+
+        <canvas width="600" height="480" id="canvas2d">
+        No canvas?
+        </canvas>
+</body>
+    <script src="../GG_all.js"></script>
+</html>

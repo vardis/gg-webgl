@@ -41,7 +41,7 @@ GG.BaseMaterial = function(spec) {
 	// index of refraction of the environment surounding the object 
 	this.externalIOR     = spec.externalIOR != undefined ? spec.externalIOR : [ 1.330, 1.31, 1.230 ];
 
-	this.fresnelBias     = spec.fresnelBias != undefined ? spec.fresnelBias : 0.44;
+	this.fresnelBias     = spec.fresnelBias != undefined ? spec.fresnelBias : 1.0;
 	this.fresnelExponent = spec.fresnelExponent != undefined ? spec.fresnelExponent : 2.0;
 };
 

@@ -34,7 +34,7 @@ var GG = {
 
 var canvas = document.getElementById(window.GG_CANVAS_ID || 'canvasGL');				
 var contextName = window.GG_CONTEXT_NAME || "experimental-webgl";
-var gl = canvas.getContext(contextName);
+var gl = canvas.getContext(contextName, { antialias : true });
 
 GG.context = gl;
 GG.canvas = canvas;

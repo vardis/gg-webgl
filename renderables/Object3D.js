@@ -33,7 +33,7 @@ GG.Object3D = function (geometry, material, spec) {
     if (this.geometry != null && spec.usesColors && this.geometry.getColors() != null) {
         this.colorsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getColors(), 'itemSize' : 3, 'itemType' : gl.UNSIGNED_BYTE });
     } else {
-        this.colorsBuffer = GG.AttributeDataBuffer.newEmptyDataBuffer();
+        this.colorsBuffer = null; // GG.AttributeDataBuffer.newEmptyDataBuffer();
     }
 
     if (this.geometry != null && spec.usesTangents && this.geometry.getTangents() != null) {

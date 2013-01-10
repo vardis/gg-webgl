@@ -22,8 +22,11 @@ GG.AttributeDataBuffer = function (spec) {
     if (this.arrayData == null) {
         this.itemCount = spec.itemCount;
         if (this.itemCount == null) throw "dataLength must be defined";
-        this.arrayData = this.allocateDataArray();
+        this.arrayData = this.allocateTypedArray();
     } else {
+        if (this.arrayData.constructor == Array) {
+            this.arrayData = this.allocateTypedArrayFromArray(this.arrayData);
+        }
         this.itemCount = this.arrayData.length / this.itemSize;
     }
 
@@ -48,34 +51,43 @@ GG.AttributeDataBuffer.prototype.streamAttribute = function (attrib) {
     gl.vertexAttribPointer(attrib, this.itemSize, this.itemType, this.normalize, this.stride, 0);
 };
 
-GG.AttributeDataBuffer.prototype.allocateDataArray = function () {
+GG.AttributeDataBuffer.prototype.allocateTypedArray = function () {
     var size = this.itemCount * this.itemSize;
-    var arrayData = null;
+    var ctor = this.getArrayBufferConstructrForItemType(this.itemType);
+    return new ctor(size);
+};
+
+GG.AttributeDataBuffer.prototype.allocateTypedArrayFromArray = function (rawArray) {    
+    var ctor = this.getArrayBufferConstructrForItemType(this.itemType);
+    return new ctor(rawArray);
+};
+
+GG.AttributeDataBuffer.prototype.getArrayBufferConstructrForItemType = function (itemType) {
+    var ctor;
     switch (this.itemType) {
         case gl.BYTE:
-            arrayData = new ArrayBuffer(size);
+            ctor = ArrayBuffer;
             break;
         case gl.UNSIGNED_BYTE:
-            arrayData = new Uint8Array(size);
+            ctor = Uint8Array;
             break;
         case gl.FLOAT:
-            arrayData = new Float32Array(size);
+            ctor = Float32Array;
             break;
         case gl.SHORT:
-            arrayData = new Int16Array(size);
+            ctor = Int16Array;
             break;
         case gl.UNSIGNED_SHORT:
-            arrayData = new Uint16Array(size);
+            ctor = Uint16Array;
             break;
         case gl.FIXED:
-            arrayData = new Uint32Array(size);
+            ctor = Uint32Array;
             break;
         default:
             throw "Unrecognized itemType";
     }
-    return arrayData;
+    return ctor;
 };
-
 GG.AttributeDataBuffer.prototype.getItemCount = function () {
     return this.itemCount;
 };
@@ -87,6 +99,7 @@ GG.AttributeDataBuffer.prototype.getData = function () {
 GG.AttributeDataBuffer.prototype.getElementAt = function (index) {
     return this.arrayData.subarray(index*this.itemSize, (index+1)*this.itemSize);
 };
+
 
 GG.AttributeDataBuffer.prototype.updateData = function (typedArray) {
     this.arrayData.set(typedArray);

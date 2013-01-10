@@ -50,26 +50,27 @@ GG.Renderer.prototype.render = function (renderable, program, options) {
 	var attribNormal = program[GG.GLSLProgram.BuiltInAttributes.attribNormal];
 	if (attribNormal != undefined) {
 		var normalsBuffer = renderable.getMaterial().flatShade ? renderable.getFlatNormalsBuffer() : renderable.getNormalsBuffer();
-        normalsBuffer.streamAttribute(attribNormal);
+        if (normalsBuffer != null) 
+        	normalsBuffer.streamAttribute(attribNormal);
 	}
 
 	var attribTexCoords = program[GG.GLSLProgram.BuiltInAttributes.attribTexCoords];
-	if (attribTexCoords != undefined) {
+	if (attribTexCoords != undefined && renderable.getTexCoordsBuffer() != null) {
         renderable.getTexCoordsBuffer().streamAttribute(attribTexCoords)
 	}
 
 	var attribColor = program[GG.GLSLProgram.BuiltInAttributes.attribColor];
-	if (attribColor != undefined) {
+	if (attribColor != undefined && renderable.getColorsBuffer() != null) {
 		renderable.getColorsBuffer().streamAttribute(attribColor);
 	}
 
     var attribTangent = program[GG.GLSLProgram.BuiltInAttributes.attribTangent];
-    if (attribTangent != undefined) {
+    if (attribTangent != undefined && renderable.getTangentsBuffer() != null) {
         renderable.getTangentsBuffer().streamAttribute(attribTangent);
     }
 
     options = options || {};
-	var mode = renderable.getMode();
+	var mode = renderable.getMode() || GG.RENDER_TRIANGLES;
 	if ('mode' in options ) {
 		mode = options.mode != null ? options.mode : mode;
 	}

@@ -62,28 +62,35 @@ GG.ProgramUtils = function() {
 			predefined[GG.Naming.UniformTime0_X] = function(p, uname) { 
 				gl.uniform1f(p[uname], GG.clock.totalRunningTime()); 
 			};
+
 			predefined[GG.Naming.UniformTime0_1] = function(p, uname) { 
 				gl.uniform1f(p[uname], GG.clock.normalizedTime()); 
 			};
+
 			predefined[GG.Naming.UniformViewMatrix] = function(p, uname) { 
 				gl.uniformMatrix4fv(p[uname], false, renderContext.camera.getViewMatrix()); 
 			};
+
 			predefined[GG.Naming.UniformInverseViewMatrix] = function(p, uname) { 
 				var inv = mat4.create();
 				mat4.inverse(renderContext.camera.getViewMatrix(), inv);
 				gl.uniformMatrix4fv(p[uname], false, inv); 
 			};
+
 			predefined[GG.Naming.UniformProjectionMatrix] = function(p, uname) { 
 				gl.uniformMatrix4fv(p[uname], false, renderContext.camera.getProjectionMatrix()); 
 			};
+
 			predefined[GG.Naming.UniformModelMatrix] = function(p, uname) { 
 				gl.uniformMatrix4fv(p[uname], false, renderable.getModelMatrix()); 
 			};
+
 			predefined[GG.Naming.UniformModelViewMatrix] = function(p, uname) { 
 				var mv = mat4.create();
 				mat4.multiply(renderContext.camera.getViewMatrix(), renderable.getModelMatrix(), mv);
 				gl.uniformMatrix4fv(p[uname], false, mv); 
 			};
+
 			predefined[GG.Naming.UniformNormalMatrix] = function(p, uname) { 
 				var mv = mat4.create();
 				mat4.multiply(renderContext.camera.getViewMatrix(), renderable.getModelMatrix(), mv);
@@ -92,6 +99,10 @@ GG.ProgramUtils = function() {
 				mat4.inverse(mv, normal);
 				mat4.transpose(normal);
 				gl.uniformMatrix3fv(p[uname], false, mat4.toMat3(normal));
+			};
+
+			predefined[GG.Naming.UniformCameraWorldPos] = function(p, uname) { 
+				gl.uniform3fv(p[uname], renderContext.camera.getPosition());
 			};
 
 			for ( u in predefined) {

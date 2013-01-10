@@ -35,7 +35,7 @@ var GG = {
 
 var canvas = document.getElementById(window.GG_CANVAS_ID || 'canvasGL');				
 var contextName = window.GG_CONTEXT_NAME || "experimental-webgl";
-var gl = canvas.getContext(contextName);
+var gl = canvas.getContext(contextName, { antialias : true });
 
 GG.context = gl;
 GG.canvas = canvas;
@@ -104,6 +104,7 @@ GG.Naming = {
 	UniformProjectionMatrix  : 'u_matProjection',
 	UniformTime0_X           : 'u_fTime0_X',
 	UniformTime0_1           : 'u_fTime0_1',
+	UniformCameraWorldPos    : 'u_wCameraPos',
 	
 	AttributePosition        : 'a_position',
 	AttributeNormal          : 'a_normal',
@@ -479,38 +480,121 @@ GG.KEYS = {
 };
 
 GG.Bezier = function (spec) {
-    this.points = spec.points != null ? spec.points : [];
-    this.tangents = [];
-    this.cp0 = spec.cp0 != null ? spec.cp0 : [0, 0, 0];
-    this.cp1 = spec.cp1 != null ? spec.cp1 : [0, 0, 0];
-    this.cp2 = spec.cp2 != null ? spec.cp2 : [0, 0, 0];
-    this.cp3 = spec.cp3 != null ? spec.cp3 : [0, 0, 0];
+    spec = spec || {};
+    this.segments = [];
+    // contains the running sum of the segment ratios
+    this.segmentRatios = [];
 };
 
 GG.Bezier.prototype.constructor = GG.Bezier;
 
 
-
+GG.Bezier.prototype.addCurve = function (p1, cp1, cp2, p2) {
+    this.segments.push({
+        'p1' : p1, 
+        'cp1' : cp1, 
+        'cp2' : cp2, 
+        'p2' : p2});
+    this.calculateSegmentsRatios();
+};
 
 GG.Bezier.prototype.point = function (t) {
+    if (t == 0) {
+        return this.segments[0].p1;
+    } else if (t == 1.0) {
+        return this.segments[this.segments.length - 1].p2;
+    } else {
+        var idx = this.getSegmentIndexForTime(t);
+        if (idx > 0) {
+            var startSegment = this.segmentRatios[idx - 1];
+        } else {
+            var startSegment = 0;
+        }
+        var endSegment = this.segmentRatios[idx];
+        
+        var segmentTime = (t - startSegment) / (endSegment - startSegment);
+        return this.interpolateSegment(this.segments[idx], segmentTime);   
+    } 
+};
+
+GG.Bezier.prototype.interpolateSegment = function (segment, t) {
     var t1 = 1 - t;
     var t2 = t1 * t1;
     var timeSquared = t * t;
     var timeCubic = t * timeSquared;
 
     var pt = [0, 0, 0];
-    pt[0] = t1 * t2 * this.cp0[0] + 3 * t * t2 * this.cp1[0] + 3 * timeSquared * t1 * this.cp2[0] + timeCubic * this.cp3[0];
-    pt[1] = t1 * t2 * this.cp0[1] + 3 * t * t2 * this.cp1[1] + 3 * timeSquared * t1 * this.cp2[1] + timeCubic * this.cp3[1];
-    pt[2] = t1 * t2 * this.cp0[2] + 3 * t * t2 * this.cp1[2] + 3 * timeSquared * t1 * this.cp2[2] + timeCubic * this.cp3[2];
+    pt[0] = t1 * t2 * segment.p1[0] + 3 * t * t2 * segment.cp1[0] + 3 * timeSquared * t1 * segment.cp2[0] + timeCubic * segment.p2[0];
+    pt[1] = t1 * t2 * segment.p1[1] + 3 * t * t2 * segment.cp1[1] + 3 * timeSquared * t1 * segment.cp2[1] + timeCubic * segment.p2[1];
+    pt[2] = t1 * t2 * segment.p1[2] + 3 * t * t2 * segment.cp1[2] + 3 * timeSquared * t1 * segment.cp2[2] + timeCubic * segment.p2[2];
     return pt;
 };
 
+GG.Bezier.prototype.calculateSegmentsRatios = function () {
+    var numSegments = this.segments.length;    
+    var total = 0;    
+    var segmentsLengths = [];
+
+    for (var i = 0; i < numSegments; i++) {
+        var v = vec3.create();
+        vec3.subtract(this.segments[i].p2, this.segments[i].p1, v);
+        var len = vec3.length(v);
+        total += len;
+        segmentsLengths.push(len);            
+    }
+
+    // set ratio for each curve of the spline
+    this.segmentRatios = [];
+    this.segmentRatios[segmentsLengths.length-1] = 1;
+
+    for (var j = 0; j < segmentsLengths.length-1; j++) {
+        this.segmentRatios[j] = segmentsLengths[j] / total;
+        if (j > 0) {
+            this.segmentRatios[j] += this.segmentRatios[j - 1];
+        }
+    }
+};
+
+/**
+ * Returns the index of the spline segment that corresponds to the given
+ * time value.
+ */
+GG.Bezier.prototype.getSegmentIndexForTime = function (t) {
+    for (var j = 0; j < this.segmentRatios.length; j++) {
+        if (t < this.segmentRatios[j]) return j;
+    }
+    return this.segmentRatios.length - 1;
+};
+
+/**
+ * A Catmull-Rom spline is a Hermite cubic degree Bezier spline where the tangents
+ * are defined by the formula:
+ * tangent[i] = sharpness * (point[i+1] - point[i-1])
+ *
+ * It has the useful property of passing through each of its control points.
+
+ * where sharpness is typically set to 0.5, although this can be controlled through
+ * the CatmullRom.sharpness field.
+ *
+ * The spline is constructed by repeatedly calling the addPoint(p: vec3) until
+ * for each point that is to be interpolated by the spline.
+ * Each pair of points define a segment of the spline and for each segment we
+ * assign an approximated ratio of its length over the total length of the spline.
+ *
+ * To sample the spline at a time offset t which lies in [0, 1], use the method CatmullRom.point(t: float).
+ * This will return the x,y,z coordinates of the spline point. Internally, the method uses
+ * the passed time value as a ratio in order to determine the segment that corresponds
+ * to that time value. Then the ratio of the starting point of the segment is subtracted
+ * from the time and divided by the ratio of the length of the segment in order to determine
+ * the point within the segment that corresponds to the passed time.
+ */
 GG.CatmullRom = function (spec) {
     spec = spec || {};
     this.points = spec.points != null ? spec.points : [];
     this.tangents = [];
-    this.ratios = [];
-    this.cp1 = spec.cp1 != null ? spec.cp1 : [0, 0, 0];
+
+    // contains the running sum of the segment ratios
+    this.segmentRatios = [];
     this.sharpness = spec.sharpness != null ? spec.sharpness : 0.5;
 };
 
@@ -522,6 +606,10 @@ GG.CatmullRom.prototype.addPoint = function (p) {
     this.calculateTangents();
 };
 
+/**
+ * Samples the spline at the given time value.
+ * The time value should lie between [0, 1].
+ */
 GG.CatmullRom.prototype.point = function (t) {
     // check corner cases, t == 0, t == 1
     if (t == 0) {
@@ -530,13 +618,21 @@ GG.CatmullRom.prototype.point = function (t) {
         return this.points[this.points.length - 1];
     } else {
         var idx = this.getSegmentForTime(t);
-        var start = this.ratios[idx];
-        var end = this.ratios[idx + 1];
-        var segmentTime = (t - start) / (end - start);
+        var startSegment = this.segmentRatios[idx];
+        if (idx == this.segmentRatios.length-1) {
+            var endSegment = 1;
+        } else {
+            var endSegment = this.segmentRatios[idx + 1];
+        }        
+        var segmentTime = (t - startSegment) / (endSegment - startSegment);
         return this.hermiteInterpolation(idx, segmentTime);   
     }    
 };
 
+/**
+ * Performs the Hermite interpolation for a given segment and a segment local
+ * time.
+ */
 GG.CatmullRom.prototype.hermiteInterpolation = function (segment, t) {
     var t1 = 1 - t;
     var t2 = t1 * t1;
@@ -559,6 +655,9 @@ GG.CatmullRom.prototype.hermiteInterpolation = function (segment, t) {
     return pt;
 };
 
+/**
+ * Calculates the tangent vectors from the current list of spline points.
+ */
 GG.CatmullRom.prototype.calculateTangents = function () {
     if (this.points.length > 2) {
         for (var i = 0; i < this.points.length; i++) {
@@ -578,6 +677,13 @@ GG.CatmullRom.prototype.calculateTangents = function () {
     }
 };
 
+/**
+ * For each spline segment, it calculates the ratio of its length over
+ * the total length of the spline.
+ * This is just an approximation, as the length of a segment we use the
+ * distance between its two endpoints. While the total length of the
+ * spline is the sum of the lengths of all the segments.
+ */
 GG.CatmullRom.prototype.calculateSegmentsRatios = function () {
     var numPoints = this.points.length;    
     if (numPoints >= 2) {
@@ -599,26 +705,30 @@ GG.CatmullRom.prototype.calculateSegmentsRatios = function () {
         }
 
         // set ratio for each curve of the spline
-        this.ratios = [];
-        this.ratios[0] = 0;
-        this.ratios[segmentsLengths.length-1] = 1;
+        this.segmentRatios = [];
+        this.segmentRatios[0] = 0;
+        this.segmentRatios[segmentsLengths.length-1] = 1;
 
         for (var j = 1; j < segmentsLengths.length-1; j++) {
-            this.ratios[j] = segmentsLengths[j] / total;
+            this.segmentRatios[j] = segmentsLengths[j] / total;
             if (j > 0) {
-                this.ratios[j] += this.ratios[j - 1];
+                this.segmentRatios[j] += this.segmentRatios[j - 1];
             }
         }
     } else {
-        this.ratios = [];
+        this.segmentRatios = [];
     }    
 };
 
+/**
+ * Returns the index of the spline segment that corresponds to the given
+ * time value.
+ */
 GG.CatmullRom.prototype.getSegmentForTime = function (t) {
-    for (var j = 0; j < this.ratios.length; j++) {
-        if (t < this.ratios[j]) return j-1;
+    for (var j = 0; j < this.segmentRatios.length; j++) {
+        if (t < this.segmentRatios[j]) return j-1;
     }
-    return this.ratios.length - 1;
+    return this.segmentRatios.length - 1;
 };
 
 
@@ -1068,8 +1178,11 @@ GG.MathUtils = function() {
 				b = Math.atan2(mat[4], mat[5]) ;
 			}
 			return [h, p, b];
-		}
+		},
 
+		isPowerOf2 : function (val) {
+			return (val & (val - 1)) === 0;
+		}
 	}
 }();
 
@@ -1138,28 +1251,35 @@ GG.ProgramUtils = function() {
 			predefined[GG.Naming.UniformTime0_X] = function(p, uname) { 
 				gl.uniform1f(p[uname], GG.clock.totalRunningTime()); 
 			};
+
 			predefined[GG.Naming.UniformTime0_1] = function(p, uname) { 
 				gl.uniform1f(p[uname], GG.clock.normalizedTime()); 
 			};
+
 			predefined[GG.Naming.UniformViewMatrix] = function(p, uname) { 
 				gl.uniformMatrix4fv(p[uname], false, renderContext.camera.getViewMatrix()); 
 			};
+
 			predefined[GG.Naming.UniformInverseViewMatrix] = function(p, uname) { 
 				var inv = mat4.create();
 				mat4.inverse(renderContext.camera.getViewMatrix(), inv);
 				gl.uniformMatrix4fv(p[uname], false, inv); 
 			};
+
 			predefined[GG.Naming.UniformProjectionMatrix] = function(p, uname) { 
 				gl.uniformMatrix4fv(p[uname], false, renderContext.camera.getProjectionMatrix()); 
 			};
+
 			predefined[GG.Naming.UniformModelMatrix] = function(p, uname) { 
 				gl.uniformMatrix4fv(p[uname], false, renderable.getModelMatrix()); 
 			};
+
 			predefined[GG.Naming.UniformModelViewMatrix] = function(p, uname) { 
 				var mv = mat4.create();
 				mat4.multiply(renderContext.camera.getViewMatrix(), renderable.getModelMatrix(), mv);
 				gl.uniformMatrix4fv(p[uname], false, mv); 
 			};
+
 			predefined[GG.Naming.UniformNormalMatrix] = function(p, uname) { 
 				var mv = mat4.create();
 				mat4.multiply(renderContext.camera.getViewMatrix(), renderable.getModelMatrix(), mv);
@@ -1168,6 +1288,10 @@ GG.ProgramUtils = function() {
 				mat4.inverse(mv, normal);
 				mat4.transpose(normal);
 				gl.uniformMatrix3fv(p[uname], false, mat4.toMat3(normal));
+			};
+
+			predefined[GG.Naming.UniformCameraWorldPos] = function(p, uname) { 
+				gl.uniform3fv(p[uname], renderContext.camera.getPosition());
 			};
 
 			for ( u in predefined) {
@@ -1317,15 +1441,15 @@ GG.Geometry.fromThreeJsJSON = function (jsonObj) {
     if ('vertices' in jsonObj) {
 		spec.vertices  = new Float32Array(jsonObj.vertices);
 
-		if ('normals' in jsonObj) {
+		if ('normals' in jsonObj && jsonObj.normals.length > 0) {
 			spec.normals   = new Float32Array(jsonObj.normals);		
 		}
 
-		if ('uvs' in jsonObj) {
+		if ('uvs' in jsonObj && jsonObj.uvs.length > 1) {
 			spec.texCoords = new Float32Array(jsonObj.uvs);
 		}
 	
-		if ('faces' in jsonObj) {
+		if ('faces' in jsonObj && jsonObj.faces.length > 0) {
 			var indices = [];
 			var count = jsonObj.faces.length;
 			var i = 0;
@@ -1340,9 +1464,9 @@ GG.Geometry.fromThreeJsJSON = function (jsonObj) {
 				var hasFaceColor        = type & 64;
 				var hasFaceVertexColor  = type & 128;
 
-				indices.push(jsonObj.faces[i+2]);
-				indices.push(jsonObj.faces[i+1]);
 				indices.push(jsonObj.faces[i]);
+				indices.push(jsonObj.faces[i+1]);
+				indices.push(jsonObj.faces[i+2]);
 				i+=3;
 				var nVertices = 3;
 				if (isQuad) {
@@ -1905,8 +2029,11 @@ GG.AttributeDataBuffer = function (spec) {
     if (this.arrayData == null) {
         this.itemCount = spec.itemCount;
         if (this.itemCount == null) throw "dataLength must be defined";
-        this.arrayData = this.allocateDataArray();
+        this.arrayData = this.allocateTypedArray();
     } else {
+        if (this.arrayData.constructor == Array) {
+            this.arrayData = this.allocateTypedArrayFromArray(this.arrayData);
+        }
         this.itemCount = this.arrayData.length / this.itemSize;
     }
 
@@ -1931,34 +2058,43 @@ GG.AttributeDataBuffer.prototype.streamAttribute = function (attrib) {
     gl.vertexAttribPointer(attrib, this.itemSize, this.itemType, this.normalize, this.stride, 0);
 };
 
-GG.AttributeDataBuffer.prototype.allocateDataArray = function () {
+GG.AttributeDataBuffer.prototype.allocateTypedArray = function () {
     var size = this.itemCount * this.itemSize;
-    var arrayData = null;
+    var ctor = this.getArrayBufferConstructrForItemType(this.itemType);
+    return new ctor(size);
+};
+
+GG.AttributeDataBuffer.prototype.allocateTypedArrayFromArray = function (rawArray) {    
+    var ctor = this.getArrayBufferConstructrForItemType(this.itemType);
+    return new ctor(rawArray);
+};
+
+GG.AttributeDataBuffer.prototype.getArrayBufferConstructrForItemType = function (itemType) {
+    var ctor;
     switch (this.itemType) {
         case gl.BYTE:
-            arrayData = new ArrayBuffer(size);
+            ctor = ArrayBuffer;
             break;
         case gl.UNSIGNED_BYTE:
-            arrayData = new Uint8Array(size);
+            ctor = Uint8Array;
             break;
         case gl.FLOAT:
-            arrayData = new Float32Array(size);
+            ctor = Float32Array;
             break;
         case gl.SHORT:
-            arrayData = new Int16Array(size);
+            ctor = Int16Array;
             break;
         case gl.UNSIGNED_SHORT:
-            arrayData = new Uint16Array(size);
+            ctor = Uint16Array;
             break;
         case gl.FIXED:
-            arrayData = new Uint32Array(size);
+            ctor = Uint32Array;
             break;
         default:
             throw "Unrecognized itemType";
     }
-    return arrayData;
+    return ctor;
 };
-
 GG.AttributeDataBuffer.prototype.getItemCount = function () {
     return this.itemCount;
 };
@@ -1970,6 +2106,7 @@ GG.AttributeDataBuffer.prototype.getData = function () {
 GG.AttributeDataBuffer.prototype.getElementAt = function (index) {
     return this.arrayData.subarray(index*this.itemSize, (index+1)*this.itemSize);
 };
+
 
 GG.AttributeDataBuffer.prototype.updateData = function (typedArray) {
     this.arrayData.set(typedArray);
@@ -2013,7 +2150,7 @@ GG.Object3D = function (geometry, material, spec) {
     if (this.geometry != null && spec.usesColors && this.geometry.getColors() != null) {
         this.colorsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getColors(), 'itemSize' : 3, 'itemType' : gl.UNSIGNED_BYTE });
     } else {
-        this.colorsBuffer = GG.AttributeDataBuffer.newEmptyDataBuffer();
+        this.colorsBuffer = null; // GG.AttributeDataBuffer.newEmptyDataBuffer();
     }
 
     if (this.geometry != null && spec.usesTangents && this.geometry.getTangents() != null) {
@@ -2142,6 +2279,16 @@ GG.PointMesh.prototype.getPointSize = function() {
 GG.PointMesh.prototype.setPointSize = function(sz) {
 	this.pointSize = sz;
 };
+
+GG.LineMesh = function (geometry, material, spec) {
+	spec = spec || {};
+	GG.Object3D.call(this, geometry, material, { usesColors : true });	
+	this.mode = GG.RENDER_LINES;
+};
+
+GG.LineMesh.prototype = new GG.Object3D();
+GG.LineMesh.prototype.constructor = GG.LineMesh;
+
 
 /**
  * Each TriangleMesh is associated with a Geometry that stores the actual vertices,
@@ -2351,6 +2498,8 @@ GG.Texture = function (spec) {
 	this.wrapS       = spec.wrapS != undefined ? spec.wrapS : gl.CLAMP_TO_EDGE;
 	this.wrapT       = spec.wrapT != undefined ? spec.wrapT : gl.CLAMP_TO_EDGE;
 	this.flipY       = spec.flipY != undefined ? spec.flipY : true;
+	this.useMipmaps  = spec.useMipmaps != undefined ? spec.useMipmaps : true;	
+	this.mipmapFiltering = spec.mipmapFiltering != undefined ? spec.mipmapFiltering : true;	
 };
 
 GG.Texture.prototype.constructor = GG.Texture;
@@ -2380,6 +2529,10 @@ GG.Texture.prototype.setWrapMode = function(wrapModeS, wrapModeT) {
 	gl.texParameteri(this.textureType, gl.TEXTURE_WRAP_T, wrapModeT);
 };
 
+GG.Texture.prototype.isPowerOf2 = function() {
+	return GG.MathUtils.isPowerOf2(this.width) && GG.MathUtils.isPowerOf2(this.height);
+};
+
 GG.Texture.prototype.handle = function() {
 	return this.tex;
 };
@@ -2395,28 +2548,47 @@ GG.Texture.createTexture = function (spec) {
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, spec.flipY != undefined ? spec.flipY : true);
 
 	// maps a format to the triple [internalFormat, format, type] as accepted by gl.TexImage2D
-	var formatDetails = {};
-	formatDetails[gl.RGB] = [gl.RGB, gl.RGB, gl.UNSIGNED_BYTE];
-	formatDetails[gl.RGBA] = [gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE];
-	formatDetails[gl.RGBA4] = [gl.RGBA, gl.RGBA, gl.UNSIGNED_SHORT_4_4_4_4];
+	var formatDetails         = {};
+	formatDetails[gl.RGB]     = [gl.RGB, gl.RGB, gl.UNSIGNED_BYTE];
+	formatDetails[gl.RGBA]    = [gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE];
+	formatDetails[gl.RGBA4]   = [gl.RGBA, gl.RGBA, gl.UNSIGNED_SHORT_4_4_4_4];
 	formatDetails[gl.RGB5_A1] = [gl.RGBA, gl.RGBA, gl.UNSIGNED_SHORT_5_5_5_1];
-	formatDetails[gl.RGB565] = [gl.RGB, gl.RGB, gl.UNSIGNED_SHORT_5_6_5];
+	formatDetails[gl.RGB565]  = [gl.RGB, gl.RGB, gl.UNSIGNED_SHORT_5_6_5];
 
-	var colorFormat = spec.colorFormat != undefined ? spec.colorFormat : gl.RGBA;
-	
-	var width = spec.width != undefined ? spec.width : 512;
-	var height = spec.height != undefined ? spec.height : 512;
+	var colorFormat     = spec.colorFormat != undefined ? spec.colorFormat : gl.RGBA;
+	var magFilter       = spec.magFilter != undefined ? spec.magFilter : gl.NEAREST;
+	var minFilter       = spec.minFilter != undefined ? spec.minFilter : gl.NEAREST;
+	var useMipmaps      = spec.useMipmaps != undefined ? spec.useMipmaps : true;
+	var mipmapFiltering = spec.minFmipmapFilteringilter != undefined ? spec.mipmapFiltering : gl.NEAREST;
+	var width, height;
 
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, spec.magFilter != undefined ? spec.magFilter : gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, spec.minFilter != undefined ? spec.minFilter : gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, spec.wrapS != undefined ? spec.wrapS : gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, spec.wrapT != undefined ? spec.wrapT : gl.CLAMP_TO_EDGE);
-	
 	if (spec.image != undefined) {
 		gl.texImage2D(gl.TEXTURE_2D, 0, formatDetails[colorFormat][0],  formatDetails[colorFormat][1], formatDetails[colorFormat][2], spec.image);	
-	} else {
+		width = spec.width;
+		heigh = spec.height;
+	} else {		
+		width = spec.width != undefined ? spec.width : 512;
+		height = spec.height != undefined ? spec.height : 512;
 		gl.texImage2D(gl.TEXTURE_2D, 0, formatDetails[colorFormat][0], width, height, 0, formatDetails[colorFormat][1], formatDetails[colorFormat][2], null);
 	}
+
+	if (useMipmaps && GG.MathUtils.isPowerOf2(width) && GG.MathUtils.isPowerOf2(height)) {
+		gl.generateMipmap(gl.TEXTURE_2D);
+		if (minFilter == gl.NEAREST && mipmapFiltering == gl.NEAREST) {
+			minFilter = gl.NEAREST_MIPMAP_NEAREST;
+		} else if (minFilter == gl.NEAREST && mipmapFiltering == gl.LINEAR) {
+			minFilter = gl.NEAREST_MIPMAP_LINEAR;
+		} else if (minFilter == gl.LINEAR && mipmapFiltering == gl.NEAREST) {
+			minFilter = gl.LINEAR_MIPMAP_NEAREST;
+		} else if (minFilter == gl.LINEAR && mipmapFiltering == gl.LINEAR) {
+			minFilter = gl.LINEAR_MIPMAP_LINEAR;
+		} 
+	}
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, spec.wrapS != undefined ? spec.wrapS : gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, spec.wrapT != undefined ? spec.wrapT : gl.CLAMP_TO_EDGE);
+
 	gl.bindTexture(gl.TEXTURE_2D, null);
 
 	copySpec = GG.cloneDictionary(spec);
@@ -3679,7 +3851,7 @@ GG.BaseMaterial = function(spec) {
 	// index of refraction of the environment surounding the object 
 	this.externalIOR     = spec.externalIOR != undefined ? spec.externalIOR : [ 1.330, 1.31, 1.230 ];
 
-	this.fresnelBias     = spec.fresnelBias != undefined ? spec.fresnelBias : 0.44;
+	this.fresnelBias     = spec.fresnelBias != undefined ? spec.fresnelBias : 1.0;
 	this.fresnelExponent = spec.fresnelExponent != undefined ? spec.fresnelExponent : 2.0;
 };
 
@@ -3763,7 +3935,7 @@ GG.PhongMaterial.prototype.constructor = GG.PhongMaterial;
  * spec.vertexShader : the vertex shader code
  * spec.fragmentShader : the fragment shader code
  * spec.attributeNames : a list containing the attribute names.
- * spec.renderableType : a constant that defines the type of renderable that
+ * spec.customRendering : a flag that indicates whether the default rendering method is to be skipped
  * this pass expects. If it is set to undefined or null, then the __renderGeometry
  * method will be called to do the actual rendering. Otherwise, RenderPass will
  * take care of calling the appropriate render method for this renderable type.
@@ -3782,19 +3954,17 @@ GG.PhongMaterial.prototype.constructor = GG.PhongMaterial;
  * provide a renderableType in the input specifications.
  */
 GG.RenderPass = function (spec) {
-	spec = spec || {};
-	this.vertexShader   = spec.vertexShader;
-	this.fragmentShader = spec.fragmentShader;
-	this.renderableType = spec.renderableType != undefined ? spec.renderableType : GG.RenderPass.MESH;
-	this.callback       = spec.callback != undefined ? spec.callback : this;
-	this.attributeNames = spec.attributeNames || [];
-	this.program        = null;
-	this.usesLighting   = spec.usesLighting != undefined ? spec.usesLighting : true;
+	spec                 = spec || {};
+	this.vertexShader    = spec.vertexShader;
+	this.fragmentShader  = spec.fragmentShader;
+	this.customRendering = spec.customRendering != undefined ? spec.customRendering : false;
+	this.callback        = spec.callback != undefined ? spec.callback : this;
+	this.attributeNames  = spec.attributeNames || [];
+	this.program         = null;
+	this.usesLighting    = spec.usesLighting != undefined ? spec.usesLighting : true;
 };
 
 GG.RenderPass.prototype.constructor = GG.RenderPass;
-
-GG.RenderPass.MESH = 1;
 
 GG.RenderPass.prototype.createGpuProgram = function() {
 	// create the gpu program if it is not linked already
@@ -3841,7 +4011,7 @@ GG.RenderPass.prototype.setRenderState = function(renderable, renderContext) {
 };
 
 GG.RenderPass.prototype.submitGeometryForRendering = function(renderable, renderContext) {
-	if (renderable && this.renderableType == GG.RenderPass.MESH) {
+	if (renderable && !this.customRendering) {
 		var options = {
 			mode : this.overrideRenderPrimitive(renderable)
 		};
@@ -3912,7 +4082,8 @@ GG.RenderPass.prototype.overrideRenderPrimitive = function(renderable) {
  */
 GG.ScreenPass = function(spec) {
 	spec = spec || {};
-
+	spec.customRendering = true;
+	
 	GG.RenderPass.call(this, spec);
 
 	this.sourceTexture = spec.sourceTexture;
@@ -3921,8 +4092,7 @@ GG.ScreenPass = function(spec) {
 
 GG.ScreenPass.SourceTextureUniform = 'u_sourceTexture';
 
-GG.ScreenPass.prototype = new GG.RenderPass();
-
+GG.ScreenPass.prototype             = new GG.RenderPass();
 GG.ScreenPass.prototype.constructor = GG.ScreenPass;
 
 GG.ScreenPass.prototype.__renderGeometry = function(renderable) {
@@ -4140,7 +4310,7 @@ GG.EmbeddableAdaptiveRenderPass.prototype.hashMaterial = function (material) {
 /**
  * Prerequisites:
  *	a) v_texCoords[0..N]: a varying passing each of the uv coordinates per fragment.
- *  b) a 'diffuse' variable already declared and used for calculating the diffuse component.
+ *  b) a 'GG.Naming.VarDiffuseBaseColor' variable already declared and used for calculating the base diffuse component.
  *  c) __setCustomUniforms must be called
  *  d) __setCustomRenderState must be called
  */
@@ -4438,6 +4608,109 @@ GG.BaseTechnique.prototype.render = function(renderable, ctx) {
 };
 
 
+/**
+ * Draws the normals of a renderable object for debugging purposes.
+ * The normals are drawing using lines with a different color for the 2 endpoints. 
+ * A LineMesh is constructed for every input renderable and having the same number
+ * of vertices as the renderable.
+ */
+GG.NormalsVisualizationTechnique = function (spec) {
+	spec        = spec || {};	
+	spec.passes = [ new GG.NormalsVisualizationTechnique.Pass() ];
+	GG.BaseTechnique.call(this, spec);
+	this.startColor   = [0, 1, 0];
+	this.endColor     = [1, 0, 0];
+	this.normalsScale = spec.normalsScale != undefined ? spec.normalsScale : 1.0;
+};
+
+
+GG.NormalsVisualizationTechnique.prototype = new GG.BaseTechnique();
+GG.NormalsVisualizationTechnique.prototype.constructor = GG.NormalsVisualizationTechnique;
+
+GG.NormalsVisualizationTechnique.create = function(spec) {
+	var t = new GG.NormalsVisualizationTechnique(spec);
+	t.passes[0].parent = t;
+	return t;
+};
+
+GG.NormalsVisualizationTechnique.Pass = function (spec) {
+	spec = spec || {};
+	spec.usesLighting = false;
+	spec.customRendering = true;
+	GG.RenderPass.call(this, spec);
+
+	// stores a reference to the technique
+	this.parent = null;
+};
+
+GG.NormalsVisualizationTechnique.Pass.prototype = new GG.RenderPass();
+GG.NormalsVisualizationTechnique.Pass.prototype.constructor = GG.NormalsVisualizationTechnique.Pass;
+
+GG.NormalsVisualizationTechnique.Pass.prototype.__createShaders = function() {
+	var vs = new GG.ProgramSource();
+	vs.position()
+		.color()
+		.varying('vec3', GG.Naming.VaryingColor)
+		.uniformModelViewMatrix()
+		.uniformProjectionMatrix()
+		.addMainBlock([
+			GG.Naming.VaryingColor + " = " + GG.Naming.AttributeColor + ";",
+			"gl_Position = u_matProjection * u_matModelView * " + GG.Naming.AttributePosition + ';'
+			].join('\n'));
+	this.vertexShader = vs.toString();
+
+	var fs = new GG.ProgramSource();
+	fs.asFragmentShader()
+		.varying('vec3', GG.Naming.VaryingColor)
+		.finalColor('gl_FragColor = vec4(' + GG.Naming.VaryingColor + ', 1.0);');
+	this.fragmentShader = fs.toString();
+};
+
+GG.NormalsVisualizationTechnique.Pass.prototype.__renderGeometry = function(renderable, ctx, program) {
+	if (renderable.constructor == GG.TriangleMesh) {
+		if (renderable.__normalsDebug == null) {
+			var lineMesh = this.createLineMeshForRenderable(renderable);
+			renderable.__normalsDebug = lineMesh;
+		}
+		GG.renderer.render(renderable.__normalsDebug, this.program);
+
+	} else throw "NormalsVisualizationTechnique can only render a TriangleMesh";
+};
+
+GG.NormalsVisualizationTechnique.Pass.prototype.createLineMeshForRenderable = function(renderable) {
+	var numVerts      = renderable.getVertexCount();	
+	var linesVertices = [];
+	var linesColors   = [];
+	var vertexBuffer  = renderable.getGeometry().getVertices();
+	var normalsBuffer = renderable.getGeometry().getNormals();
+	if (normalsBuffer == null || normalsBuffer.length == 0) {
+		return;
+	}
+	for (var i = 0; i < numVerts; i++) {			
+		var v = vertexBuffer.subarray(i*3, i*3+3);
+		var n = normalsBuffer.subarray(i*3, i*3+3);
+
+		var normal = this.getNormalEndpoint(v, n);
+		linesVertices.push(v[0], v[1], v[2]);		
+		linesVertices.push(normal[0], normal[1], normal[2]);
+
+		linesColors.push(this.parent.startColor[0], this.parent.startColor[1], this.parent.startColor[2]);
+		linesColors.push(this.parent.endColor[0], this.parent.endColor[1], this.parent.endColor[2]);
+	}
+	var linesGeom = new GG.Geometry({ vertices : linesVertices, colors : linesColors });
+	return new GG.LineMesh(linesGeom, new GG.BaseMaterial());
+};
+
+GG.NormalsVisualizationTechnique.Pass.prototype.getNormalEndpoint = function(v, n) {
+	var endpoint = vec3.create(v);
+	var ns = vec3.create(n);
+	vec3.scale(ns, this.parent.normalsScale);
+	vec3.add(endpoint, ns);
+	//vec3.normalize(endpoint);
+	
+	return endpoint;
+};
+
 GG.ConstantColorTechnique = function (spec) {
     spec = spec || {};
     spec.passes = [ new GG.ConstantColorPass() ];
@@ -4523,7 +4796,7 @@ GG.VertexColorsPass.prototype.__createShaders = function() {
  */
 GG.TexturedShadelessTechnique = function(texture, spec) {
 	spec = spec || {};
-	spec.passes = [new GG.PhongPass( { 'texture' : texture })];
+	spec.passes = [new GG.TexturedShadelessPass( { 'texture' : texture })];
 	GG.BaseTechnique.call(this, spec);	
 };
 
@@ -4531,41 +4804,56 @@ GG.TexturedShadelessTechnique.prototype = new GG.BaseTechnique();
 GG.TexturedShadelessTechnique.prototype.constructor = GG.TexturedShadelessTechnique;
 
 GG.TexturedShadelessPass = function (spec) {	
-	spec = spec || {};
 	GG.RenderPass.call(this, spec);
+	this.diffuseTexturingPass = new GG.DiffuseTextureStackEmbeddableRenderPass();
+};
 
-	this.texture = spec.texture;
+GG.TexturedShadelessPass.prototype = new GG.AdaptiveRenderPass();
+GG.TexturedShadelessPass.prototype.constructor = GG.TexturedShadelessPass;
 
-	var pg = new GG.ProgramSource();
-	pg.position()
-		.texCoords()
+GG.TexturedShadelessPass.prototype.createProgram = function(material) {
+	var vs = new GG.ProgramSource();
+	vs.position()
+		.texCoord0()
 		.uniformModelViewMatrix()
 		.uniformProjectionMatrix()
-		.varying('vec2', 'v_texCoords')
+		.varying('vec2', GG.Naming.VaryingTexCoords)
 		.addMainBlock([
 			"	v_texCoords = a_texCoords;",
 			"	gl_Position = u_matProjection*u_matModelView*a_position;"
-    ].join('\n')
-		);
-
-	this.vertexShader = pg.toString();
+    ].join('\n'));
 	
-	pg = new GG.ProgramSource();
-	pg.asFragmentShader()
-		.varying('vec2', 'v_texCoords')
+	var fs = new GG.ProgramSource();
+	fs.asFragmentShader()
+		.varying('vec2', GG.Naming.VaryingTexCoords)
 		.uniform('sampler2D', 'u_texture')
-		.addMainBlock("gl_FragColor = texture2D(u_texture, v_texCoords);");
+		.uniformMaterial()
+		.addMainInitBlock("   vec3 " + GG.Naming.VarDiffuseBaseColor + " = u_material.diffuse;")
+		.addMainBlock("gl_FragColor = texture2D(u_texture, " + GG.Naming.VaryingTexCoords + ");");	
 
-	this.fragmentShader = pg.toString();	
+	if (material != null) {
+		this.diffuseTexturingPass.adaptShadersToMaterial(vs, fs, material);
+	}
+	this.vertexShader   = vs.toString();
+	this.fragmentShader = fs.toString();
 };
 
-
-GG.TexturedShadelessPass.prototype = new GG.RenderPass();
-GG.TexturedShadelessPass.prototype.constructor = GG.TexturedShadelessPass;
-
 GG.TexturedShadelessPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
-	this.texture.bindAtUnit(GG.TEX_UNIT_DIFFUSE_MAP_0);
-    gl.uniform1i(this.program.samplerUniform.handle(), 0);
+	GG.ProgramUtils.setMaterialUniforms(program, GG.Naming.UniformMaterial, renderable.material);	
+	this.diffuseTexturingPass.__setCustomUniforms(renderable, ctx, program);
+};
+
+GG.TexturedShadelessPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
+	this.diffuseTexturingPass.__setCustomRenderState(renderable, ctx, program);
+	gl.disable(gl.CULL_FACE);
+};
+
+GG.TexturedShadelessPass.prototype.createShadersForMaterial = function (material) {
+	this.createProgram(material);
+};
+
+GG.TexturedShadelessPass.prototype.hashMaterial = function (material) {
+	return this.diffuseTexturingPass.hashMaterial(material);
 };
 GG.CubemapTechnique = function(spec) {
 	spec = spec || {};
@@ -4733,6 +5021,72 @@ GG.ReflectiveTechnique.ReflectivePass.prototype.__setCustomRenderState = functio
  	gl.enable(gl.CULL_FACE);
 };
 
+/**
+ * Blinn/Newell Latitude Mapping
+ */
+GG.LatitudeReflectionMappingTechnique = function (spec) {
+	spec        = spec || {};
+	spec.passes = [ new GG.LatitudeReflectionMappingTechnique.Pass(spec)];
+	GG.BaseTechnique.call(this, spec);
+};
+
+GG.LatitudeReflectionMappingTechnique.prototype = new GG.BaseTechnique();
+GG.LatitudeReflectionMappingTechnique.prototype.constructor = GG.LatitudeReflectionMappingTechnique;
+
+
+GG.LatitudeReflectionMappingTechnique.Pass = function (spec) {
+	
+	spec.vertexShader = [
+		"attribute vec4 a_position;",
+		"attribute vec3 a_normal;",
+
+		"uniform mat4 u_matModel;",
+		"uniform vec3 u_wCameraPos;",
+		"uniform mat4 u_matModelView;",
+		"uniform mat4 u_matProjection;",
+
+		"varying vec3 v_reflection;",		
+
+		"void main() {",
+		"	gl_Position = u_matProjection*u_matModelView*a_position;",
+		"	vec4 wPos = u_matModel * a_position;",
+		"	vec3 wNormal = (u_matModel * vec4(a_normal, 0.0)).xyz;",
+		"	vec3 view = u_wCameraPos - wPos.xyz;",
+		"	v_reflection = normalize(reflect(view, wNormal));",
+		"}"
+	].join("\n");
+	
+	spec.fragmentShader = [
+		"precision mediump float;",
+		"uniform sampler2D u_texture;",
+		"varying vec3 v_reflection;",		
+
+		"void main() {",
+		"	float PI = 3.14159265358979323846264;",
+		//"	float yaw = .5 + atan( v_reflection.z, v_reflection.x ) / ( 2.0 * PI );",
+		//"	float pitch = .5 + atan( v_reflection.y, length( v_reflection.xz ) ) / ( PI );",
+		"	float yaw = .5 + atan( v_reflection.x, v_reflection.z ) / ( 2.0 * PI );",
+		"	float pitch = .5 + asin( v_reflection.y ) / ( PI );",
+		"	if (yaw > 0.9999) yaw = 0.0;",
+		"	vec3 color = texture2D( u_texture, vec2( yaw, pitch ) ).rgb;",
+		"	gl_FragColor = vec4( color, 1.0 );",
+		"}"
+	].join("\n");
+	
+	GG.RenderPass.call(this, spec);
+};
+
+GG.LatitudeReflectionMappingTechnique.Pass.prototype = new GG.RenderPass();
+GG.LatitudeReflectionMappingTechnique.Pass.prototype.constructor = GG.LatitudeReflectionMappingTechnique.Pass;
+
+GG.LatitudeReflectionMappingTechnique.Pass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	var mat = renderable.getMaterial();
+	gl.uniform1i(this.program.u_texture, GG.TEX_UNIT_DIFFUSE_MAP_0);
+};
+
+GG.LatitudeReflectionMappingTechnique.Pass.prototype.__setCustomRenderState = function(renderable, ctx, program) {	
+	renderable.getMaterial().diffuseTextureStack.getAt(0).bind();	
+};
 GG.PhongShadingTechnique = function(spec) {
 	spec        = spec || {};
 	spec.passes = [new GG.PhongPass()];
@@ -4855,6 +5209,12 @@ GG.PhongPass.prototype.hashMaterial = function (material) {
         + this.alphaMapPass.hashMaterial(material)
         + this.normalMapPass.hashMaterial(material);
 };
+/**
+ * Renders the wireframe display of a renderable using lines. A depth offset can be supplied
+ * in order to avoid z-fighting.
+ * It can be applied only on renderables that provide a getAsLineMesh method returning a LineMesh
+ * The returned LineMesh is supposed to provide the vertex, colour, UV information for the lines rendering.
+ */
 GG.WireframeTechnique = function (spec) {
 	spec              = spec || {};
 	spec.passes = [ new GG.WireframeTechnique.WireframePass(spec) ];
@@ -4904,7 +5264,7 @@ GG.WireframeTechnique.WireframePass.prototype.__setCustomRenderState = function(
 
 
 GG.WireframeTechnique.WireframePass.prototype.overrideRenderPrimitive = function(renderable) {
-	return gl.LINES;
+	return GG.RENDER_LINES;
 };
 GG.DepthPrePassTechnique = function (spec) {
 	spec        = spec || {};
@@ -5723,26 +6083,27 @@ GG.Renderer.prototype.render = function (renderable, program, options) {
 	var attribNormal = program[GG.GLSLProgram.BuiltInAttributes.attribNormal];
 	if (attribNormal != undefined) {
 		var normalsBuffer = renderable.getMaterial().flatShade ? renderable.getFlatNormalsBuffer() : renderable.getNormalsBuffer();
-        normalsBuffer.streamAttribute(attribNormal);
+        if (normalsBuffer != null) 
+        	normalsBuffer.streamAttribute(attribNormal);
 	}
 
 	var attribTexCoords = program[GG.GLSLProgram.BuiltInAttributes.attribTexCoords];
-	if (attribTexCoords != undefined) {
+	if (attribTexCoords != undefined && renderable.getTexCoordsBuffer() != null) {
         renderable.getTexCoordsBuffer().streamAttribute(attribTexCoords)
 	}
 
 	var attribColor = program[GG.GLSLProgram.BuiltInAttributes.attribColor];
-	if (attribColor != undefined) {
+	if (attribColor != undefined && renderable.getColorsBuffer() != null) {
 		renderable.getColorsBuffer().streamAttribute(attribColor);
 	}
 
     var attribTangent = program[GG.GLSLProgram.BuiltInAttributes.attribTangent];
-    if (attribTangent != undefined) {
+    if (attribTangent != undefined && renderable.getTangentsBuffer() != null) {
         renderable.getTangentsBuffer().streamAttribute(attribTangent);
     }
 
     options = options || {};
-	var mode = renderable.getMode();
+	var mode = renderable.getMode() || GG.RENDER_TRIANGLES;
 	if ('mode' in options ) {
 		mode = options.mode != null ? options.mode : mode;
 	}
@@ -6058,7 +6419,7 @@ GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {
 		} else {
 			//this.renderer.setViewport(this.camera.getViewport());			
 			gl.viewport(0, 0, vp.getWidth(), vp.getHeight());
-			gl.clearColor(vp.getClearColor()[0], vp.getClearColor()[1], vp.getClearColor[2], 1.0);
+			gl.clearColor(vp.getClearColor()[0], vp.getClearColor()[1], vp.getClearColor()[2], 1.0);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		}
 		

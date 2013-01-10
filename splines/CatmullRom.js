@@ -1,9 +1,32 @@
+/**
+ * A Catmull-Rom spline is a Hermite cubic degree Bezier spline where the tangents
+ * are defined by the formula:
+ * tangent[i] = sharpness * (point[i+1] - point[i-1])
+ *
+ * It has the useful property of passing through each of its control points.
+
+ * where sharpness is typically set to 0.5, although this can be controlled through
+ * the CatmullRom.sharpness field.
+ *
+ * The spline is constructed by repeatedly calling the addPoint(p: vec3) until
+ * for each point that is to be interpolated by the spline.
+ * Each pair of points define a segment of the spline and for each segment we
+ * assign an approximated ratio of its length over the total length of the spline.
+ *
+ * To sample the spline at a time offset t which lies in [0, 1], use the method CatmullRom.point(t: float).
+ * This will return the x,y,z coordinates of the spline point. Internally, the method uses
+ * the passed time value as a ratio in order to determine the segment that corresponds
+ * to that time value. Then the ratio of the starting point of the segment is subtracted
+ * from the time and divided by the ratio of the length of the segment in order to determine
+ * the point within the segment that corresponds to the passed time.
+ */
 GG.CatmullRom = function (spec) {
     spec = spec || {};
     this.points = spec.points != null ? spec.points : [];
     this.tangents = [];
-    this.ratios = [];
-    this.cp1 = spec.cp1 != null ? spec.cp1 : [0, 0, 0];
+
+    // contains the running sum of the segment ratios
+    this.segmentRatios = [];
     this.sharpness = spec.sharpness != null ? spec.sharpness : 0.5;
 };
 
@@ -15,6 +38,10 @@ GG.CatmullRom.prototype.addPoint = function (p) {
     this.calculateTangents();
 };
 
+/**
+ * Samples the spline at the given time value.
+ * The time value should lie between [0, 1].
+ */
 GG.CatmullRom.prototype.point = function (t) {
     // check corner cases, t == 0, t == 1
     if (t == 0) {
@@ -23,13 +50,21 @@ GG.CatmullRom.prototype.point = function (t) {
         return this.points[this.points.length - 1];
     } else {
         var idx = this.getSegmentForTime(t);
-        var start = this.ratios[idx];
-        var end = this.ratios[idx + 1];
-        var segmentTime = (t - start) / (end - start);
+        var startSegment = this.segmentRatios[idx];
+        if (idx == this.segmentRatios.length-1) {
+            var endSegment = 1;
+        } else {
+            var endSegment = this.segmentRatios[idx + 1];
+        }        
+        var segmentTime = (t - startSegment) / (endSegment - startSegment);
         return this.hermiteInterpolation(idx, segmentTime);   
     }    
 };
 
+/**
+ * Performs the Hermite interpolation for a given segment and a segment local
+ * time.
+ */
 GG.CatmullRom.prototype.hermiteInterpolation = function (segment, t) {
     var t1 = 1 - t;
     var t2 = t1 * t1;
@@ -52,6 +87,9 @@ GG.CatmullRom.prototype.hermiteInterpolation = function (segment, t) {
     return pt;
 };
 
+/**
+ * Calculates the tangent vectors from the current list of spline points.
+ */
 GG.CatmullRom.prototype.calculateTangents = function () {
     if (this.points.length > 2) {
         for (var i = 0; i < this.points.length; i++) {
@@ -71,6 +109,13 @@ GG.CatmullRom.prototype.calculateTangents = function () {
     }
 };
 
+/**
+ * For each spline segment, it calculates the ratio of its length over
+ * the total length of the spline.
+ * This is just an approximation, as the length of a segment we use the
+ * distance between its two endpoints. While the total length of the
+ * spline is the sum of the lengths of all the segments.
+ */
 GG.CatmullRom.prototype.calculateSegmentsRatios = function () {
     var numPoints = this.points.length;    
     if (numPoints >= 2) {
@@ -92,26 +137,30 @@ GG.CatmullRom.prototype.calculateSegmentsRatios = function () {
         }
 
         // set ratio for each curve of the spline
-        this.ratios = [];
-        this.ratios[0] = 0;
-        this.ratios[segmentsLengths.length-1] = 1;
+        this.segmentRatios = [];
+        this.segmentRatios[0] = 0;
+        this.segmentRatios[segmentsLengths.length-1] = 1;
 
         for (var j = 1; j < segmentsLengths.length-1; j++) {
-            this.ratios[j] = segmentsLengths[j] / total;
+            this.segmentRatios[j] = segmentsLengths[j] / total;
             if (j > 0) {
-                this.ratios[j] += this.ratios[j - 1];
+                this.segmentRatios[j] += this.segmentRatios[j - 1];
             }
         }
     } else {
-        this.ratios = [];
+        this.segmentRatios = [];
     }    
 };
 
+/**
+ * Returns the index of the spline segment that corresponds to the given
+ * time value.
+ */
 GG.CatmullRom.prototype.getSegmentForTime = function (t) {
-    for (var j = 0; j < this.ratios.length; j++) {
-        if (t < this.ratios[j]) return j-1;
+    for (var j = 0; j < this.segmentRatios.length; j++) {
+        if (t < this.segmentRatios[j]) return j-1;
     }
-    return this.ratios.length - 1;
+    return this.segmentRatios.length - 1;
 };
 
 

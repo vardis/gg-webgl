@@ -8,7 +8,7 @@
  * spec.vertexShader : the vertex shader code
  * spec.fragmentShader : the fragment shader code
  * spec.attributeNames : a list containing the attribute names.
- * spec.renderableType : a constant that defines the type of renderable that
+ * spec.customRendering : a flag that indicates whether the default rendering method is to be skipped
  * this pass expects. If it is set to undefined or null, then the __renderGeometry
  * method will be called to do the actual rendering. Otherwise, RenderPass will
  * take care of calling the appropriate render method for this renderable type.
@@ -27,19 +27,17 @@
  * provide a renderableType in the input specifications.
  */
 GG.RenderPass = function (spec) {
-	spec = spec || {};
-	this.vertexShader   = spec.vertexShader;
-	this.fragmentShader = spec.fragmentShader;
-	this.renderableType = spec.renderableType != undefined ? spec.renderableType : GG.RenderPass.MESH;
-	this.callback       = spec.callback != undefined ? spec.callback : this;
-	this.attributeNames = spec.attributeNames || [];
-	this.program        = null;
-	this.usesLighting   = spec.usesLighting != undefined ? spec.usesLighting : true;
+	spec                 = spec || {};
+	this.vertexShader    = spec.vertexShader;
+	this.fragmentShader  = spec.fragmentShader;
+	this.customRendering = spec.customRendering != undefined ? spec.customRendering : false;
+	this.callback        = spec.callback != undefined ? spec.callback : this;
+	this.attributeNames  = spec.attributeNames || [];
+	this.program         = null;
+	this.usesLighting    = spec.usesLighting != undefined ? spec.usesLighting : true;
 };
 
 GG.RenderPass.prototype.constructor = GG.RenderPass;
-
-GG.RenderPass.MESH = 1;
 
 GG.RenderPass.prototype.createGpuProgram = function() {
 	// create the gpu program if it is not linked already
@@ -86,7 +84,7 @@ GG.RenderPass.prototype.setRenderState = function(renderable, renderContext) {
 };
 
 GG.RenderPass.prototype.submitGeometryForRendering = function(renderable, renderContext) {
-	if (renderable && this.renderableType == GG.RenderPass.MESH) {
+	if (renderable && !this.customRendering) {
 		var options = {
 			mode : this.overrideRenderPrimitive(renderable)
 		};

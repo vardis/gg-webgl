@@ -1,3 +1,9 @@
+/**
+ * Renders the wireframe display of a renderable using lines. A depth offset can be supplied
+ * in order to avoid z-fighting.
+ * It can be applied only on renderables that provide a getAsLineMesh method returning a LineMesh
+ * The returned LineMesh is supposed to provide the vertex, colour, UV information for the lines rendering.
+ */
 GG.WireframeTechnique = function (spec) {
 	spec              = spec || {};
 	spec.passes = [ new GG.WireframeTechnique.WireframePass(spec) ];
@@ -47,5 +53,5 @@ GG.WireframeTechnique.WireframePass.prototype.__setCustomRenderState = function(
 
 
 GG.WireframeTechnique.WireframePass.prototype.overrideRenderPrimitive = function(renderable) {
-	return gl.LINES;
+	return GG.RENDER_LINES;
 };

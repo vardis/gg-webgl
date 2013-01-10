@@ -1,7 +1,7 @@
 /**
  * Prerequisites:
  *	a) v_texCoords[0..N]: a varying passing each of the uv coordinates per fragment.
- *  b) a 'diffuse' variable already declared and used for calculating the diffuse component.
+ *  b) a 'GG.Naming.VarDiffuseBaseColor' variable already declared and used for calculating the base diffuse component.
  *  c) __setCustomUniforms must be called
  *  d) __setCustomRenderState must be called
  */

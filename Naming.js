@@ -18,6 +18,7 @@ GG.Naming = {
 	UniformProjectionMatrix  : 'u_matProjection',
 	UniformTime0_X           : 'u_fTime0_X',
 	UniformTime0_1           : 'u_fTime0_1',
+	UniformCameraWorldPos    : 'u_wCameraPos',
 	
 	AttributePosition        : 'a_position',
 	AttributeNormal          : 'a_normal',

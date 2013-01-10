@@ -36,15 +36,15 @@ GG.Geometry.fromThreeJsJSON = function (jsonObj) {
     if ('vertices' in jsonObj) {
 		spec.vertices  = new Float32Array(jsonObj.vertices);
 
-		if ('normals' in jsonObj) {
+		if ('normals' in jsonObj && jsonObj.normals.length > 0) {
 			spec.normals   = new Float32Array(jsonObj.normals);		
 		}
 
-		if ('uvs' in jsonObj) {
+		if ('uvs' in jsonObj && jsonObj.uvs.length > 1) {
 			spec.texCoords = new Float32Array(jsonObj.uvs);
 		}
 	
-		if ('faces' in jsonObj) {
+		if ('faces' in jsonObj && jsonObj.faces.length > 0) {
 			var indices = [];
 			var count = jsonObj.faces.length;
 			var i = 0;
@@ -59,9 +59,9 @@ GG.Geometry.fromThreeJsJSON = function (jsonObj) {
 				var hasFaceColor        = type & 64;
 				var hasFaceVertexColor  = type & 128;
 
-				indices.push(jsonObj.faces[i+2]);
-				indices.push(jsonObj.faces[i+1]);
 				indices.push(jsonObj.faces[i]);
+				indices.push(jsonObj.faces[i+1]);
+				indices.push(jsonObj.faces[i+2]);
 				i+=3;
 				var nVertices = 3;
 				if (isQuad) {

@@ -81,7 +81,7 @@ NormalMappingSample.prototype.update = function () {
 NormalMappingSample.prototype.draw = function () {
     var vp = this.camera.getViewport();
     gl.viewport(0, 0, vp.getWidth(), vp.getHeight());
-    gl.clearColor(vp.getClearColor()[0], vp.getClearColor()[1], vp.getClearColor[2], 1.0);
+    gl.clearColor(vp.getClearColor()[0], vp.getClearColor()[1], vp.getClearColor()[2], 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     gl.enable(gl.DEPTH_TEST);

@@ -4,7 +4,8 @@
  */
 GG.ScreenPass = function(spec) {
 	spec = spec || {};
-
+	spec.customRendering = true;
+	
 	GG.RenderPass.call(this, spec);
 
 	this.sourceTexture = spec.sourceTexture;
@@ -13,8 +14,7 @@ GG.ScreenPass = function(spec) {
 
 GG.ScreenPass.SourceTextureUniform = 'u_sourceTexture';
 
-GG.ScreenPass.prototype = new GG.RenderPass();
-
+GG.ScreenPass.prototype             = new GG.RenderPass();
 GG.ScreenPass.prototype.constructor = GG.ScreenPass;
 
 GG.ScreenPass.prototype.__renderGeometry = function(renderable) {
