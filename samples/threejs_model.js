@@ -1,6 +1,6 @@
 ThreeJsModelSample = function (spec) {
 	this.jsonMesh      = null;
-	this.technique     = null;
+	this.wireframeTechnique     = null;
 	this.phong         = null;
 	this.light         = null;
 	this.camera        = null;
@@ -8,6 +8,7 @@ ThreeJsModelSample = function (spec) {
 	this.renderContext = null;
 	this.mouseHandler  = null;
 	this.normalsDebug  = null;
+	this.wireframe     = null;
 	this.y_rot         = 0.0;
 	GG.SampleBase.call(this, spec);
 };
@@ -21,10 +22,15 @@ ThreeJsModelSample.prototype.initializeAssets = function () {
 	this.material.flatShade = true;
 
 	var self = this;	
-	GG.Loader.loadJSON('teapot', '../assets/models/torus.js', function (jsonObj) {
+	GG.Loader.loadJSON('teapot', '../assets/models/monkey.js', function (jsonObj) {
         self.jsonMesh = new GG.TriangleMesh(GG.Geometry.fromThreeJsJSON(jsonObj));
         self.jsonMesh.material = self.material;
         self.jsonMesh.setScale([3,3,3]);
+        self.jsonMesh.material.wireOffset = 0.01;
+
+        self.wireframe = self.jsonMesh.asWireframeMesh();
+        self.wireframe.setScale([3,3,3]);
+
         self.assetsLoaded = true;
     });
 };
@@ -40,7 +46,7 @@ ThreeJsModelSample.prototype.initializeWithAssetsLoaded = function () {
 	this.mouseHandler = new GG.MouseHandler();
 	this.mouseHandler.setCamera(this.camera);
 
-	this.technique = new GG.WireframeTechnique();
+	this.wireframeTechnique = new GG.WireframeTechnique();
 	this.phong = new GG.PhongShadingTechnique();
 	this.normalsDebug = GG.NormalsVisualizationTechnique.create();
 
@@ -68,7 +74,7 @@ ThreeJsModelSample.prototype.update = function () {
 
 ThreeJsModelSample.prototype.draw = function () {
     var vp = this.camera.getViewport();
-    vp.setClearColor([1,1,1]);
+    vp.setClearColor([0,0,0]);
     gl.viewport(0, 0, vp.getWidth(), vp.getHeight());
     gl.clearColor(vp.getClearColor()[0], vp.getClearColor()[1], vp.getClearColor()[2], 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -81,7 +87,8 @@ ThreeJsModelSample.prototype.draw = function () {
     gl.enable(gl.CULL_FACE);
 
     this.phong.render(this.jsonMesh, this.renderContext);
-    //this.technique.render(this.jsonMesh, this.renderContext);
+    this.wireframeTechnique.render(this.wireframe, this.renderContext);
+
     this.normalsDebug.normalsScale = 10.35;
-    this.normalsDebug.render(this.jsonMesh, this.renderContext);
+    //this.normalsDebug.render(this.jsonMesh, this.renderContext);
 };

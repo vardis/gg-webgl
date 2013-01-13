@@ -49,6 +49,8 @@ GG.WireframeTechnique.WireframePass.prototype.__setCustomUniforms = function(ren
 
 GG.WireframeTechnique.WireframePass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
 	gl.lineWidth(renderable.material.wireWidth);
+	//gl.enable(gl.POLYGON_OFFSET_FILL);
+	//gl.polygonOffset(1.1,10);
 };
 
 

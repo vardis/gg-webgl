@@ -2129,37 +2129,70 @@ GG.Object3D = function (geometry, material, spec) {
     this.scale         = [1.0, 1.0, 1.0];
     this.renderMode    = GG.RENDER_TRIANGLES;
 
-    if (this.geometry != null && this.geometry.getVertices() != null) {
-        this.positionsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getVertices(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    if (spec.positionsBuffer != undefined) {
+        this.positionsBuffer = spec.positionsBuffer;
     } else {
-        this.positionsBuffer = null;
+        if (this.geometry != null && this.geometry.getVertices() != null) {
+            this.positionsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getVertices(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+        } else {
+            this.positionsBuffer = null;
+        }
     }
 
-    if (this.geometry != null && spec.usesNormals && this.geometry.getNormals() != null) {
-        this.normalsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getNormals(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    if (spec.normalsBuffer != undefined) {
+        this.normalsBuffer = spec.normalsBuffer;
     } else {
-        this.normalsBuffer = null;
+        if (this.geometry != null && spec.usesNormals && this.geometry.getNormals() != null) {
+            this.normalsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getNormals(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+        } else {
+            this.normalsBuffer = null;
+        }
     }
 
-    if (this.geometry != null && spec.usesTexCoords && this.geometry.getTexCoords() != null) {
-        this.texCoordsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTexCoords(), 'itemSize' : 2, 'itemType' : gl.FLOAT });
+    if (spec.texCoordsBuffer != undefined) {
+            this.texCoordsBuffer = spec.texCoordsBuffer;
     } else {
-        this.texCoordsBuffer = null;
+        if (this.geometry != null && spec.usesTexCoords && this.geometry.getTexCoords() != null) {
+            this.texCoordsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTexCoords(), 'itemSize' : 2, 'itemType' : gl.FLOAT });
+        } else {
+            this.texCoordsBuffer = null;
+        }
     }
 
-    if (this.geometry != null && spec.usesColors && this.geometry.getColors() != null) {
-        this.colorsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getColors(), 'itemSize' : 3, 'itemType' : gl.UNSIGNED_BYTE });
+    if (spec.colorsBuffer != undefined) {
+            this.colorsBuffer = spec.colorsBuffer;
     } else {
-        this.colorsBuffer = null; // GG.AttributeDataBuffer.newEmptyDataBuffer();
+        if (this.geometry != null && spec.usesColors && this.geometry.getColors() != null) {
+            this.colorsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getColors(), 'itemSize' : 3, 'itemType' : gl.UNSIGNED_BYTE });
+        } else {
+            this.colorsBuffer = null; // GG.AttributeDataBuffer.newEmptyDataBuffer();
+        }
     }
 
-    if (this.geometry != null && spec.usesTangents && this.geometry.getTangents() != null) {
-        this.tangentsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTangents(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    if (spec.tangentsBuffer != undefined) {
+            this.tangentsBuffer = spec.tangentsBuffer;
     } else {
-        this.tangentsBuffer = null;
+        if (this.geometry != null && spec.usesTangents && this.geometry.getTangents() != null) {
+            this.tangentsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTangents(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+        } else {
+            this.tangentsBuffer = null;
+        }
     }
 
-
+    // TODO: abstract the following in a VertexIndexBuffer class
+    if (spec.indexBuffer != undefined) {
+            this.indexBuffer = spec.indexBuffer;
+    } else {
+        if (this.geometry != null && this.geometry.indices != undefined) {
+            this.indexBuffer          = gl.createBuffer(1);
+            this.indexBuffer.numItems = this.geometry.getIndices().length;
+            this.indexBuffer.itemType = gl.UNSIGNED_SHORT;
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.geometry.getIndices(), gl.STATIC_DRAW);
+        } else {
+            this.indexBuffer = null;
+        }
+    }
 };
 
 GG.Object3D.prototype.getGeometry = function() {
@@ -2282,7 +2315,8 @@ GG.PointMesh.prototype.setPointSize = function(sz) {
 
 GG.LineMesh = function (geometry, material, spec) {
 	spec = spec || {};
-	GG.Object3D.call(this, geometry, material, { usesColors : true });	
+	spec.usesColors = true;
+	GG.Object3D.call(this, geometry, material, spec);	
 	this.mode = GG.RENDER_LINES;
 };
 
@@ -2302,17 +2336,7 @@ GG.TriangleMesh = function(geometry, material, spec) {
 	spec.usesColors    = true;
 	spec.usesTangents  = true;
 
-	GG.Object3D.call(this, geometry, material, spec);
-
-	if (this.geometry != null && this.geometry.indices != undefined) {
-        this.indexBuffer          = gl.createBuffer(1);
-        this.indexBuffer.numItems = this.geometry.getIndices().length;
-        this.indexBuffer.itemType = gl.UNSIGNED_SHORT;
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.geometry.getIndices(), gl.STATIC_DRAW);
-    } else {
-        this.indexBuffer = null;
-    }
+	GG.Object3D.call(this, geometry, material, spec);	
 };
 
 GG.TriangleMesh.prototype = new GG.Object3D();
@@ -2331,6 +2355,61 @@ GG.TriangleMesh.prototype.getFlatNormalsBuffer = function() {
 		}
 	}
 	return this.flatNormalsBuffer;
+};
+
+GG.TriangleMesh.prototype.asWireframeMesh = function() {
+	// they can re-use the vertex attributes buffers, only the index buffers and the primitive
+	// type will be different
+	var spec             = {};
+	spec.positionsBuffer = this.positionsBuffer;
+	spec.colorsBuffer    = this.colorsBuffer;
+	spec.normalsBuffer   = this.normalsBuffer;
+	spec.texCoordsBuffer = this.texCoordsBuffer;
+
+	/*
+	Verify the primitive type is triangles
+	If there's already an index buffer 
+		Loop through the index buffer, one triangle at a time
+		For triangle indices a,b,c emit the line indices (a,b), (b,c) and (c,a)
+	Else
+		Loop through the index buffer, one triangle at a time
+		For vertices a,b,c emit the line indices (index(a),index(b)), (index(b),index(c)) and (index(c),index(a))
+	*/
+	if (this.renderMode == GG.RENDER_TRIANGLES)	{
+		var linesIndexBuffer = new Uint16Array(2 * this.indexBuffer.numItems);
+		var j = 0;
+		if (this.geometry.indices != null) {
+			for (var i = 0; i < this.geometry.indices.length; i += 3) {
+				var i1 = this.geometry.indices[i];
+				var i2 = this.geometry.indices[i+1];
+				var i3 = this.geometry.indices[i+2];
+				linesIndexBuffer[j++] = i1;
+				linesIndexBuffer[j++] = i2;
+				linesIndexBuffer[j++] = i2;
+				linesIndexBuffer[j++] = i3;
+				linesIndexBuffer[j++] = i3;
+				linesIndexBuffer[j++] = i1;
+			}
+		} else {
+			for (var i = 0; i < this.geometry.getVertices().length; i += 3) {
+				linesIndexBuffer[j++] = i;
+				linesIndexBuffer[j++] = i+1;
+				linesIndexBuffer[j++] = i+1;
+				linesIndexBuffer[j++] = i+2;
+				linesIndexBuffer[j++] = i+2;
+				linesIndexBuffer[j++] = i;	
+			}
+		}
+		spec.indexBuffer          = gl.createBuffer(1);
+        spec.indexBuffer.numItems = linesIndexBuffer.length;
+        spec.indexBuffer.itemType = gl.UNSIGNED_SHORT;
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, spec.indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, linesIndexBuffer, gl.STATIC_DRAW);
+
+	} else {
+		throw "can only get wireframe mesh for triangles";
+	}
+	return new GG.LineMesh(this.geometry, this.material, spec);
 };
 /**
  * Create a static particle system, i.e. the particles remain stationery
@@ -4577,6 +4656,12 @@ GG.BaseTechnique = function(spec) {
 };
 
 GG.BaseTechnique.prototype.constructor = GG.BaseTechnique;
+
+GG.BaseTechnique.fromShaders = function (vertexShader, fragmentShader) {
+	var pass = new GG.RenderPass({ 'vertexShader' : vertexShader, 'fragmentShader' : fragmentShader });
+	return new GG.BaseTechnique({ passes : [ pass ] });
+};
+
 GG.BaseTechnique.prototype.getTextures = function() {
 	return this.textures;
 };
@@ -5260,6 +5345,8 @@ GG.WireframeTechnique.WireframePass.prototype.__setCustomUniforms = function(ren
 
 GG.WireframeTechnique.WireframePass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
 	gl.lineWidth(renderable.material.wireWidth);
+	//gl.enable(gl.POLYGON_OFFSET_FILL);
+	//gl.polygonOffset(1.1,10);
 };
 
 

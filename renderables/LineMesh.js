@@ -1,6 +1,7 @@
 GG.LineMesh = function (geometry, material, spec) {
 	spec = spec || {};
-	GG.Object3D.call(this, geometry, material, { usesColors : true });	
+	spec.usesColors = true;
+	GG.Object3D.call(this, geometry, material, spec);	
 	this.mode = GG.RENDER_LINES;
 };
 

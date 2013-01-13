@@ -6,6 +6,12 @@ GG.BaseTechnique = function(spec) {
 };
 
 GG.BaseTechnique.prototype.constructor = GG.BaseTechnique;
+
+GG.BaseTechnique.fromShaders = function (vertexShader, fragmentShader) {
+	var pass = new GG.RenderPass({ 'vertexShader' : vertexShader, 'fragmentShader' : fragmentShader });
+	return new GG.BaseTechnique({ passes : [ pass ] });
+};
+
 GG.BaseTechnique.prototype.getTextures = function() {
 	return this.textures;
 };

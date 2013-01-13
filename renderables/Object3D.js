@@ -12,37 +12,70 @@ GG.Object3D = function (geometry, material, spec) {
     this.scale         = [1.0, 1.0, 1.0];
     this.renderMode    = GG.RENDER_TRIANGLES;
 
-    if (this.geometry != null && this.geometry.getVertices() != null) {
-        this.positionsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getVertices(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    if (spec.positionsBuffer != undefined) {
+        this.positionsBuffer = spec.positionsBuffer;
     } else {
-        this.positionsBuffer = null;
+        if (this.geometry != null && this.geometry.getVertices() != null) {
+            this.positionsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getVertices(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+        } else {
+            this.positionsBuffer = null;
+        }
     }
 
-    if (this.geometry != null && spec.usesNormals && this.geometry.getNormals() != null) {
-        this.normalsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getNormals(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    if (spec.normalsBuffer != undefined) {
+        this.normalsBuffer = spec.normalsBuffer;
     } else {
-        this.normalsBuffer = null;
+        if (this.geometry != null && spec.usesNormals && this.geometry.getNormals() != null) {
+            this.normalsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getNormals(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+        } else {
+            this.normalsBuffer = null;
+        }
     }
 
-    if (this.geometry != null && spec.usesTexCoords && this.geometry.getTexCoords() != null) {
-        this.texCoordsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTexCoords(), 'itemSize' : 2, 'itemType' : gl.FLOAT });
+    if (spec.texCoordsBuffer != undefined) {
+            this.texCoordsBuffer = spec.texCoordsBuffer;
     } else {
-        this.texCoordsBuffer = null;
+        if (this.geometry != null && spec.usesTexCoords && this.geometry.getTexCoords() != null) {
+            this.texCoordsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTexCoords(), 'itemSize' : 2, 'itemType' : gl.FLOAT });
+        } else {
+            this.texCoordsBuffer = null;
+        }
     }
 
-    if (this.geometry != null && spec.usesColors && this.geometry.getColors() != null) {
-        this.colorsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getColors(), 'itemSize' : 3, 'itemType' : gl.UNSIGNED_BYTE });
+    if (spec.colorsBuffer != undefined) {
+            this.colorsBuffer = spec.colorsBuffer;
     } else {
-        this.colorsBuffer = null; // GG.AttributeDataBuffer.newEmptyDataBuffer();
+        if (this.geometry != null && spec.usesColors && this.geometry.getColors() != null) {
+            this.colorsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getColors(), 'itemSize' : 3, 'itemType' : gl.UNSIGNED_BYTE });
+        } else {
+            this.colorsBuffer = null; // GG.AttributeDataBuffer.newEmptyDataBuffer();
+        }
     }
 
-    if (this.geometry != null && spec.usesTangents && this.geometry.getTangents() != null) {
-        this.tangentsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTangents(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+    if (spec.tangentsBuffer != undefined) {
+            this.tangentsBuffer = spec.tangentsBuffer;
     } else {
-        this.tangentsBuffer = null;
+        if (this.geometry != null && spec.usesTangents && this.geometry.getTangents() != null) {
+            this.tangentsBuffer = new GG.AttributeDataBuffer({ 'arrayData' : this.geometry.getTangents(), 'itemSize' : 3, 'itemType' : gl.FLOAT });
+        } else {
+            this.tangentsBuffer = null;
+        }
     }
 
-
+    // TODO: abstract the following in a VertexIndexBuffer class
+    if (spec.indexBuffer != undefined) {
+            this.indexBuffer = spec.indexBuffer;
+    } else {
+        if (this.geometry != null && this.geometry.indices != undefined) {
+            this.indexBuffer          = gl.createBuffer(1);
+            this.indexBuffer.numItems = this.geometry.getIndices().length;
+            this.indexBuffer.itemType = gl.UNSIGNED_SHORT;
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.geometry.getIndices(), gl.STATIC_DRAW);
+        } else {
+            this.indexBuffer = null;
+        }
+    }
 };
 
 GG.Object3D.prototype.getGeometry = function() {
