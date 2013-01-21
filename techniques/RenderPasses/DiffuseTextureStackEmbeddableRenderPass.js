@@ -12,14 +12,14 @@ GG.DiffuseTextureStackEmbeddableRenderPass = function (spec) {
 GG.DiffuseTextureStackEmbeddableRenderPass.prototype = new GG.EmbeddableAdaptiveRenderPass();
 GG.DiffuseTextureStackEmbeddableRenderPass.prototype.constructor = GG.DiffuseTextureStackEmbeddableRenderPass;
 
-GG.DiffuseTextureStackEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {
+GG.DiffuseTextureStackEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material, renderContext) {
 	if (!material.diffuseTextureStack.isEmpty()) {
 		fragmentShader.addDecl('sampleTexUnit', GG.ShaderLib.blocks.sampleTexUnit);
 		this.evaluateTextureStack(fragmentShader, material.diffuseTextureStack);
 	}
 };
 
-GG.DiffuseTextureStackEmbeddableRenderPass.prototype.hashMaterial = function (material) {	
+GG.DiffuseTextureStackEmbeddableRenderPass.prototype.hashMaterial = function (material, renderContext) {	
 	return material.diffuseTextureStack.hashCode();
 };
 

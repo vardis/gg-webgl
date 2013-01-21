@@ -15,7 +15,7 @@ GG.StaticPointParticlesRenderPass = function (spec) {
 GG.StaticPointParticlesRenderPass.prototype = new GG.AdaptiveRenderPass();
 GG.StaticPointParticlesRenderPass.prototype.constructor = GG.StaticPointParticlesRenderPass;
 
-GG.StaticPointParticlesRenderPass.prototype.createShadersForMaterial = function (material) {	
+GG.StaticPointParticlesRenderPass.prototype.createShadersForMaterial = function (material, renderContext) {	
 	var vs = this.createVertexShader(material);
 	var fs = this.createFragmentShader(material);
 
@@ -57,12 +57,12 @@ GG.StaticPointParticlesRenderPass.prototype.createFragmentShader = function (mat
 			.addMainInitBlock('vec3 '  + GG.Naming.VarDiffuseBaseColor + ' = u_materialDiffuse;');
 	} 
 	fs.addMainInitBlock('vec2 ' + GG.Naming.VaryingTexCoords + ' = gl_PointCoord;');
-	fs.finalColor('gl_FragColor = vec4(' + GG.Naming.VarDiffuseBaseColor + ', 1.0);');
+	fs.writeOutput('gl_FragColor = vec4(' + GG.Naming.VarDiffuseBaseColor + ', 1.0);');
 	return fs;
 };
 
-GG.StaticPointParticlesRenderPass.prototype.hashMaterial = function (material) {
-	return material.useVertexColors + this.diffuseTexturingPass.hashMaterial(material);
+GG.StaticPointParticlesRenderPass.prototype.hashMaterial = function (material, renderContext) {
+	return material.useVertexColors + this.diffuseTexturingPass.hashMaterial(material, renderContext);
 };
 
 GG.StaticPointParticlesRenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {

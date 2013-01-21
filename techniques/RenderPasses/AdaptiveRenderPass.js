@@ -28,22 +28,23 @@ GG.AdaptiveRenderPass.prototype.constructor = GG.AdaptiveRenderPass;
 
 GG.AdaptiveRenderPass.prototype.prepareForRendering = function (renderable, renderContext) {
 	if (renderable.getMaterial() != null) {
-		this.adaptShadersToMaterial(renderable.getMaterial());
+		this.adaptShadersToMaterial(renderable.getMaterial(), renderContext);
 	}	
 	GG.RenderPass.prototype.prepareForRendering.call(this, renderable, renderContext);
 };
 
-GG.AdaptiveRenderPass.prototype.adaptShadersToMaterial = function (material) {	
+GG.AdaptiveRenderPass.prototype.adaptShadersToMaterial = function (material, renderContext) {	
 	// if the program cannot handle the current material, either lookup
 	// an appropriate instance from the cache or create a new on on the fly
-	var hash = this.hashMaterial(material);
+	var hash = this.hashMaterial(material, renderContext);
 	if (this.shouldInvalidateProgram(hash)) {
 		this.program = null;
 		var cachedProgram = this.lookupCachedProgramInstance(hash);
 		if (cachedProgram != null) {
 			this.useProgramInstance(cachedProgram, hash);
 		} else {
-			this.createNewProgramInstance(material, hash);		
+			this.createNewProgramInstance(material, renderContext);		
+			this.useProgramInstance(this.program, hash);
 			this.storeProgramInstanceInCache(this.program, hash);	
 		}		
 	}
@@ -54,10 +55,9 @@ GG.AdaptiveRenderPass.prototype.useProgramInstance = function (program, hash) {
 	this.activeHash = hash;
 };
 
-GG.AdaptiveRenderPass.prototype.createNewProgramInstance = function (material, hash) {
-	this.createShadersForMaterial(material);
-	this.createGpuProgram();	
-	this.useProgramInstance(this.program, hash);
+GG.AdaptiveRenderPass.prototype.createNewProgramInstance = function (material, renderContext) {
+	this.createShadersForMaterial(material, renderContext);
+	this.createGpuProgram();		
 };
 
 GG.AdaptiveRenderPass.prototype.shouldInvalidateProgram = function (hash) {	
@@ -72,10 +72,10 @@ GG.AdaptiveRenderPass.prototype.storeProgramInstanceInCache = function (program,
 	return this.programCache[hash] = program;
 };
 
-GG.AdaptiveRenderPass.prototype.createShadersForMaterial = function (material) {
+GG.AdaptiveRenderPass.prototype.createShadersForMaterial = function (material, renderContext) {
 	throw "AdaptiveRenderPass.createShadersForMaterial is abstract";
 };
 
-GG.AdaptiveRenderPass.prototype.hashMaterial = function (material) {
+GG.AdaptiveRenderPass.prototype.hashMaterial = function (material, renderContext) {
 	throw "AdaptiveRenderPass.hashMaterial is abstract";
 };

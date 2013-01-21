@@ -18,7 +18,7 @@ ThreeJsModelSample.prototype.constructor = ThreeJsModelSample;
 
 ThreeJsModelSample.prototype.initializeAssets = function () {
 	this.material = new GG.BaseMaterial();
-	this.material.shininess = 30;
+	this.material.shininess = 120;
 	this.material.flatShade = true;
 
 	var self = this;	
@@ -26,6 +26,7 @@ ThreeJsModelSample.prototype.initializeAssets = function () {
         self.jsonMesh = new GG.TriangleMesh(GG.Geometry.fromThreeJsJSON(jsonObj));
         self.jsonMesh.material = self.material;
         self.jsonMesh.setScale([3,3,3]);
+        self.jsonMesh.setPosition([0,0,-2]);
         self.jsonMesh.material.wireOffset = 0.01;
 
         self.wireframe = self.jsonMesh.asWireframeMesh();
@@ -43,9 +44,6 @@ ThreeJsModelSample.prototype.initializeWithAssetsLoaded = function () {
 	this.camera.getViewport().setWidth(gl.viewportWidth);
 	this.camera.getViewport().setHeight(gl.viewportHeight);
 
-	this.mouseHandler = new GG.MouseHandler();
-	this.mouseHandler.setCamera(this.camera);
-
 	this.wireframeTechnique = new GG.WireframeTechnique();
 	this.phong = new GG.PhongShadingTechnique();
 	this.normalsDebug = GG.NormalsVisualizationTechnique.create();
@@ -58,6 +56,9 @@ ThreeJsModelSample.prototype.initializeWithAssetsLoaded = function () {
         diffuse:[0.30, 0.20, 0.70],
         cosCutOff:0.9
     });
+
+	this.mouseHandler = new GG.SphericalCameraController();
+	this.mouseHandler.setCamera(this.camera);
 
 	this.renderContext = new GG.RenderContext({ camera : this.camera, light : this.light });
 	this.initialized = true;

@@ -52,7 +52,7 @@ GG.NormalsVisualizationTechnique.Pass.prototype.__createShaders = function() {
 	var fs = new GG.ProgramSource();
 	fs.asFragmentShader()
 		.varying('vec3', GG.Naming.VaryingColor)
-		.finalColor('gl_FragColor = vec4(' + GG.Naming.VaryingColor + ', 1.0);');
+		.writeOutput('gl_FragColor = vec4(' + GG.Naming.VaryingColor + ', 1.0);');
 	this.fragmentShader = fs.toString();
 };
 

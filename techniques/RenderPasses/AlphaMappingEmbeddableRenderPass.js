@@ -11,7 +11,7 @@ GG.AlphaMappingEmbeddableRenderPass = function (spec) {
 GG.AlphaMappingEmbeddableRenderPass.prototype = new GG.EmbeddableAdaptiveRenderPass();
 GG.AlphaMappingEmbeddableRenderPass.prototype.constructor = GG.AlphaMappingEmbeddableRenderPass;
 
-GG.AlphaMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {
+GG.AlphaMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material, renderContext) {
     if (material.alphaMap.texture != null) {
         fragmentShader
             .addDecl('sampleTexUnit', GG.ShaderLib.blocks.sampleTexUnit)
@@ -23,7 +23,7 @@ GG.AlphaMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function 
     }
 };
 
-GG.AlphaMappingEmbeddableRenderPass.prototype.hashMaterial = function (material) {
+GG.AlphaMappingEmbeddableRenderPass.prototype.hashMaterial = function (material, renderContext) {
     return material.alphaMap.texture != null;
 };
 

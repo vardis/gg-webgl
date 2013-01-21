@@ -6,7 +6,12 @@ GG.Scene = function(name) {
 	this.directionaLights = [];
 	this.spotLights = [];
 	this.shadowsEnabled = false;
-	this.fogEnabled = false;
+
+	this.showFog = false;
+	this.fogStart = 10;
+	this.fogEnd = 100;
+	this.fogDensity = 2;
+	this.fogColor = [0.7, 0.7, 0.7];
 };
 
 GG.Scene.prototype.addObject = function(object) {

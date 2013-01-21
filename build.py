@@ -2,6 +2,7 @@ import sys
 
 GG_files = [
 	'GG_init.js',
+	'Constants.js',
 	'Naming.js',
 	'materials/Color.js',
 	'input/MouseInput.js',
@@ -32,6 +33,7 @@ GG_files = [
 	'cameras/PerspectiveCamera.js',
 	'cameras/OrthographicCamera.js',
 	'lights/Light.js',
+	'render/RenderState.js',
 	'render/RenderTarget.js',
 	'render/RenderContext.js',
 	'render/PingPongBuffer.js',
@@ -50,6 +52,7 @@ GG_files = [
 	'techniques/RenderPasses/GaussianBlurPass.js',	
 	'techniques/RenderPasses/AdaptiveRenderPass.js',
 	'techniques/RenderPasses/EmbeddableAdaptiveRenderPass.js',
+	'techniques/RenderPasses/FogEmbeddableRenderPass.js',
 	'techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass.js',
 	'techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js',
 	'techniques/RenderPasses/AlphaMappingEmbeddableRenderPass.js',
@@ -75,6 +78,7 @@ GG_files = [
 	'techniques/shadow_mapping/ShadowMapTechnique.js',
 	'render/Renderer.js',	
 	'interaction/MouseHandler.js',
+	'interaction/SphericalCameraController.js',
 	'scene/Scene.js',
 	'scene/DefaultSceneRenderer.js'
 ]

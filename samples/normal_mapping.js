@@ -16,6 +16,18 @@ NormalMappingSample.prototype.initializeAssets = function () {
     var self = this;
     self.teapotMat = new GG.BaseMaterial();
 
+GG.Loader.loadImage('earth', '../assets/textures/rockwall.png', function (reqId, image) {
+        var diffuseMap = GG.Texture.createTexture({
+            'image' : image, width : 1024,
+            minFilter : gl.LINEAR, magFilter : gl.LINEAR,
+            'wrapS' : gl.REPEAT, wrapT : gl.REPEAT,
+            flipY : false
+        });
+        self.teapotMat.addDiffuseTexture(diffuseMap);
+        self.teapotMat.diffuseMap.scaleU = 3.0;
+        self.teapotMat.diffuseMap.scaleV = 3.0;        
+    });
+
     GG.Loader.loadImage('earth', '../assets/textures/brickwall-normal.png', function (reqId, image) {
         var normalMap = GG.Texture.createTexture({
             'image' : image, width : 1024,
@@ -28,12 +40,26 @@ NormalMappingSample.prototype.initializeAssets = function () {
         self.teapotMat.normalMap.scaleV = 3.0;
         self.assetsLoaded = true;
     });
+
+    GG.Loader.loadImage('earth', '../assets/textures/rockwall_height.png', function (reqId, image) {
+        var parallaxMap = GG.Texture.createTexture({
+            'image' : image, width : 256, colorFormat : gl.RGB,
+            minFilter : gl.LINEAR, magFilter : gl.LINEAR,
+            'wrapS' : gl.REPEAT, wrapT : gl.REPEAT,
+            flipY : false
+        });
+        self.teapotMat.setParallaxMap(parallaxMap);
+        self.teapotMat.parallaxMap.scaleU = 3.0;
+        self.teapotMat.parallaxMap.scaleV = 3.0;
+        self.assetsLoaded = true;
+    });
 };
 
 NormalMappingSample.prototype.initializeWithAssetsLoaded = function () {
-    this.mouseHandler = new GG.MouseHandler();
+    this.mouseHandler = new GG.SphericalCameraController();
     this.camera       = new GG.PerspectiveCamera();
-    this.camera.setPosition([0.0, 0.0, 9.8]);
+    this.camera.setPosition([0.0, 0.0, 900.8]);
+    this.camera.far = 1000;
     this.camera.getViewport().setWidth(gl.viewportWidth);
     this.camera.getViewport().setHeight(gl.viewportHeight);
 
@@ -44,17 +70,18 @@ NormalMappingSample.prototype.initializeWithAssetsLoaded = function () {
     this.teapotMat.diffuse   = [1.0, 1.0, 1.0];
     this.teapotMat.ambient   = [0.05, 0.05, 0.05];
     this.teapotMat.shininess = 60.0;
-    this.teapotMat.normalMapScale = 2.0;
+    this.teapotMat.normalMapScale = 0.0011;
 
     var geom = new GG.SphereGeometry(2.0, 64, 64);
     geom.calculateTangents();
     this.sphereMesh          = new GG.TriangleMesh(geom);
     this.sphereMesh.material = this.teapotMat;
+    this.sphereMesh.setScale([200,200,200]);
 
     this.light = new GG.Light({
         name : 'red',
         type : GG.LT_POINT,
-        position : [0.0, 1.0, 5.0],
+        position : [0.0, 1.0, 500.0],
         direction : [0.0, 0.0, -0.90],
         diffuse : [0.60, 0.70, 0.70],
         cosCutOff : 0.9
@@ -67,14 +94,14 @@ NormalMappingSample.prototype.update = function () {
     GG.SampleBase.prototype.update.call(this);
 
     if (this.initialized) {
-        this.light.position[0] = 15.0*Math.cos(0.5*this.y_rot);
+        this.light.position[0] = 500.0*Math.cos(0.5*this.y_rot);
         this.light.position[1] = 3.0;
-        this.light.position[2] = 15.0*Math.sin(0.5*this.y_rot);
+        this.light.position[2] = 500.0*Math.sin(0.5*this.y_rot);
 
         this.sphereMesh.setPosition([0.0, 0.0, -2.0]);
         //this.jsonMesh.setRotation([0.0, this.y_rot, 0.0]);
 
-        this.y_rot += GG.clock.deltaTime() * 0.001;
+        this.y_rot += GG.clock.deltaTime() * 0.00021;
     }
 };
 

@@ -44,7 +44,9 @@ ShaderMaterialSample.prototype.initializeWithAssetsLoaded = function () {
         gl.uniform3fv(program.DiffuseColor, [ self.DiffuseColor[0]/256, self.DiffuseColor[1]/256, self.DiffuseColor[2]/256 ]);
     };
     this.shaderTechnique = GG.BaseTechnique.fromShaders(vertexShader, fragmentShader);
-    this.shaderTechnique.passes[0].__setCustomUniforms = setUniforms;
+    this.shaderTechnique.uniforms = {
+        'Fuzz' 
+    };
 
     this.Scale = 10.0;
     this.Width = 0.2;

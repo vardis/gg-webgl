@@ -131,7 +131,7 @@ GG.ShaderLib = new function (argument) {
 			"void lightIrradiance(in vec3 normal, in vec3 view, in vec3 light, in LightInfo lightInfo, in Material_t mat, inout vec3 diffuse, inout vec3 specular) {",		
 			"	float df = clamp(dot(normal, light), 0.0, 1.0);",
 			"	if (lightInfo.type == 3.0) {",
-			"		float cosSpot = clamp(dot(normalize(u_matView*vec4(lightInfo.direction, 0.0)).xyz, -light), 0.0, 1.0);",
+			"		float cosSpot = clamp(" + GG.Naming.VaryingSpotlightCos + ", 0.0, 1.0);",
 			"		df *= pow(cosSpot, -lightInfo.attenuation) * smoothstep(lightInfo.cosCutOff, 1.0, cosSpot);",
 			"	}",
 			"	float sp = pow(clamp(dot(normalize(light + view), normal), 0.0, 1.0), mat.shininess);",
@@ -142,6 +142,20 @@ GG.ShaderLib = new function (argument) {
 		},
 
 		blocks : {
+			// returns the world space vector from the vertex to the light source.
+			// assumes the Light_t uniform is present.
+			'getWorldLightVector' : [
+			"vec3 getWorldLightVector(vec3 vertexWorldPos) {",
+			"	vec3 lightVec;",
+			"	if (u_light.type == 1.0) {",
+			" 		lightVec = normalize(-u_light.direction);",
+			"	} else {",
+			" 		lightVec = normalize(u_light.position - vertexWorldPos);",
+			"	}",
+			"	return lightVec;",
+			"}"
+			].join('\n'),
+
 			// Packs a normalized half to a vec2.
 			'libPackHalfToVec2' : [
 			" ",

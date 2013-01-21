@@ -16,34 +16,7 @@ GG.BaseCamera.FORWARD_VECTOR = [0.0, 0.0, 1.0, 0.0];
 GG.BaseCamera.UP_VECTOR      = [0.0, 1.0, 0.0, 0.0];
 
 GG.BaseCamera.prototype.getViewMatrix = function() {
-	mat4.identity(this.viewMatrix); 	 
-	
-	mat4.rotateX(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[0]));
-	mat4.rotateY(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[1])); 	
-	mat4.rotateZ(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[2])); 	
-	/*
-	var base = vec3.create([this.viewMatrix[0], this.viewMatrix[4], this.viewMatrix[8]]);
-	vec3.scale(base, this.offset[0], base);
-	vec3.add(this.position, base, this.position);
-
-	var base = vec3.create([this.viewMatrix[1], this.viewMatrix[5], this.viewMatrix[9]]);
-	vec3.scale(base, this.offset[1], base);
-	vec3.add(this.position, base, this.position);	
-
- 	var base = vec3.create([this.viewMatrix[2], this.viewMatrix[6], this.viewMatrix[10]]);
-	vec3.scale(base, this.offset[2], base);
-	vec3.add(this.position, base, this.position);	
-*/
-mat4.translate(this.viewMatrix, [-this.position[0], -this.position[1], -this.position[2]]);
-	
-/*
-	console.log('looking dir ' + this.lookAt[0] + ', ' + this.lookAt[1] + ', ' + this.lookAt[2]);
-	console.log('position ' + this.position[0] + ', ' + this.position[1] + ', ' + this.position[2]);
-	console.log('lt ' + lt[0] + ', ' + lt[1] + ', ' + lt[2]);
-	*/
-	
-	//mat4.lookAt(this.position, lt, this.up, this.viewMatrix);
-	this.offset = [0.0, 0.0, 0.0];
+	mat4.lookAt(this.position, this.lookAt, this.up, this.viewMatrix);
 	return this.viewMatrix;
 	//return mat4.inverse(this.viewMatrix);
 };

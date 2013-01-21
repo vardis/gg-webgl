@@ -10,7 +10,9 @@
  *	  methods of T. i.e: T.adaptShadersToMaterial should call E.adaptShadersToMaterial
  *    in order to adapt its own technique and E's technique on the same material
  *    having a resulting overall technique that combines both of them.
- * 3) Calling the RenderPass methods __setCustomUniforms and __setCustomRenderState
+ * 3) Call the method E.hashMaterial() from within T.hashMaterial() in order to generate
+ *	  a compound hash value.
+ * 4) Calling the RenderPass methods __setCustomUniforms and __setCustomRenderState
  */
 GG.EmbeddableAdaptiveRenderPass = function(spec) {
 	this.activeHash = null;
@@ -23,10 +25,18 @@ GG.EmbeddableAdaptiveRenderPass.prototype.shouldInvalidateProgram = function (ha
 	return this.activeHash != hash;
 };
 
-GG.EmbeddableAdaptiveRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {
+GG.EmbeddableAdaptiveRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material, renderContext) {
 	throw "EmbeddableAdaptiveRenderPass.adaptShadersToMaterial is abstract";
 };
 
-GG.EmbeddableAdaptiveRenderPass.prototype.hashMaterial = function (material) {
+GG.EmbeddableAdaptiveRenderPass.prototype.hashMaterial = function (material, renderContext) {
 	throw "EmbeddableAdaptiveRenderPass.hashMaterial is abstract";
+};
+
+GG.EmbeddableAdaptiveRenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+    
+};
+
+GG.EmbeddableAdaptiveRenderPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
+    
 };

@@ -12,33 +12,27 @@
 
 		<script src="../GG_all.js"></script>
 		<script src="SampleBase.js"></script>
-		<script src="adaptablePrograms.js"></script>
+		<script src="fog_sample.js"></script>
 		
 		<script>
 		
 		function init () {
-			new AdaptableProgramSample().start();
+			new FogSample().start();
 
 			var gui = new dat.GUI();
-			gui.add(window.sample, 'blendMode', [
-				'BLEND_MULTIPLY',
-				'BLEND_ADD',
-				'BLEND_SUBTRACT',
-				'BLEND_DARKEN',
-				'BLEND_COLOR_BURN',
-				'BLEND_LINEAR_BURN',
-				'BLEND_LIGHTEN',
-				'BLEND_SCREEN',
-				'BLEND_COLOR_DODGE',
-				'BLEND_OVERLAY',
-				'BLEND_SOFT_LIGHT',
-				'BLEND_HARD_LIGHT',
-				'BLEND_VIVID_LIGHT',
-				'BLEND_LINEAR_LIGHT',
-				'BLEND_PIN_LIGHT'    
+			gui.add(window.sample.renderState, 'enableFog');
+			gui.add(window.sample.renderState, 'fogStart', 0.0, 10.0);
+			gui.add(window.sample.renderState, 'fogEnd', 0.0, 1000.0);
+			gui.add(window.sample.renderState, 'fogDensity', 0.0, 20.0);
+
+			gui.add(window.sample, 'fogMode', [
+				'FOG_LINEAR',
+				'FOG_EXP',
+				'FOG_EXP2'
 				]).onChange(function(value) {
-				  window.sample.updateBlendMode();
+				  window.sample.renderState.fogMode = GG.Constants[value];
 				});
+			
 		}
 		</script>
 

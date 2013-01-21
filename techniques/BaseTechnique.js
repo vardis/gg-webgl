@@ -37,6 +37,10 @@ GG.BaseTechnique.prototype.renderPasses = function() {
 };
 
 GG.BaseTechnique.prototype.render = function(renderable, ctx) {	
+	if (renderable.material == null) {
+		throw "You must define a material for each renderable";		
+	}
+	
 	this.passes.forEach(function(pass) {
 		pass.render(renderable, ctx);
 	});

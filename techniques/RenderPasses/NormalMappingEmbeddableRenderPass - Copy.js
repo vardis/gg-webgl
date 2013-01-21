@@ -6,7 +6,7 @@ GG.NormalMappingEmbeddableRenderPass = function (spec) {
 GG.NormalMappingEmbeddableRenderPass.prototype = new GG.EmbeddableAdaptiveRenderPass();
 GG.NormalMappingEmbeddableRenderPass.prototype.constructor = GG.NormalMappingEmbeddableRenderPass;
 
-GG.NormalMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {
+GG.NormalMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material, renderContext) {
     if (material.normalMap.texture != null) {
         gl.getExtension("OES_standard_derivatives");
         fragmentShader

@@ -10,4 +10,5 @@ GG.RenderContext = function(spec) {
 	this.renderTarget = spec.renderTarget;
 	this.scene        = spec.scene;
 	this.light        = spec.light;
+	this.renderState  = spec.renderState;
 };

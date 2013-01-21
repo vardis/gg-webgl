@@ -59,10 +59,10 @@ GG.TexturedShadelessPass.prototype.__setCustomRenderState = function(renderable,
 	gl.disable(gl.CULL_FACE);
 };
 
-GG.TexturedShadelessPass.prototype.createShadersForMaterial = function (material) {
+GG.TexturedShadelessPass.prototype.createShadersForMaterial = function (material, renderContext) {
 	this.createProgram(material);
 };
 
-GG.TexturedShadelessPass.prototype.hashMaterial = function (material) {
-	return this.diffuseTexturingPass.hashMaterial(material);
+GG.TexturedShadelessPass.prototype.hashMaterial = function (material, renderContext) {
+	return this.diffuseTexturingPass.hashMaterial(material, renderContext);
 };

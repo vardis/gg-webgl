@@ -27,7 +27,6 @@ AdaptableProgramSample.prototype.initializeAssets = function () {
 			flipY : false 
 		});		
 		self.material.addDiffuseTexture(earthTexture);
-		self.assetsLoaded = true;
 	});
 
 	GG.Loader.loadImage('earth', '../assets/textures/earth-specular.png', function (reqId, image) {		

@@ -14,8 +14,10 @@
  *		per directional light
  *		per spot light
  *	main blocks
- *	post process
  *  final color assignment
+ *  fog
+ *	post process
+ *	write output
  * } 
  *
  * Fragment shader variable names by convention:
@@ -47,8 +49,10 @@ GG.ProgramSource = function (spec) {
 	this.pointLightBlocks       = [];
 	this.directionalLightBlocks = [];
 	this.spotLightBlocks        = [];
+	this.fogBlocks              = [];
 	this.postProcessBlocks      = [];
-	this.finalColorAssignment   = "";
+	this.finalColorAssignment   = [];
+	this.finalOutput            = "";
 };
 
 GG.ProgramSource.prototype.asVertexShader = function() {
@@ -185,28 +189,49 @@ GG.ProgramSource.prototype.addPostProcessBlock = function(block, name) {
 };
 
 
-GG.ProgramSource.prototype.perPointLightBlock = function (block) {
+GG.ProgramSource.prototype.perPointLightBlock = function (block, name) {
 	this.pointLightBlocks.push({
 		'name' : name != undefined ? name : 'block_' + this.pointLightBlocks.length,
 		'code' : block,
 		'order' : this.pointLightBlocks.length
 	});
+	return this;
 };
 
-GG.ProgramSource.prototype.perDirectionalLightBlock = function (block) {
+GG.ProgramSource.prototype.perDirectionalLightBlock = function (block, name) {
 	this.directionalLightBlocks.push({
 		'name' : name != undefined ? name : 'block_' + this.directionalLightBlocks.length,
 		'code' : block,
 		'order' : this.directionalLightBlocks.length
 	});
+	return this;
 };
 
-GG.ProgramSource.prototype.perSpotLightBlock = function (block) {
+GG.ProgramSource.prototype.perSpotLightBlock = function (block, name) {
 	this.spotLightBlocks.push({
 		'name' : name != undefined ? name : 'block_' + this.spotLightBlocks.length,
 		'code' : block,
 		'order' : this.spotLightBlocks.length
 	});
+	return this;
+};
+
+GG.ProgramSource.prototype.addFinalColorAssignment = function (block, name) {
+	this.finalColorAssignment.push({
+		'name' : name != undefined ? name : 'block_' + this.finalColorAssignment.length,
+		'code' : block,
+		'order' : this.finalColorAssignment.length
+	});
+	return this;
+};
+
+GG.ProgramSource.prototype.addFogBlock = function (block, name) {
+	this.fogBlocks.push({
+		'name' : name != undefined ? name : 'block_' + this.fogBlocks.length,
+		'code' : block,
+		'order' : this.fogBlocks.length
+	});
+	return this;
 };
 
 GG.ProgramSource.prototype.position = function() {
@@ -259,13 +284,8 @@ GG.ProgramSource.prototype.uniformNormalsMatrix = function() {
 	return this;
 };
 
-GG.ProgramSource.prototype.declareDiffuseOutput = function() {
-    this.addMainInitBlock('vec3 ' + GG.Naming.VarDiffuseOutput + " = vec3(0.0);");
-    return this;
-};
-
-GG.ProgramSource.prototype.declareSpecularOutput = function() {
-    this.addMainInitBlock('vec3 ' + GG.Naming.VarSpecularOutput + " = vec3(0.0);");
+GG.ProgramSource.prototype.declareFinalColorOutput = function() {
+    this.addMainInitBlock('vec3 ' + GG.Naming.VarColorOutput + " = vec3(0.0);");
     return this;
 };
 
@@ -274,11 +294,14 @@ GG.ProgramSource.prototype.declareAlphaOutput = function() {
     return this;
 };
 
-GG.ProgramSource.prototype.finalColor = function(s) {
-	this.finalColorAssignment = s;
+GG.ProgramSource.prototype.writeOutput = function(s) {
+	this.finalOutput = s;
 	return this;
 };
 
+GG.ProgramSource.textureSampling = function (textureUnitName, texCoordsAttributeName) {
+	return "sampleTexUnit(" + GG.Naming.textureUnitUniformMap(textureUnitName) + ", " + textureUnitName + ", " + texCoordsAttributeName + ")";
+};
 
 GG.ProgramSource.prototype.toString = function() {
 	var glsl = '';
@@ -356,12 +379,24 @@ GG.ProgramSource.prototype.toString = function() {
 	for (var i = 0; i < this.mainBlocks.length; i++) {
 		glsl += this.mainBlocks[i].code + '\n';
     }
+
+	glsl += this.emitBlocks(this.finalColorAssignment);	
+    glsl += this.emitBlocks(this.fogBlocks);	
+
     for (var i = 0; i < this.postProcessBlocks.length; i++) {
 		glsl += this.postProcessBlocks[i].code + '\n';
     }
-    glsl += this.finalColorAssignment;
+    glsl += this.finalOutput;
 
-	glsl += '} // end main \n';
+	glsl += '\n} // end main \n';
 
 	return glsl;
 };
+
+GG.ProgramSource.prototype.emitBlocks = function (blocks) {
+	var codeBlock = "";
+	for (var i = 0; i < blocks.length; i++) {
+		codeBlock += blocks[i].code + '\n';
+    }
+    return codeBlock;
+}

@@ -22,6 +22,17 @@ var GG = {
 	},
 
 	init : function () {
+
+		var canvas = document.getElementById(window.GG_CANVAS_ID || 'canvasGL');				
+		var contextName = window.GG_CONTEXT_NAME || "experimental-webgl";
+		window.gl = canvas.getContext(contextName, { antialias : true });
+
+		GG.context = gl;
+		GG.canvas = canvas;
+
+		gl.viewportWidth  = canvas.width;
+		gl.viewportHeight = canvas.height;
+
 		GG.clock = new GG.Clock();		
 		
 		GG.renderer = new GG.Renderer();
@@ -32,17 +43,6 @@ var GG = {
 	}
 	
 };
-
-var canvas = document.getElementById(window.GG_CANVAS_ID || 'canvasGL');				
-var contextName = window.GG_CONTEXT_NAME || "experimental-webgl";
-var gl = canvas.getContext(contextName, { antialias : true });
-
-GG.context = gl;
-GG.canvas = canvas;
-
-gl.viewportWidth  = canvas.width;
-gl.viewportHeight = canvas.height;
-
 
 GG.RENDER_POINTS     = 1;
 GG.RENDER_LINES      = 2;
@@ -76,6 +76,7 @@ GG.TEX_UNIT_ALPHA_MAP    = GG.TEX_UNIT_SPECULAR_MAP  + 1;
 GG.TEX_UNIT_GLOW_MAP     = GG.TEX_UNIT_ALPHA_MAP     + 1;
 GG.TEX_UNIT_SHADOW_MAP   = GG.TEX_UNIT_GLOW_MAP      + 1;
 GG.TEX_UNIT_ENV_MAP      = GG.TEX_UNIT_SHADOW_MAP    + 1;			
+GG.TEX_UNIT_PARALLAX_MAP = GG.TEX_UNIT_ENV_MAP       + 1;			
 			
 String.prototype.times = function(n) {
     return Array.prototype.join.call({length:n+1}, this);
@@ -84,15 +85,27 @@ String.prototype.times = function(n) {
 
 
 		
+GG.Constants = {
+
+	FOG_LINEAR : 1,
+	FOG_EXP : 2,
+	FOG_EXP2 : 3
+
+};
+
 /**
  * Contains the naming conventions used throughout the framework.
  */
 GG.Naming = {
     // names for standard varyings
     VaryingNormal            : 'v_normal',
-    VaryingView              : 'v_view',
+    VaryingViewPos           : 'v_viewPos',
     VaryingColor             : 'v_color',
     VaryingTexCoords         : 'v_texCoords',
+    VaryingWorldPos          : 'v_worldPos',
+    VaryingLightVec          : 'v_lightVec',
+    VaryingViewVec           : 'v_viewVec',
+    VaryingSpotlightCos      : 'v_spotlightCos',
 
 	UniformMaterial          : 'u_material',
 	UniformLight             : 'u_light',	
@@ -105,6 +118,10 @@ GG.Naming = {
 	UniformTime0_X           : 'u_fTime0_X',
 	UniformTime0_1           : 'u_fTime0_1',
 	UniformCameraWorldPos    : 'u_wCameraPos',
+    UniformFogColor          : 'u_fogColor',
+    UniformFogStart          : 'u_fogStart',
+    UniformFogEnd            : 'u_fogEnd',
+    UniformFogDensity        : 'u_fogDensity',
 	
 	AttributePosition        : 'a_position',
 	AttributeNormal          : 'a_normal',
@@ -118,6 +135,9 @@ GG.Naming = {
     VarSpecularOutput        : 'specular',
     VarAlphaOutput           : 'alpha',
 
+    // the final 3-component value to be assigned as the rgb output of the fragment shader
+    VarColorOutput           : 'finalColor',
+
     VarDiffuseBaseColor      : 'baseColor',
     
     // common preprocessor definition names
@@ -125,6 +145,7 @@ GG.Naming = {
 
 };
 
+/** Given the uniform name of a texture unit, it returns the name of the corresponding uniform sampler. */
 GG.Naming.textureUnitUniformMap = function (basename) {
     return basename + '_map';
 };
@@ -1049,7 +1070,7 @@ GG.ShaderLib = new function (argument) {
 			"void lightIrradiance(in vec3 normal, in vec3 view, in vec3 light, in LightInfo lightInfo, in Material_t mat, inout vec3 diffuse, inout vec3 specular) {",		
 			"	float df = clamp(dot(normal, light), 0.0, 1.0);",
 			"	if (lightInfo.type == 3.0) {",
-			"		float cosSpot = clamp(dot(normalize(u_matView*vec4(lightInfo.direction, 0.0)).xyz, -light), 0.0, 1.0);",
+			"		float cosSpot = clamp(" + GG.Naming.VaryingSpotlightCos + ", 0.0, 1.0);",
 			"		df *= pow(cosSpot, -lightInfo.attenuation) * smoothstep(lightInfo.cosCutOff, 1.0, cosSpot);",
 			"	}",
 			"	float sp = pow(clamp(dot(normalize(light + view), normal), 0.0, 1.0), mat.shininess);",
@@ -1060,6 +1081,20 @@ GG.ShaderLib = new function (argument) {
 		},
 
 		blocks : {
+			// returns the world space vector from the vertex to the light source.
+			// assumes the Light_t uniform is present.
+			'getWorldLightVector' : [
+			"vec3 getWorldLightVector(vec3 vertexWorldPos) {",
+			"	vec3 lightVec;",
+			"	if (u_light.type == 1.0) {",
+			" 		lightVec = normalize(-u_light.direction);",
+			"	} else {",
+			" 		lightVec = normalize(u_light.position - vertexWorldPos);",
+			"	}",
+			"	return lightVec;",
+			"}"
+			].join('\n'),
+
 			// Packs a normalized half to a vec2.
 			'libPackHalfToVec2' : [
 			" ",
@@ -2736,34 +2771,7 @@ GG.BaseCamera.FORWARD_VECTOR = [0.0, 0.0, 1.0, 0.0];
 GG.BaseCamera.UP_VECTOR      = [0.0, 1.0, 0.0, 0.0];
 
 GG.BaseCamera.prototype.getViewMatrix = function() {
-	mat4.identity(this.viewMatrix); 	 
-	
-	mat4.rotateX(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[0]));
-	mat4.rotateY(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[1])); 	
-	mat4.rotateZ(this.viewMatrix, GG.MathUtils.degToRads(this.rotation[2])); 	
-	/*
-	var base = vec3.create([this.viewMatrix[0], this.viewMatrix[4], this.viewMatrix[8]]);
-	vec3.scale(base, this.offset[0], base);
-	vec3.add(this.position, base, this.position);
-
-	var base = vec3.create([this.viewMatrix[1], this.viewMatrix[5], this.viewMatrix[9]]);
-	vec3.scale(base, this.offset[1], base);
-	vec3.add(this.position, base, this.position);	
-
- 	var base = vec3.create([this.viewMatrix[2], this.viewMatrix[6], this.viewMatrix[10]]);
-	vec3.scale(base, this.offset[2], base);
-	vec3.add(this.position, base, this.position);	
-*/
-mat4.translate(this.viewMatrix, [-this.position[0], -this.position[1], -this.position[2]]);
-	
-/*
-	console.log('looking dir ' + this.lookAt[0] + ', ' + this.lookAt[1] + ', ' + this.lookAt[2]);
-	console.log('position ' + this.position[0] + ', ' + this.position[1] + ', ' + this.position[2]);
-	console.log('lt ' + lt[0] + ', ' + lt[1] + ', ' + lt[2]);
-	*/
-	
-	//mat4.lookAt(this.position, lt, this.up, this.viewMatrix);
-	this.offset = [0.0, 0.0, 0.0];
+	mat4.lookAt(this.position, this.lookAt, this.up, this.viewMatrix);
 	return this.viewMatrix;
 	//return mat4.inverse(this.viewMatrix);
 };
@@ -2938,6 +2946,29 @@ GG.Light.prototype.getShadowCamera = function () {
 	*/
 	return this.shadowCamera;
 };
+GG.RenderState = function (spec) {
+	spec = spec || {};
+	/*false
+	this.enableDepthTest = spec.enableFog != null ? spec.enableFog : false;
+	this.depthClearValue = ...;
+	this.depthFunc = ...;
+	this.cullFace = ...;
+	this.enableCulling = ...;
+	this.setFrontFace = ...;
+	this.enableBlend = spec.enableFog != null ? spec.enableFog : false;
+	this.blendMode;
+	this.blendFactors;
+	*/
+
+	this.enableFog  = spec.enableFog  != null ? spec.enableFog : false;
+	this.fogStart   = spec.fogStart   != null ? spec.fogStart  : 10;
+	this.fogEnd     = spec.fogEnd     != null ? spec.fogEnd    : 100;
+	this.fogColor   = spec.fogColor   != null ? spec.fogColor  : [0.5, 0.5, 0.5];
+	this.fogMode    = spec.fogMode    != null ? spec.fogMode   : GG.Constants.FOG_LINEAR;
+	this.fogDensity = spec.fogDensity != null ? spec.fogDensity  : 2;
+};
+
+GG.RenderState.prototype.constructor = GG.RenderState;
 /**
  * Creates a render target for off-screen rendering.
  * The target can be customized through a specifications map, with the following keys:
@@ -3133,6 +3164,7 @@ GG.RenderContext = function(spec) {
 	this.renderTarget = spec.renderTarget;
 	this.scene        = spec.scene;
 	this.light        = spec.light;
+	this.renderState  = spec.renderState;
 };
 GG.PingPongBuffer = function (spec) {
 	spec = spec || {};
@@ -3454,8 +3486,10 @@ GG.GLSLProgram.BuiltInUniforms = [
  *		per directional light
  *		per spot light
  *	main blocks
- *	post process
  *  final color assignment
+ *  fog
+ *	post process
+ *	write output
  * } 
  *
  * Fragment shader variable names by convention:
@@ -3487,8 +3521,10 @@ GG.ProgramSource = function (spec) {
 	this.pointLightBlocks       = [];
 	this.directionalLightBlocks = [];
 	this.spotLightBlocks        = [];
+	this.fogBlocks              = [];
 	this.postProcessBlocks      = [];
-	this.finalColorAssignment   = "";
+	this.finalColorAssignment   = [];
+	this.finalOutput            = "";
 };
 
 GG.ProgramSource.prototype.asVertexShader = function() {
@@ -3625,28 +3661,49 @@ GG.ProgramSource.prototype.addPostProcessBlock = function(block, name) {
 };
 
 
-GG.ProgramSource.prototype.perPointLightBlock = function (block) {
+GG.ProgramSource.prototype.perPointLightBlock = function (block, name) {
 	this.pointLightBlocks.push({
 		'name' : name != undefined ? name : 'block_' + this.pointLightBlocks.length,
 		'code' : block,
 		'order' : this.pointLightBlocks.length
 	});
+	return this;
 };
 
-GG.ProgramSource.prototype.perDirectionalLightBlock = function (block) {
+GG.ProgramSource.prototype.perDirectionalLightBlock = function (block, name) {
 	this.directionalLightBlocks.push({
 		'name' : name != undefined ? name : 'block_' + this.directionalLightBlocks.length,
 		'code' : block,
 		'order' : this.directionalLightBlocks.length
 	});
+	return this;
 };
 
-GG.ProgramSource.prototype.perSpotLightBlock = function (block) {
+GG.ProgramSource.prototype.perSpotLightBlock = function (block, name) {
 	this.spotLightBlocks.push({
 		'name' : name != undefined ? name : 'block_' + this.spotLightBlocks.length,
 		'code' : block,
 		'order' : this.spotLightBlocks.length
 	});
+	return this;
+};
+
+GG.ProgramSource.prototype.addFinalColorAssignment = function (block, name) {
+	this.finalColorAssignment.push({
+		'name' : name != undefined ? name : 'block_' + this.finalColorAssignment.length,
+		'code' : block,
+		'order' : this.finalColorAssignment.length
+	});
+	return this;
+};
+
+GG.ProgramSource.prototype.addFogBlock = function (block, name) {
+	this.fogBlocks.push({
+		'name' : name != undefined ? name : 'block_' + this.fogBlocks.length,
+		'code' : block,
+		'order' : this.fogBlocks.length
+	});
+	return this;
 };
 
 GG.ProgramSource.prototype.position = function() {
@@ -3699,13 +3756,8 @@ GG.ProgramSource.prototype.uniformNormalsMatrix = function() {
 	return this;
 };
 
-GG.ProgramSource.prototype.declareDiffuseOutput = function() {
-    this.addMainInitBlock('vec3 ' + GG.Naming.VarDiffuseOutput + " = vec3(0.0);");
-    return this;
-};
-
-GG.ProgramSource.prototype.declareSpecularOutput = function() {
-    this.addMainInitBlock('vec3 ' + GG.Naming.VarSpecularOutput + " = vec3(0.0);");
+GG.ProgramSource.prototype.declareFinalColorOutput = function() {
+    this.addMainInitBlock('vec3 ' + GG.Naming.VarColorOutput + " = vec3(0.0);");
     return this;
 };
 
@@ -3714,11 +3766,14 @@ GG.ProgramSource.prototype.declareAlphaOutput = function() {
     return this;
 };
 
-GG.ProgramSource.prototype.finalColor = function(s) {
-	this.finalColorAssignment = s;
+GG.ProgramSource.prototype.writeOutput = function(s) {
+	this.finalOutput = s;
 	return this;
 };
 
+GG.ProgramSource.textureSampling = function (textureUnitName, texCoordsAttributeName) {
+	return "sampleTexUnit(" + GG.Naming.textureUnitUniformMap(textureUnitName) + ", " + textureUnitName + ", " + texCoordsAttributeName + ")";
+};
 
 GG.ProgramSource.prototype.toString = function() {
 	var glsl = '';
@@ -3796,15 +3851,27 @@ GG.ProgramSource.prototype.toString = function() {
 	for (var i = 0; i < this.mainBlocks.length; i++) {
 		glsl += this.mainBlocks[i].code + '\n';
     }
+
+	glsl += this.emitBlocks(this.finalColorAssignment);	
+    glsl += this.emitBlocks(this.fogBlocks);	
+
     for (var i = 0; i < this.postProcessBlocks.length; i++) {
 		glsl += this.postProcessBlocks[i].code + '\n';
     }
-    glsl += this.finalColorAssignment;
+    glsl += this.finalOutput;
 
-	glsl += '} // end main \n';
+	glsl += '\n} // end main \n';
 
 	return glsl;
 };
+
+GG.ProgramSource.prototype.emitBlocks = function (blocks) {
+	var codeBlock = "";
+	for (var i = 0; i < blocks.length; i++) {
+		codeBlock += blocks[i].code + '\n';
+    }
+    return codeBlock;
+}
 
 GG.BLEND_MULTIPLY    = 1;
 GG.BLEND_ADD          = 2;
@@ -3900,8 +3967,9 @@ GG.BaseMaterial = function(spec) {
 	this.specularMap = new GG.TextureUnit({ 'texture' : spec.specularMap, 'unit' : GG.TEX_UNIT_SPECULAR_MAP });
 	this.alphaMap    = new GG.TextureUnit({ 'texture' : spec.alphaMap, 'unit' : GG.TEX_UNIT_ALPHA_MAP });
 	this.normalMap   = new GG.TextureUnit({ 'texture' : spec.normalMap, 'unit' : GG.TEX_UNIT_NORMAL_MAP });
+	this.parallaxMap = new GG.TextureUnit({ 'texture' : spec.parallaxMap, 'unit' : GG.TEX_UNIT_PARALLAX_MAP });
 
-    this.normalMapScale = 1.0;
+    this.normalMapScale = 0.0005;
 
 	this.diffuseTextureStack = new GG.TextureStack();
 	
@@ -3969,6 +4037,11 @@ GG.BaseMaterial.prototype.setAlphaMap = function (texture) {
 
 GG.BaseMaterial.prototype.setNormalMap = function (texture) {
     this.normalMap = new GG.TextureUnit({ 'texture' : texture, 'unit' : GG.TEX_UNIT_NORMAL_MAP});
+    return this;
+};
+
+GG.BaseMaterial.prototype.setParallaxMap = function (texture) {
+    this.parallaxMap = new GG.TextureUnit({ 'texture' : texture, 'unit' : GG.TEX_UNIT_PARALLAX_MAP});
     return this;
 };
 
@@ -4302,22 +4375,23 @@ GG.AdaptiveRenderPass.prototype.constructor = GG.AdaptiveRenderPass;
 
 GG.AdaptiveRenderPass.prototype.prepareForRendering = function (renderable, renderContext) {
 	if (renderable.getMaterial() != null) {
-		this.adaptShadersToMaterial(renderable.getMaterial());
+		this.adaptShadersToMaterial(renderable.getMaterial(), renderContext);
 	}	
 	GG.RenderPass.prototype.prepareForRendering.call(this, renderable, renderContext);
 };
 
-GG.AdaptiveRenderPass.prototype.adaptShadersToMaterial = function (material) {	
+GG.AdaptiveRenderPass.prototype.adaptShadersToMaterial = function (material, renderContext) {	
 	// if the program cannot handle the current material, either lookup
 	// an appropriate instance from the cache or create a new on on the fly
-	var hash = this.hashMaterial(material);
+	var hash = this.hashMaterial(material, renderContext);
 	if (this.shouldInvalidateProgram(hash)) {
 		this.program = null;
 		var cachedProgram = this.lookupCachedProgramInstance(hash);
 		if (cachedProgram != null) {
 			this.useProgramInstance(cachedProgram, hash);
 		} else {
-			this.createNewProgramInstance(material, hash);		
+			this.createNewProgramInstance(material, renderContext);		
+			this.useProgramInstance(this.program, hash);
 			this.storeProgramInstanceInCache(this.program, hash);	
 		}		
 	}
@@ -4328,10 +4402,9 @@ GG.AdaptiveRenderPass.prototype.useProgramInstance = function (program, hash) {
 	this.activeHash = hash;
 };
 
-GG.AdaptiveRenderPass.prototype.createNewProgramInstance = function (material, hash) {
-	this.createShadersForMaterial(material);
-	this.createGpuProgram();	
-	this.useProgramInstance(this.program, hash);
+GG.AdaptiveRenderPass.prototype.createNewProgramInstance = function (material, renderContext) {
+	this.createShadersForMaterial(material, renderContext);
+	this.createGpuProgram();		
 };
 
 GG.AdaptiveRenderPass.prototype.shouldInvalidateProgram = function (hash) {	
@@ -4346,11 +4419,11 @@ GG.AdaptiveRenderPass.prototype.storeProgramInstanceInCache = function (program,
 	return this.programCache[hash] = program;
 };
 
-GG.AdaptiveRenderPass.prototype.createShadersForMaterial = function (material) {
+GG.AdaptiveRenderPass.prototype.createShadersForMaterial = function (material, renderContext) {
 	throw "AdaptiveRenderPass.createShadersForMaterial is abstract";
 };
 
-GG.AdaptiveRenderPass.prototype.hashMaterial = function (material) {
+GG.AdaptiveRenderPass.prototype.hashMaterial = function (material, renderContext) {
 	throw "AdaptiveRenderPass.hashMaterial is abstract";
 };
 /**
@@ -4365,7 +4438,9 @@ GG.AdaptiveRenderPass.prototype.hashMaterial = function (material) {
  *	  methods of T. i.e: T.adaptShadersToMaterial should call E.adaptShadersToMaterial
  *    in order to adapt its own technique and E's technique on the same material
  *    having a resulting overall technique that combines both of them.
- * 3) Calling the RenderPass methods __setCustomUniforms and __setCustomRenderState
+ * 3) Call the method E.hashMaterial() from within T.hashMaterial() in order to generate
+ *	  a compound hash value.
+ * 4) Calling the RenderPass methods __setCustomUniforms and __setCustomRenderState
  */
 GG.EmbeddableAdaptiveRenderPass = function(spec) {
 	this.activeHash = null;
@@ -4378,14 +4453,125 @@ GG.EmbeddableAdaptiveRenderPass.prototype.shouldInvalidateProgram = function (ha
 	return this.activeHash != hash;
 };
 
-GG.EmbeddableAdaptiveRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {
+GG.EmbeddableAdaptiveRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material, renderContext) {
 	throw "EmbeddableAdaptiveRenderPass.adaptShadersToMaterial is abstract";
 };
 
-GG.EmbeddableAdaptiveRenderPass.prototype.hashMaterial = function (material) {
+GG.EmbeddableAdaptiveRenderPass.prototype.hashMaterial = function (material, renderContext) {
 	throw "EmbeddableAdaptiveRenderPass.hashMaterial is abstract";
 };
 
+GG.EmbeddableAdaptiveRenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+    
+};
+
+GG.EmbeddableAdaptiveRenderPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
+    
+};
+/**
+ * Can be used by calling the function getFogFactor(...) and then mixing the current
+ * color with u_fogColor:
+ *	float fogFactor = getFogFactor();
+ *	gl_FragColor = mix(color, u_fogColor, fogFactor);
+ *
+ * It adds the following uniforms:
+ *	u_fogColor: the fog's color
+ *	u_fogStart: the minimum camera distance at which the fog starts to appear
+ *  u_fogEnd: the maximum camera distance at which the fog appears
+ */
+
+GG.FogEmbeddableRenderPass = function (spec) {
+    GG.EmbeddableAdaptiveRenderPass.call(this, spec);
+    this.BASE_UNIFORM_NAME = 'u_alphaTexUnit';
+};
+
+GG.FogEmbeddableRenderPass.prototype = new GG.EmbeddableAdaptiveRenderPass();
+GG.FogEmbeddableRenderPass.prototype.constructor = GG.FogEmbeddableRenderPass;
+
+GG.FogEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material, renderContext) {
+	// if no render state is specified or fog is disabled, then do nothing
+	if (renderContext.renderState == null || !renderContext.renderState.enableFog) {
+		return;
+	}
+	vertexShader.varying('vec3', 'v_viewPos').addMainBlock('v_viewPos = (u_matModelView * a_position).xyz;');
+	fragmentShader
+		.uniform('vec3', GG.Naming.UniformFogColor)
+		.uniform('float', GG.Naming.UniformFogStart)
+		.uniform('float', GG.Naming.UniformFogEnd)
+		.uniform('float', GG.Naming.UniformFogDensity)
+		.varying('vec3', 'v_viewPos');
+
+	switch (renderContext.renderState.fogMode) {		
+		case GG.Constants.FOG_EXP:
+			fragmentShader.addDecl('getFogFactor', [
+				"float getFogFactor(float distance) {",				
+				"	float fogFactor = exp(-u_fogDensity * distance);",
+				"	return clamp(0.0, 1.0, fogFactor);",
+				"}"
+			].join('\n'));
+			break;
+		case GG.Constants.FOG_EXP2:
+			fragmentShader.addDecl('getFogFactor', [
+				"float getFogFactor(float distance) {",				
+				"	float fogFactor = exp(-u_fogDensity*u_fogDensity * distance*distance);",
+				"	return clamp(0.0, 1.0, fogFactor);",
+				"}"
+			].join('\n'));
+			break;
+		case GG.Constants.FOG_LINER:
+		default:
+			fragmentShader.addDecl('getFogFactor', [
+				"float getFogFactor(float distance) {",
+				"	float fogCoords = (u_fogEnd - distance) / (u_fogEnd - u_fogStart);",
+				"	float fogFactor = fogCoords;",
+				"	return clamp(0.0, 1.0, fogFactor);",
+				"}"
+			].join('\n'));
+			break;
+	}
+		
+	fragmentShader.addFogBlock([
+		"float fogFactor = getFogFactor(length(v_viewPos));",
+		"finalColor = mix(u_fogColor, finalColor, fogFactor);"
+		].join('\n')
+	);
+		
+};
+
+GG.FogEmbeddableRenderPass.prototype.hashMaterial = function (material, renderContext) {
+	var rs = renderContext.renderState;
+	if (rs != null) {
+		return rs.enableFog + "_" + rs.fogMode;
+	} else {
+		return "";
+	}
+};
+
+GG.FogEmbeddableRenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	if (ctx.renderState != null && ctx.renderState.enableFog) {
+		gl.uniform1f(program[GG.Naming.UniformFogStart], ctx.renderState.fogStart);
+		gl.uniform1f(program[GG.Naming.UniformFogEnd], ctx.renderState.fogEnd);
+		gl.uniform1f(program[GG.Naming.UniformFogDensity], ctx.renderState.fogDensity);
+		gl.uniform3fv(program[GG.Naming.UniformFogColor], ctx.renderState.fogColor);
+	}
+};
+
+/*
+// TODO: 
+// add the context to the parameters of EmbeddableRenderPass.adaptShadersToMaterial
+// rename EmbeddableRenderPass.adaptShadersToMaterial to EmbeddableRenderPass.adaptShaders
+// rename AdaptiveRenderPass.adaptShadersToMaterial to AdaptiveRenderPass.adaptToMaterial
+fogCoords = viewDist - fogStart / (fogEnd - fogStart);
+
+// linear
+fogFactor = fogCoords;
+
+// exp
+fogFactor = exp(-u_fogDensity * fogCoords);
+
+// exp2
+fogFactor = pow(exp(-u_fogDensity * fogCoords), 2);
+*/
 /**
  * Prerequisites:
  *	a) v_texCoords[0..N]: a varying passing each of the uv coordinates per fragment.
@@ -4400,14 +4586,14 @@ GG.DiffuseTextureStackEmbeddableRenderPass = function (spec) {
 GG.DiffuseTextureStackEmbeddableRenderPass.prototype = new GG.EmbeddableAdaptiveRenderPass();
 GG.DiffuseTextureStackEmbeddableRenderPass.prototype.constructor = GG.DiffuseTextureStackEmbeddableRenderPass;
 
-GG.DiffuseTextureStackEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {
+GG.DiffuseTextureStackEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material, renderContext) {
 	if (!material.diffuseTextureStack.isEmpty()) {
 		fragmentShader.addDecl('sampleTexUnit', GG.ShaderLib.blocks.sampleTexUnit);
 		this.evaluateTextureStack(fragmentShader, material.diffuseTextureStack);
 	}
 };
 
-GG.DiffuseTextureStackEmbeddableRenderPass.prototype.hashMaterial = function (material) {	
+GG.DiffuseTextureStackEmbeddableRenderPass.prototype.hashMaterial = function (material, renderContext) {	
 	return material.diffuseTextureStack.hashCode();
 };
 
@@ -4522,7 +4708,7 @@ GG.SpecularMappingEmbeddableTechnique = function (spec) {
 GG.SpecularMappingEmbeddableTechnique.prototype = new GG.EmbeddableAdaptiveRenderPass();
 GG.SpecularMappingEmbeddableTechnique.prototype.constructor = GG.SpecularMappingEmbeddableTechnique;
 
-GG.SpecularMappingEmbeddableTechnique.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {	
+GG.SpecularMappingEmbeddableTechnique.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material, renderContext) {	
 	if (material.specularMap.texture != null) {
 		fragmentShader.addDecl('sampleTexUnit', GG.ShaderLib.blocks.sampleTexUnit)
 			.uniformTexUnit(this.BASE_UNIFORM_NAME)
@@ -4534,7 +4720,7 @@ GG.SpecularMappingEmbeddableTechnique.prototype.adaptShadersToMaterial = functio
 	}
 };
 
-GG.SpecularMappingEmbeddableTechnique.prototype.hashMaterial = function (material) {	
+GG.SpecularMappingEmbeddableTechnique.prototype.hashMaterial = function (material, renderContext) {	
 	return material.specularMap.texture != null;
 };		
 
@@ -4564,7 +4750,7 @@ GG.AlphaMappingEmbeddableRenderPass = function (spec) {
 GG.AlphaMappingEmbeddableRenderPass.prototype = new GG.EmbeddableAdaptiveRenderPass();
 GG.AlphaMappingEmbeddableRenderPass.prototype.constructor = GG.AlphaMappingEmbeddableRenderPass;
 
-GG.AlphaMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {
+GG.AlphaMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material, renderContext) {
     if (material.alphaMap.texture != null) {
         fragmentShader
             .addDecl('sampleTexUnit', GG.ShaderLib.blocks.sampleTexUnit)
@@ -4576,7 +4762,7 @@ GG.AlphaMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function 
     }
 };
 
-GG.AlphaMappingEmbeddableRenderPass.prototype.hashMaterial = function (material) {
+GG.AlphaMappingEmbeddableRenderPass.prototype.hashMaterial = function (material, renderContext) {
     return material.alphaMap.texture != null;
 };
 
@@ -4593,60 +4779,131 @@ GG.AlphaMappingEmbeddableRenderPass.prototype.__setCustomUniforms = function(ren
 GG.AlphaMappingEmbeddableRenderPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
     renderable.material.alphaMap.bind();
 };
+/**
+ * Provides normal & parallax mapping functionality for shader programs.
+ * At a minimum the material's normal map must be defined for this pass to perform any action.
+ * The parallax map on the other hand is optional and in its absence only a simple normal
+ * mapping effect is applied.
+ *
+ * This pass will:
+ * - bind the normal & parallax height maps as uniforms and set the appropriate
+ *   render state for sampling them.
+ * - introduce the sampleNormalMap method which returns the surface normal as calculated
+ *   from the normal & parallax maps.
+ *
+ * Requirements for shader programs that integrate this render pass: 
+ * - the varyings GG.Naming.VaryingViewVec, GG.Naming.VaryingLightVec and GG.Naming.VaryingNormal must be present
+ */
 GG.NormalMappingEmbeddableRenderPass = function (spec) {
     GG.EmbeddableAdaptiveRenderPass.call(this, spec);
-    this.BASE_UNIFORM_NAME = 'u_normalMapTexUnit';
+    this.NORMALMAP_UNIFORM_NAME     = 'u_normalMapTexUnit';
+    this.PARALLAX_UNIFORM_NAME = 'u_parallaxMapTexUnit';
 };
 
 GG.NormalMappingEmbeddableRenderPass.prototype = new GG.EmbeddableAdaptiveRenderPass();
 GG.NormalMappingEmbeddableRenderPass.prototype.constructor = GG.NormalMappingEmbeddableRenderPass;
 
-GG.NormalMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {
+GG.NormalMappingEmbeddableRenderPass.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material, renderContext) {
     if (material.normalMap.texture != null) {
-
         vertexShader
+            .normal()
             .tangent()
-            .varying('vec3', 'v_tangent')
-            .addMainBlock("v_tangent = a_tangent;");
+            .texCoord0()        
+            .uniform('vec3', 'u_wCameraPos')
+            .uniformModelMatrix()
+            .uniformLight()
+            .addDecl('blocks.getWorldLightVector', GG.ShaderLib.blocks.getWorldLightVector)
+            .preprocessorDefinition(GG.Naming.DefUseTangentSpace)
+            .addMainBlock([
+                "   vec3 N = normalize(a_normal);",
+                "   vec3 T = normalize(a_tangent);",
+                "   vec3 B = cross(N, T);",
+                "   vec4 wPos = u_matModel * a_position;",
+                "   vec3 viewVec = u_wCameraPos.xyz - wPos.xyz;",
+
+                "   vec3 tbnViewVec;",
+                "   tbnViewVec.x = dot(T, viewVec);",
+                "   tbnViewVec.y = dot(B, viewVec);",
+                "   tbnViewVec.z = dot(N, viewVec);",
+                "   v_viewVec = tbnViewVec;",
+
+                "   vec3 lightVec = getWorldLightVector(wPos.xyz);",
+                "   vec3 tbnLightVec;",
+                "   tbnLightVec.x = dot(T, lightVec);",
+                "   tbnLightVec.y = dot(B, lightVec);",
+                "   tbnLightVec.z = dot(N, lightVec);",
+                "   v_lightVec = tbnLightVec;",
+
+                "   v_normal = a_normal;"
+                ].join('\n'));
+
 
         fragmentShader
             .preprocessorDefinition(GG.Naming.DefUseTangentSpace)
             .addDecl('sampleTexUnit', GG.ShaderLib.blocks.sampleTexUnit)
-            .uniformTexUnit(this.BASE_UNIFORM_NAME)
+            .uniformTexUnit(this.NORMALMAP_UNIFORM_NAME)
             .uniform('float', 'u_normalMapScale')
-            .uniformNormalsMatrix()
-            .varying('vec3', 'v_tangent')
-            .addDecl('sampleNormalMap', [
-                "vec3 sampleNormalMap() {",
-                "   vec3 N = normalize(v_normal);",
-                "   vec3 T = normalize(v_tangent);",
-                "   vec3 B = cross(N, T);",
-                "   mat3 tangentToWorld = mat3(T, B, N);",
-                "   mat3 tangentToView =  tangentToWorld;",
-                "   vec3 surfaceNormal = sampleTexUnit(" + GG.Naming.textureUnitUniformMap(this.BASE_UNIFORM_NAME) + ", " + this.BASE_UNIFORM_NAME + ", v_texCoords).xyz * 2.0 - 1.0;",
-                "   return normalize(tangentToView * surfaceNormal);",
+            .uniformNormalsMatrix();
+
+        if (material.parallaxMap.texture != null) {
+            fragmentShader.uniformTexUnit(this.PARALLAX_UNIFORM_NAME);
+            fragmentShader.addDecl('parallaxTexCoords', [
+                "vec2 parallaxTexCoords(vec2 uvCoords) {",                
+                "   vec3 tbnViewDir = normalize(-v_viewVec);",
+                "   float height = " + GG.ProgramSource.textureSampling(this.PARALLAX_UNIFORM_NAME, 'uvCoords') + ".r;",
+                "   vec2 vHalfOffset = tbnViewDir.xy * height * u_normalMapScale;",
+
+                "   height = (height + " + GG.ProgramSource.textureSampling(this.PARALLAX_UNIFORM_NAME, 'uvCoords + vHalfOffset') + ".r)*0.5;",
+                "   vHalfOffset = tbnViewDir.xy * height * u_normalMapScale;",
+
+                "   height = (height + " + GG.ProgramSource.textureSampling(this.PARALLAX_UNIFORM_NAME, 'uvCoords + vHalfOffset') + ".r)*0.5;",
+                "   vHalfOffset = tbnViewDir.xy * height * u_normalMapScale;",
+
+                "   return uvCoords + vHalfOffset;",
                 "}"
-        ].join('\n'));
+             ].join('\n'));
+        }
+
+        var uvCoords = (material.parallaxMap.texture != null) ? "parallaxTexCoords(v_texCoords)" : "v_texCoords";
+
+        fragmentShader.addDecl('sampleNormalMap', [
+                "vec3 sampleNormalMap() {",
+                "   vec2 uv = " + uvCoords + ";",
+                "   vec3 surfaceNormal = " + GG.ProgramSource.textureSampling(this.NORMALMAP_UNIFORM_NAME, 'uv') + ".xyz * 2.0 - 1.0;",
+                "   return normalize(surfaceNormal);",
+                "}"
+            ].join('\n')
+        );
     }
 };
 
-GG.NormalMappingEmbeddableRenderPass.prototype.hashMaterial = function (material) {
-    return material.normalMap.texture != null;
+GG.NormalMappingEmbeddableRenderPass.prototype.hashMaterial = function (material, renderContext) {
+    return material.normalMap.texture != null + '_' + material.parallaxMap.texture != null;
 };
 
 GG.NormalMappingEmbeddableRenderPass.prototype.__locateCustomUniforms = function(renderable, ctx, program) {
-    GG.ProgramUtils.getTexUnitUniformLocations(program, this.BASE_UNIFORM_NAME);
+    GG.ProgramUtils.getTexUnitUniformLocations(program, this.NORMALMAP_UNIFORM_NAME);
+    GG.ProgramUtils.getTexUnitUniformLocations(program, this.PARALLAX_UNIFORM_NAME);
 };
 
 GG.NormalMappingEmbeddableRenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
     if (renderable.material.normalMap.texture != null) {
-        GG.ProgramUtils.setTexUnitUniforms(program, this.BASE_UNIFORM_NAME, renderable.material.normalMap);
+        GG.ProgramUtils.setTexUnitUniforms(program, this.NORMALMAP_UNIFORM_NAME, renderable.material.normalMap);        
+    }
+
+    if (renderable.material.parallaxMap.texture != null) {
+        GG.ProgramUtils.setTexUnitUniforms(program, this.PARALLAX_UNIFORM_NAME, renderable.material.parallaxMap);
         gl.uniform1f(program.u_normalMapScale, renderable.material.normalMapScale);
     }
 };
 
-GG.NormalMappingEmbeddableRenderPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
-    renderable.material.normalMap.bind();
+GG.NormalMappingEmbeddableRenderPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {    
+    if (renderable.material.normalMap.texture != null) {
+        renderable.material.normalMap.bind();
+    }
+    if (renderable.material.parallaxMap.texture != null) {
+        renderable.material.parallaxMap.bind();
+    }
 };
 GG.BaseTechnique = function(spec) {	
 	spec          = spec || {};	
@@ -4687,6 +4944,10 @@ GG.BaseTechnique.prototype.renderPasses = function() {
 };
 
 GG.BaseTechnique.prototype.render = function(renderable, ctx) {	
+	if (renderable.material == null) {
+		throw "You must define a material for each renderable";		
+	}
+	
 	this.passes.forEach(function(pass) {
 		pass.render(renderable, ctx);
 	});
@@ -4747,7 +5008,7 @@ GG.NormalsVisualizationTechnique.Pass.prototype.__createShaders = function() {
 	var fs = new GG.ProgramSource();
 	fs.asFragmentShader()
 		.varying('vec3', GG.Naming.VaryingColor)
-		.finalColor('gl_FragColor = vec4(' + GG.Naming.VaryingColor + ', 1.0);');
+		.writeOutput('gl_FragColor = vec4(' + GG.Naming.VaryingColor + ', 1.0);');
 	this.fragmentShader = fs.toString();
 };
 
@@ -4867,7 +5128,7 @@ GG.VertexColorsPass.prototype.__createShaders = function() {
     var fs = new GG.ProgramSource();
     fs.asFragmentShader()
         .varying('vec3', GG.Naming.VaryingColor)
-        .finalColor("gl_FragColor = vec4(" + GG.Naming.VaryingColor + ", 1.0);");
+        .writeOutput("gl_FragColor = vec4(" + GG.Naming.VaryingColor + ", 1.0);");
 
     this.vertexShader = vs.toString();
     this.fragmentShader = fs.toString();
@@ -4933,12 +5194,12 @@ GG.TexturedShadelessPass.prototype.__setCustomRenderState = function(renderable,
 	gl.disable(gl.CULL_FACE);
 };
 
-GG.TexturedShadelessPass.prototype.createShadersForMaterial = function (material) {
+GG.TexturedShadelessPass.prototype.createShadersForMaterial = function (material, renderContext) {
 	this.createProgram(material);
 };
 
-GG.TexturedShadelessPass.prototype.hashMaterial = function (material) {
-	return this.diffuseTexturingPass.hashMaterial(material);
+GG.TexturedShadelessPass.prototype.hashMaterial = function (material, renderContext) {
+	return this.diffuseTexturingPass.hashMaterial(material, renderContext);
 };
 GG.CubemapTechnique = function(spec) {
 	spec = spec || {};
@@ -5188,82 +5449,95 @@ GG.PhongPass = function(spec) {
 	this.specularMapPass      = new GG.SpecularMappingEmbeddableTechnique();
 	this.alphaMapPass         = new GG.AlphaMappingEmbeddableRenderPass();
 	this.normalMapPass        = new GG.NormalMappingEmbeddableRenderPass();
+	this.fogPass			  = new GG.FogEmbeddableRenderPass();
 	this.createProgram(null);	
 };
 
 GG.PhongPass.prototype             = new GG.AdaptiveRenderPass();
 GG.PhongPass.prototype.constructor = GG.PhongPass;
 
-GG.PhongPass.prototype.createProgram = function(material) {
+GG.PhongPass.prototype.createProgram = function(material, renderContext) {
 	var vs = new GG.ProgramSource();
 	vs.position()
 		.normal()
   		.uniformModelViewMatrix()
   		.uniformNormalsMatrix()
+  		.uniformViewMatrix()
 		.uniformProjectionMatrix()
+		.uniformLight()
 		.texCoord0()
 		.varying('vec3', 'v_normal')
-		.varying('vec4', 'v_viewPos')
+		.varying('vec3', 'v_lightVec')
+		.varying('vec3', 'v_viewVec')
 		.varying('vec2', 'v_texCoords')		
+		.varying('float', GG.Naming.VaryingSpotlightCos)
+		.addDecl('blocks.getWorldLightVector', GG.ShaderLib.blocks.getWorldLightVector)
 		.addMainBlock([
 			"	vec4 viewPos = u_matModelView*a_position;",
 			"	gl_Position = u_matProjection*viewPos;",
 			"	gl_Position.z -= 0.0001;",
-            "#ifdef " + GG.Naming.DefUseTangentSpace,
-            "   v_normal = a_normal;",
-            "#else",
+
+			// If the preprocessor directive is not defined then varyings are calculate in view space
+			// otherwise varyings will be calculated in tangent space by the normal mapping technique            
+            "#ifndef " + GG.Naming.DefUseTangentSpace,                        
 			"	v_normal = u_matNormals * a_normal;",
+			"   vec3 wlightVec = getWorldLightVector(a_position.xyz);",
+			"	v_lightVec = (u_matView*vec4(wlightVec, 0.0)).xyz;",
+			"	v_lightVec = normalize(v_lightVec);",			
+			"	v_viewVec = -normalize(viewPos.xyz);",			
             "#endif",
-			"	//v_viewVector = -viewPos.xyz; //(u_matInverseView * vec4(0.0, 0.0, 0.0, 1.0) - viewPos).xyz;",
-			"	v_viewPos = viewPos;",
 			"	v_texCoords = a_texCoords;"
 			].join('\n'));	
 
 	var fs = new GG.ProgramSource();
 	fs.asFragmentShader()
-		.varying('vec3', 'v_normal')
-		.varying('vec4', 'v_viewPos')
-		.varying('vec2', GG.Naming.VaryingTexCoords)
 		.uniformViewMatrix()
 		.uniformLight()
 		.uniformMaterial()
+		.varying('vec3', 'v_normal')
+		.varying('vec3', 'v_lightVec')
+		.varying('vec3', 'v_viewVec')
+		.varying('vec2', 'v_texCoords')
+		.varying('float', GG.Naming.VaryingSpotlightCos)		
 		.addDecl('phong.lightIrradiance', GG.ShaderLib.phong.lightIrradiance)
 		.declareAlphaOutput()
+		.declareFinalColorOutput()
 		.addMainInitBlock([
             "#ifdef " + GG.Naming.DefUseTangentSpace,
             "   vec3 N = sampleNormalMap();",
             "#else",
 			"	vec3 N = normalize(v_normal);",
             "#endif",
-			"	vec3 V = normalize(-v_viewPos.xyz);",
+			"	vec3 V = normalize(v_viewVec);",
+			"	vec3 L = normalize(v_lightVec);",
 			"	vec3 diffuse = vec3(0.0);",
 			"   vec3 " + GG.Naming.VarDiffuseBaseColor + " = u_material.diffuse;",
-			"	vec3 specular = vec3(0.0);",
+			"	vec3 specular = vec3(0.0);"
 			].join('\n'))
-		.addMainBlock([			
-			"	vec3 L;",
-			"	if (u_light.type == 1.0) {",
-			"		L = normalize((u_matView*vec4(-u_light.direction, 0.0)).xyz);",
-			"	} else {",
-			"	   L = normalize(u_matView*vec4(u_light.position, 1.0) - v_viewPos).xyz;",
-			"	}",
+		.addMainBlock([						
 			"	lightIrradiance(N, V, L, u_light, u_material, diffuse, specular);"			
 		].join('\n'))
-		.finalColor(
-	
-            "	gl_FragColor = vec4(u_material.ambient" +
-            " + baseColor*diffuse" +
-            " + u_material.specular*specular" +
-            ", " + GG.Naming.VarAlphaOutput + ");"   
-                 
+		.addFinalColorAssignment(
+			"finalColor = vec3(u_material.ambient + baseColor*diffuse + u_material.specular*specular);"
+			)
+		.writeOutput(
+            "	gl_FragColor = vec4(finalColor, " + GG.Naming.VarAlphaOutput + ");"                  
 			);
-    //TODO: Add light ambient and object emissive
+    
 	if (material != null) {
-		this.diffuseTexturingPass.adaptShadersToMaterial(vs, fs, material);
-		this.specularMapPass.adaptShadersToMaterial(vs, fs, material);
-        this.alphaMapPass.adaptShadersToMaterial(vs, fs, material);
-        this.normalMapPass.adaptShadersToMaterial(vs, fs, material);
+		this.diffuseTexturingPass.adaptShadersToMaterial(vs, fs, material, renderContext);
+		this.specularMapPass.adaptShadersToMaterial(vs, fs, material, renderContext);
+        this.alphaMapPass.adaptShadersToMaterial(vs, fs, material, renderContext);
+        this.normalMapPass.adaptShadersToMaterial(vs, fs, material, renderContext);
+        this.fogPass.adaptShadersToMaterial(vs, fs, material, renderContext);
 	}
+
+	vs.addMainBlock([
+		"	if (u_light.type == 3.0) {",
+		"		v_spotlightCos =  dot(-v_lightVec, normalize(u_light.direction));",
+		"	}",
+		].join('\n'))
+
 	this.vertexShader   = vs.toString();
 	this.fragmentShader = fs.toString();	
 };
@@ -5275,6 +5549,7 @@ GG.PhongPass.prototype.__setCustomUniforms = function(renderable, ctx, program) 
 	this.specularMapPass.__setCustomUniforms(renderable, ctx, program);
     this.alphaMapPass.__setCustomUniforms(renderable, ctx, program);
     this.normalMapPass.__setCustomUniforms(renderable, ctx, program);
+    this.fogPass.__setCustomUniforms(renderable, ctx, program);
 };
 
 GG.PhongPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
@@ -5282,17 +5557,19 @@ GG.PhongPass.prototype.__setCustomRenderState = function(renderable, ctx, progra
 	this.specularMapPass.__setCustomRenderState(renderable, ctx, program);
     this.alphaMapPass.__setCustomRenderState(renderable, ctx, program);
     this.normalMapPass.__setCustomRenderState(renderable, ctx, program);
+    this.fogPass.__setCustomRenderState(renderable, ctx, program);
 };
 
-GG.PhongPass.prototype.createShadersForMaterial = function (material) {
-	this.createProgram(material);
+GG.PhongPass.prototype.createShadersForMaterial = function (material, renderContext) {
+	this.createProgram(material, renderContext);
 };
 
-GG.PhongPass.prototype.hashMaterial = function (material) {
-	return this.diffuseTexturingPass.hashMaterial(material)
-        + this.specularMapPass.hashMaterial(material)
-        + this.alphaMapPass.hashMaterial(material)
-        + this.normalMapPass.hashMaterial(material);
+GG.PhongPass.prototype.hashMaterial = function (material, renderContext) {
+	return this.diffuseTexturingPass.hashMaterial(material, renderContext)
+        + this.specularMapPass.hashMaterial(material, renderContext)
+        + this.alphaMapPass.hashMaterial(material, renderContext)
+        + this.normalMapPass.hashMaterial(material, renderContext)
+        + this.fogPass.hashMaterial(material, renderContext);
 };
 /**
  * Renders the wireframe display of a renderable using lines. A depth offset can be supplied
@@ -5410,7 +5687,7 @@ GG.StaticPointParticlesRenderPass = function (spec) {
 GG.StaticPointParticlesRenderPass.prototype = new GG.AdaptiveRenderPass();
 GG.StaticPointParticlesRenderPass.prototype.constructor = GG.StaticPointParticlesRenderPass;
 
-GG.StaticPointParticlesRenderPass.prototype.createShadersForMaterial = function (material) {	
+GG.StaticPointParticlesRenderPass.prototype.createShadersForMaterial = function (material, renderContext) {	
 	var vs = this.createVertexShader(material);
 	var fs = this.createFragmentShader(material);
 
@@ -5452,12 +5729,12 @@ GG.StaticPointParticlesRenderPass.prototype.createFragmentShader = function (mat
 			.addMainInitBlock('vec3 '  + GG.Naming.VarDiffuseBaseColor + ' = u_materialDiffuse;');
 	} 
 	fs.addMainInitBlock('vec2 ' + GG.Naming.VaryingTexCoords + ' = gl_PointCoord;');
-	fs.finalColor('gl_FragColor = vec4(' + GG.Naming.VarDiffuseBaseColor + ', 1.0);');
+	fs.writeOutput('gl_FragColor = vec4(' + GG.Naming.VarDiffuseBaseColor + ', 1.0);');
 	return fs;
 };
 
-GG.StaticPointParticlesRenderPass.prototype.hashMaterial = function (material) {
-	return material.useVertexColors + this.diffuseTexturingPass.hashMaterial(material);
+GG.StaticPointParticlesRenderPass.prototype.hashMaterial = function (material, renderContext) {
+	return material.useVertexColors + this.diffuseTexturingPass.hashMaterial(material, renderContext);
 };
 
 GG.StaticPointParticlesRenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
@@ -6324,6 +6601,133 @@ GG.MouseHandler.prototype.setCamera = function (c) {
 
 
 
+GG.SphericalCameraController = function (spec) {
+	this.center     = [0, 0, 0];
+	this.up         = [0, 1, 0];
+	this.camera     = null;
+	this.speed      = 0.5;
+	this.rotX = 0;
+	this.rotY = 0;
+	this.dragging   = false;
+	this.lastMouseX = null;
+	this.lastMouseY = null;
+
+	var self = this;
+    this.mouseDownCallback = function(x, y) {
+        self.handleMouseDown(x, y);
+    }
+    this.mouseUpCallback = function(x, y) {
+        self.handleMouseUp(x, y);
+    }
+    this.mouseMoveCallback = function(x, y) {
+        self.handleMouseMove(x, y);
+    }
+    this.mouseWheelCallback = function(deltaY) {
+        self.handleMouseWheel(deltaY);
+    }
+    this.keyDownCallback = function(keyCode) {
+        self.handleKeyDown(keyCode);
+    };
+
+	GG.mouseInput.onMouseDown(this.mouseDownCallback);
+    GG.mouseInput.onMouseUp(this.mouseUpCallback);
+    GG.mouseInput.onMouseMove(this.mouseMoveCallback);
+    GG.mouseInput.onMouseWheel(this.mouseWheelCallback);
+    GG.keyboardInput.onKeyDown(this.keyDownCallback);
+};
+
+GG.SphericalCameraController.prototype.constructor = GG.SphericalCameraController;
+
+GG.SphericalCameraController.prototype.rotateLeftMatrix = function (angle, up) {
+	var rotMat = mat4.identity();
+	mat4.rotate(rotMat, angle, up);
+	return rotMat;    
+};
+
+GG.SphericalCameraController.prototype.rotateUpMatrix = function (angle, eye, up) {
+ 	var cameraZ = vec3.normalize(vec3.subtract([0,0,0], eye));
+  	var cameraY = vec3.normalize(up);
+  	var cameraX = vec3.normalize(vec3.cross(cameraZ, cameraY, vec3.create()));
+
+	var rotMat = mat4.identity();
+	return mat4.rotate(rotMat, angle, cameraX);	
+};
+
+GG.SphericalCameraController.prototype.rotateCamera = function (rx, ry) {
+	var rotLeft = this.rotateLeftMatrix(rx, this.camera.up);
+	mat4.multiplyVec3(rotLeft, this.camera.position);
+
+	var rotUp = this.rotateUpMatrix(ry, this.camera.position, this.camera.up);
+	mat4.multiplyVec3(rotUp, this.camera.position);
+	mat4.multiplyVec3(rotUp, this.camera.up);
+};
+
+GG.SphericalCameraController.prototype.handleMouseDown = function (x, y) {
+    this.dragging  = true;
+    this.lastMouseX = x;
+    this.lastMouseY = y;
+};
+
+GG.SphericalCameraController.prototype.handleMouseUp = function (x, y) {
+    this.dragging = false;
+};
+
+GG.SphericalCameraController.prototype.handleMouseMove = function (x, y) {
+    if (this.camera != null && this.dragging) {
+        this.rotX  += x - this.lastMouseX;
+	    this.rotY  += y - this.lastMouseY;
+		this.lastMouseX = x;
+	    this.lastMouseY = y;
+
+	    this.rotX *= this.speed;
+	    this.rotY *= this.speed;
+	    this.rotateCamera(GG.MathUtils.degToRads(this.rotX), GG.MathUtils.degToRads(this.rotY));
+    }
+};
+
+GG.SphericalCameraController.prototype.handleMouseWheel = function (deltaY) {
+    if (this.camera != null) {
+    	var delta = deltaY * 0.01;
+    	this.camera.zoom(delta);
+	}
+};
+
+GG.SphericalCameraController.prototype.handleKeyDown = function(keyCode) {
+	if (this.camera != null) {
+	    switch (keyCode) {
+	        case GG.KEYS.LEFT:
+	            this.rotateCamera(-0.2, 0);
+	            break;
+
+	        case GG.KEYS.RIGHT:
+	            this.rotateCamera(0.2, 0);
+	            break;
+
+	        case GG.KEYS.UP:
+	            this.rotateCamera(0, -0.2);
+	            break;
+
+	        case GG.KEYS.DOWN:
+	            this.rotateCamera(0, 0.2);
+	            break;
+
+	        default: break;
+	    }
+	}
+};
+    
+GG.SphericalCameraController.prototype.getCamera = function () {
+    return this.camera;
+};
+
+GG.SphericalCameraController.prototype.setCamera = function (c) {
+    this.camera = c;
+    if (this.camera != null) {
+    	this.camera.lookAt = [0, 0, 0];
+	}
+    return this;
+};
+
 GG.Scene = function(name) {
 	this.name = name;
 
@@ -6332,7 +6736,12 @@ GG.Scene = function(name) {
 	this.directionaLights = [];
 	this.spotLights = [];
 	this.shadowsEnabled = false;
-	this.fogEnabled = false;
+
+	this.showFog = false;
+	this.fogStart = 10;
+	this.fogEnd = 100;
+	this.fogDensity = 2;
+	this.fogColor = [0.7, 0.7, 0.7];
 };
 
 GG.Scene.prototype.addObject = function(object) {

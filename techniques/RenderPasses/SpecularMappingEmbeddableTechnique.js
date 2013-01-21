@@ -10,7 +10,7 @@ GG.SpecularMappingEmbeddableTechnique = function (spec) {
 GG.SpecularMappingEmbeddableTechnique.prototype = new GG.EmbeddableAdaptiveRenderPass();
 GG.SpecularMappingEmbeddableTechnique.prototype.constructor = GG.SpecularMappingEmbeddableTechnique;
 
-GG.SpecularMappingEmbeddableTechnique.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material) {	
+GG.SpecularMappingEmbeddableTechnique.prototype.adaptShadersToMaterial = function (vertexShader, fragmentShader, material, renderContext) {	
 	if (material.specularMap.texture != null) {
 		fragmentShader.addDecl('sampleTexUnit', GG.ShaderLib.blocks.sampleTexUnit)
 			.uniformTexUnit(this.BASE_UNIFORM_NAME)
@@ -22,7 +22,7 @@ GG.SpecularMappingEmbeddableTechnique.prototype.adaptShadersToMaterial = functio
 	}
 };
 
-GG.SpecularMappingEmbeddableTechnique.prototype.hashMaterial = function (material) {	
+GG.SpecularMappingEmbeddableTechnique.prototype.hashMaterial = function (material, renderContext) {	
 	return material.specularMap.texture != null;
 };		
 

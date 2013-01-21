@@ -4,6 +4,178 @@
 		"selected_items":
 		[
 			[
+				"cam",
+				"cameraZ"
+			],
+			[
+				"rot",
+				"rotX"
+			],
+			[
+				"co",
+				"controller"
+			],
+			[
+				"rota",
+				"rotateUpMatrix"
+			],
+			[
+				"rotateLe",
+				"rotateLeftMatrix"
+			],
+			[
+				"set",
+				"setUniforms"
+			],
+			[
+				"B",
+				"BackColor"
+			],
+			[
+				"se",
+				"setScale"
+			],
+			[
+				"ge",
+				"geometry"
+			],
+			[
+				"wi",
+				"wireframe"
+			],
+			[
+				"end",
+				"endSegment"
+			],
+			[
+				"s",
+				"segmentRatios  (variable)"
+			],
+			[
+				"ad",
+				"addCurve"
+			],
+			[
+				"b",
+				"beginPath"
+			],
+			[
+				"js",
+				"jsonMesh"
+			],
+			[
+				"alo",
+				"allocateTypedArrayFromArray  (function)"
+			],
+			[
+				"it",
+				"itemType  (variable)"
+			],
+			[
+				"N",
+				"NormalsVisualizationTechnique"
+			],
+			[
+				"re",
+				"renderContext"
+			],
+			[
+				"getN",
+				"getNormalEndpoint"
+			],
+			[
+				"en",
+				"endpoint"
+			],
+			[
+				"no",
+				"normalsScale"
+			],
+			[
+				"nu",
+				"null"
+			],
+			[
+				"li",
+				"lineMesh"
+			],
+			[
+				"ver",
+				"vertices"
+			],
+			[
+				"Array",
+				"ArrayBuffer"
+			],
+			[
+				"p",
+				"push"
+			],
+			[
+				"num",
+				"numVerts"
+			],
+			[
+				"m",
+				"mipmapFiltering"
+			],
+			[
+				"ref",
+				"reflect"
+			],
+			[
+				"v_",
+				"v_viewVector"
+			],
+			[
+				"u_c",
+				"u_wCameraPos"
+			],
+			[
+				"j",
+				"jsonMesh"
+			],
+			[
+				"add",
+				"addMainInitBlock"
+			],
+			[
+				"po",
+				"pointMesh"
+			],
+			[
+				"us",
+				"usesNormals"
+			],
+			[
+				"u",
+				"usesColors"
+			],
+			[
+				"pa",
+				"particles"
+			],
+			[
+				"u_",
+				"u_pointSize"
+			],
+			[
+				"tim",
+				"timeCubic"
+			],
+			[
+				"ti",
+				"timeSquared"
+			],
+			[
+				"le",
+				"length-1"
+			],
+			[
+				"e",
+				"else"
+			],
+			[
 				"c",
 				"createVertexShader"
 			],
@@ -24,10 +196,6 @@
 				"__setCustomRenderState"
 			],
 			[
-				"u",
-				"u_materialDiffuse"
-			],
-			[
 				"v",
 				"v_color"
 			],
@@ -42,14 +210,6 @@
 			[
 				"ite",
 				"itemType"
-			],
-			[
-				"co",
-				"colorsBuffer"
-			],
-			[
-				"B",
-				"BaseMaterial  (class)"
 			],
 			[
 				"te",
@@ -98,10 +258,6 @@
 			[
 				"con",
 				"contentType"
-			],
-			[
-				"se",
-				"setCustomRenderState  (function)"
 			],
 			[
 				"d",
@@ -208,14 +364,6 @@
 				"RenderPasses"
 			],
 			[
-				"p",
-				"program  (variable)"
-			],
-			[
-				"re",
-				"renderAttributes  (argument)"
-			],
-			[
 				"get",
 				"getRenderAttributesMask"
 			],
@@ -234,10 +382,6 @@
 			[
 				"a_",
 				"a_position"
-			],
-			[
-				"li",
-				"lightInfo"
 			],
 			[
 				"red",
@@ -264,40 +408,20 @@
 				"cubemapTexture"
 			],
 			[
-				"wi",
-				"wireframeTechnique"
-			],
-			[
 				"pro",
 				"program"
-			],
-			[
-				"u_",
-				"u_matModelView"
 			],
 			[
 				"sc",
 				"screen_filters"
 			],
 			[
-				"no",
-				"normalized"
-			],
-			[
 				"fil",
 				"filterName"
 			],
 			[
-				"s",
-				"src  (variable)"
-			],
-			[
 				"sour",
 				"sourceTexture"
-			],
-			[
-				"add",
-				"addMainBlock  (function)"
 			],
 			[
 				"pgr",
@@ -384,146 +508,31 @@
 				"nearPlaneDist"
 			],
 			[
-				"po",
-				"pointSize"
-			],
-			[
 				"cl",
 				"clearDepth"
 			],
 			[
-				"us",
-				"useStencil"
-			],
-			[
 				"st",
 				"stencilFormat"
-			],
-			[
-				"ph",
-				"phongShade"
-			],
-			[
-				"seg",
-				"segments"
-			],
-			[
-				"r",
-				"right"
-			],
-			[
-				"uniform",
-				"uniform1f"
-			],
-			[
-				"opt",
-				"options"
-			],
-			[
-				"del",
-				"delegate"
-			],
-			[
-				"u_mat",
-				"u_matModel"
-			],
-			[
-				"ligh",
-				"lightInfo"
-			],
-			[
-				"prot",
-				"prototype"
-			],
-			[
-				"visib",
-				"visibleObjects"
-			],
-			[
-				"render",
-				"renderer"
-			],
-			[
-				"rende",
-				"renderer"
-			],
-			[
-				"rend",
-				"renderer"
-			],
-			[
-				"cam",
-				"camera"
-			],
-			[
-				"ma",
-				"maxDepth"
-			],
-			[
-				"t",
-				"teapot"
-			],
-			[
-				"ri",
-				"rightVec"
-			],
-			[
-				"ca",
-				"camera"
-			],
-			[
-				"h",
-				"handleKeyDown"
-			],
-			[
-				"G",
-				"Geometry"
-			],
-			[
-				"getR",
-				"getResponseHeader"
-			],
-			[
-				"js",
-				"jsonObj"
-			],
-			[
-				"f",
-				"f	Anonymous Function"
-			],
-			[
-				"su",
-				"success"
-			],
-			[
-				"as",
-				"asyncRequest"
-			],
-			[
-				"mea",
-				"mean_2"
-			],
-			[
-				"SH",
-				"SHADOW_MAPPING_VSM"
-			],
-			[
-				"sha",
-				"shadowMapTexture"
-			],
-			[
-				"Sh",
-				"ShadowMapVSM"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "renderables/StaticParticleSystem.js",
+			"file": "interaction/SphericalCameraController.js",
 			"settings":
 			{
-				"buffer_size": 1785,
+				"buffer_size": 3611,
+				"line_ending": "Windows",
+				"name": "SphericalCameraController"
+			}
+		},
+		{
+			"file": "samples/threejs_model.js",
+			"settings":
+			{
+				"buffer_size": 2971,
 				"line_ending": "Windows"
 			}
 		}
@@ -624,69 +633,107 @@
 	},
 	"file_history":
 	[
-		"/D/webgl/gg-webgl/techniques/particles/ParticlesTechnique.js",
-		"/D/webgl/gg-webgl/techniques/particles/StaticPointParticlesTechnique.js",
+		"/D/webgl/gg-webgl/samples/shader_material.js",
+		"/D/webgl/gg-webgl/techniques/BaseTechnique.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/RenderPass.js",
+		"/D/webgl/gg-webgl/samples/shader_material.html",
+		"/D/webgl/gg-webgl/glsl/ProgramSource.js",
+		"/D/webgl/gg-webgl/samples/scene_renderer.html",
+		"/D/webgl/gg-webgl/samples/scene_renderer.js",
+		"/D/webgl/gg-webgl/interaction/MouseHandler.js",
+		"/D/webgl/gg-webgl/cameras/BaseCamera.js",
+		"/D/webgl/gg-webgl/samples/threejs_model.js",
+		"/D/webgl/gg-webgl/build.py",
+		"/D/webgl/gg-webgl/externals/gl-matrix.js",
+		"/D/webgl/gg-webgl/input/MouseInput.js",
+		"/D/webgl/gg-webgl/utils/MathUtils.js",
+		"/D/webgl/gg-webgl/cameras/PerspectiveCamera.js",
+		"/D/webgl/gg-webgl/cameras/OrthographicCamera.js",
+		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapSimple.js",
+		"/D/webgl/gg-webgl/utils/ProgramUtils.js",
+		"/D/webgl/gg-webgl/samples/splines.html",
 		"/D/webgl/gg-webgl/renderables/TriangleMesh.js",
+		"/D/webgl/gg-webgl/splines/Bezier.js",
+		"/D/webgl/gg-webgl/renderables/LineMesh.js",
 		"/D/webgl/gg-webgl/buffers/AttributeDataBuffer.js",
-		"/D/webgl/gg-webgl/techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js",
-		"/D/webgl/gg-webgl/techniques/RenderPasses/AdaptiveRenderPass.js",
+		"/D/webgl/gg-webgl/renderables/Object3D.js",
+		"/D/webgl/gg-webgl/samples/static_particles.js",
+		"/D/webgl/gg-webgl/samples/SampleBase.js",
+		"/D/webgl/gg-webgl/Naming.js",
+		"/D/webgl/gg-webgl/splines/CatmullRom.js",
+		"/D/webgl/gg-webgl/techniques/WireframeTechnique.js",
+		"/C/Users/Giorgos/Downloads/wireframe.js",
+		"/D/webgl/gg-webgl/geometries/Geometry.js",
+		"/D/webgl/gg-webgl/techniques/NormalsVisualizationTechnique.js",
+		"/D/webgl/gg-webgl/samples/threejs_model.html",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/ScreenPass.js",
+		"/D/webgl/gg-webgl/samples/post_processing.js",
+		"/D/webgl/gg-webgl/render/Renderer.js",
+		"/D/webgl/gg-webgl/renderables/PointMesh.js",
+		"/D/webgl/gg-webgl/techniques/particles/ParticlesTechnique.js",
+		"/D/webgl/gg-webgl/render/PostProcessChain.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/GaussianBlurPass.js",
+		"/D/webgl/gg-webgl/GG_init.js",
+		"/D/webgl/gg-webgl/techniques/particles/StaticPointParticlesTechnique.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/NormalMappingEmbeddableRenderPass.js",
+		"/D/webgl/gg-webgl/techniques/VertexColorsTechnique.js",
+		"/D/webgl/gg-webgl/techniques/ConstantColorTechnique.js",
+		"/D/webgl/gg-webgl/renderables/StaticParticleSystem.js",
+		"/D/webgl/gg-webgl/samples/latitude_reflection_mapping.js",
+		"/D/webgl/gg-webgl/geometries/SphereGeometry.js",
+		"/D/webgl/gg-webgl/samples/latitude_reflection_mapping.html",
+		"/D/webgl/gg-webgl/techniques/TexturedShadelessTechnique.js",
+		"/D/webgl/gg-webgl/textures/Texture.js",
+		"/D/webgl/gg-webgl/techniques/CubemapTechnique.js",
+		"/D/webgl/gg-webgl/textures/TextureCubemap.js",
+		"/D/webgl/gg-webgl/techniques/LatitudeReflectionMappingTechnique.js",
+		"/D/webgl/gg-webgl/techniques/ReflectiveTechnique.js",
+		"/D/webgl/gg-webgl/samples/reflections.js",
+		"/D/webgl/gg-webgl/materials/BaseMaterial.js",
 		"/D/webgl/gg-webgl/techniques/PhongShadingTechnique.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass.js",
+		"/D/webgl/gg-webgl/materials/TextureStack.js",
+		"/D/webgl/gg-webgl/utils/Loader.js",
+		"/D/webgl/gg-webgl/cameras/Viewport.js",
+		"/D/webgl/gg-webgl/samples/adaptablePrograms.html",
+		"/D/webgl/gg-webgl/scene/DefaultSceneRenderer.js",
+		"/D/webgl/gg-webgl/GG_all.js",
+		"/D/webgl/gg-webgl/samples/adaptablePrograms.js",
+		"/D/webgl/gg-webgl/samples/normal_mapping.js",
+		"/D/webgl/gg-webgl/samples/vertex_colors.js",
+		"/D/webgl/gg-webgl/geometries/CubeGeometry.js",
+		"/D/webgl/gg-webgl/glsl/ShaderLib.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/NormalMappingEmbeddableRenderPass - Copy.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/AlphaMappingEmbeddableRenderPass.js",
+		"/D/webgl/gg-webgl/samples/static_particles.html",
+		"/D/webgl/gg-webgl/samples/normal_mapping.html",
+		"/D/webgl/gg-webgl/samples/post_processing.html",
+		"/D/webgl/gg-webgl/samples/reflections.html",
+		"/D/webgl/gg-webgl/samples/vertex_colors.html",
+		"/D/webgl/gg-webgl/techniques/DepthPrePassTechnique.js",
+		"/D/webgl/gg-webgl/techniques/RenderPasses/AdaptiveRenderPass.js",
 		"/D/webgl/gg-webgl/techniques/RenderPasses/EmbeddableAdaptiveRenderPass.js",
 		"/D/webgl/gg-webgl/ProgramSource.js",
-		"/D/webgl/gg-webgl/techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass.js",
-		"/D/webgl/gg-webgl/materials/BaseMaterial.js",
 		"/D/webgl/gg-webgl/sample_base.js",
-		"/D/webgl/gg-webgl/render/Renderer.js",
-		"/D/webgl/gg-webgl/geometries/Geometry.js",
 		"/D/webgl/gg-webgl/techniques/RenderPasses/DiffuseTextureStackEmbeddableRenderPass - Copy.js",
-		"/D/webgl/gg-webgl/materials/TextureStack.js",
 		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapTechnique.js",
-		"/D/webgl/gg-webgl/utils/ProgramUtils.js",
 		"/D/webgl/gg-webgl/ShaderLib.js",
-		"/D/webgl/gg-webgl/techniques/RenderPasses/RenderPass.js",
-		"/D/webgl/gg-webgl/GG_init.js",
-		"/D/webgl/gg-webgl/samples/adaptablePrograms.js",
-		"/D/webgl/gg-webgl/textures/Texture.js",
-		"/D/webgl/gg-webgl/Naming.js",
-		"/D/webgl/gg-webgl/techniques/RenderPasses/ScreenPass.js",
-		"/D/webgl/gg-webgl/scene/DefaultSceneRenderer.js",
-		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapSimple.js",
 		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapPCF.js",
 		"/D/webgl/gg-webgl/techniques/shadow_mapping/DepthMapDebugOutput.js",
 		"/D/webgl/gg-webgl/utils/AjaxUtils.js",
-		"/D/webgl/gg-webgl/samples/scene_renderer.js",
-		"/D/webgl/gg-webgl/samples/SampleBase.js",
-		"/D/webgl/gg-webgl/interaction/MouseHandler.js",
-		"/D/webgl/gg-webgl/samples/scene_renderer.html",
-		"/D/webgl/gg-webgl/samples/post_processing.html",
-		"/D/webgl/gg-webgl/samples/post_processing.js",
 		"/D/webgl/gg-webgl/Light.js",
-		"/D/webgl/gg-webgl/geometries/SphereGeometry.js",
 		"/D/webgl/gg-webgl/techniques/DiffuseTextureStackEmbeddableTechnique.js",
 		"/D/webgl/gg-webgl/materials/PhongMaterial.js",
 		"/D/webgl/gg-webgl/techniques/TextureStackTechnique.js",
-		"/D/webgl/gg-webgl/samples/adaptablePrograms.html",
-		"/D/webgl/gg-webgl/utils/Loader.js",
 		"/D/webgl/gg-webgl/render/PingPongBuffer.js",
-		"/D/webgl/gg-webgl/techniques/TexturedShadelessTechnique.js",
-		"/D/webgl/gg-webgl/build.py",
 		"/D/webgl/gg-webgl/render/RenderTarget.js",
 		"/D/webgl/gg-webgl/GLSLProgram.js",
-		"/D/webgl/gg-webgl/techniques/CubemapTechnique.js",
-		"/D/webgl/gg-webgl/textures/TextureCubemap.js",
 		"/D/webgl/gg-webgl/render/RenderContext.js",
-		"/D/webgl/gg-webgl/render/PostProcessChain.js",
-		"/D/webgl/gg-webgl/techniques/BaseTechnique.js",
 		"/D/webgl/gg-webgl/render/screen_filters/VignetteScreenFilter.js",
 		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapDepthPass.js",
-		"/D/webgl/gg-webgl/techniques/DepthPrePassTechnique.js",
 		"/D/webgl/gg-webgl/samples/screen_pass.js",
-		"/D/webgl/gg-webgl/samples/reflections.html",
-		"/D/webgl/gg-webgl/samples/reflections.js",
-		"/D/webgl/gg-webgl/techniques/ReflectiveTechnique.js",
 		"/D/webgl/gg-webgl/samples/json_model.js",
-		"/D/webgl/gg-webgl/GG_all.js",
-		"/D/webgl/gg-webgl/techniques/WireframeTechnique.js",
 		"/C/Users/Giorgos/.todomanager/todo-8162fc9208fcc491ec1a33f8384bfbde.txt",
 		"/D/webgl/gg-webgl/render/screen_filters/TVLinesScreenFilter.js",
 		"/D/webgl/gg-webgl/render/screen_filters/GammaScreenFilter.js",
@@ -700,21 +747,11 @@
 		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/Default/Preferences.sublime-settings",
 		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/ASCII Decorator/Default (Windows).sublime-keymap",
 		"/D/webgl/gg-webgl/samples/Reflections.js",
-		"/D/webgl/gg-webgl/cameras/OrthographicCamera.js",
-		"/D/webgl/gg-webgl/cameras/PerspectiveCamera.js",
-		"/D/webgl/gg-webgl/cameras/BaseCamera.js",
-		"/D/webgl/gg-webgl/utils/MathUtils.js",
-		"/D/webgl/gg-webgl/techniques/ConstantColorTechnique.js",
-		"/D/webgl/gg-webgl/cameras/Viewport.js",
-		"/D/webgl/gg-webgl/geometries/CubeGeometry.js",
 		"/D/webgl/gg-webgl/techniques/shadow_mapping/ShadowMapVSM.js",
 		"/D/webgl/gg-webgl/gl-matrix.js",
 		"/D/webgl/gg-webgl/cube.html",
-		"/D/webgl/gg-webgl/renderables/StaticParticleSystem.js",
-		"/D/webgl/gg-webgl/techniques/RenderPasses/GaussianBlurPass.js",
 		"/D/webgl/gg-webgl/techniques/shadow_mapping/VSMGaussianBlurPass.js",
 		"/D/webgl/gg-webgl/render/RenderQueue.js",
-		"/D/webgl/gg-webgl/renderables/Object3D.js",
 		"/D/webgl/gg-webgl/geometries/ScreenAlignedQuad.js",
 		"/D/webgl/gg-webgl/geometries/PlaneGeometry.js",
 		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/User/GG_javascript_getset.sublime-snippet",
@@ -723,35 +760,7 @@
 		"/D/webgl/gg-webgl/scene/Scene.js",
 		"/D/webgl/gg-webgl/techniques/ConstantLightingTechnique.js",
 		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/Alignment/Default (Windows).sublime-keymap",
-		"/D/webgl/gg-webgl/utils/ShaderBuilder.js",
-		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/User/Preferences.sublime-settings",
-		"/D/webgl/gg-webgl/BaseMaterial.js",
-		"/C/Users/Giorgos/AppData/Roaming/Sublime Text 2/Packages/User/GG_webgl.sublime-build",
-		"/D/webgl/GG_sublime.sublime-project",
-		"/D/webgl/GG_init.js",
-		"/D/webgl/samples/Reflections.js",
-		"/D/webgl/techniques/BaseTechnique.js",
-		"/D/webgl/techniques/PhongShadingTechnique.js",
-		"/D/webgl/techniques/TexturedShadelessTechnique.js",
-		"/D/webgl/techniques/ReflectiveTechnique.js",
-		"/D/webgl/techniques/CubemapTechnique.js",
-		"/D/webgl/techniques/ConstantLightingTechnique.js",
-		"/D/webgl/techniques/shadow_mapping/ShadowMapDepthPass.js",
-		"/D/webgl/utils/ShaderBuilder.js",
-		"/D/webgl/techniques/RenderPasses/BlitPass.js",
-		"/D/webgl/ShaderLib.js",
-		"/D/webgl/GLSLProgram.js",
-		"/D/webgl/techniques/RenderPass.js",
-		"/D/webgl/utils/ProgramUtils.js",
-		"/D/webgl/build.py",
-		"/D/webgl/techniques/ScreenPass.js",
-		"/D/webgl/scene/Scene.js",
-		"/D/webgl/samples/screen_pass.js",
-		"/D/webgl/render/RenderTarget.js",
-		"/D/webgl/techniques/RenderPass.js",
-		"/D/webgl/techniques/ScreenPass.js",
-		"/D/webgl/build.py",
-		"/D/webgl/ShaderLib.js"
+		"/D/webgl/gg-webgl/utils/ShaderBuilder.js"
 	],
 	"find":
 	{
@@ -759,7 +768,7 @@
 	},
 	"find_in_files":
 	{
-		"height": 0.0,
+		"height": 90.0,
 		"where_history":
 		[
 			"*.js",
@@ -771,6 +780,76 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"vec3.norm",
+			"setup",
+			"getViewMatrix",
+			"rotMat",
+			"vec",
+			"glm::",
+			"MouseHandler",
+			"BackColor",
+			"dat.GUI",
+			"particlesMaterial",
+			"StaticParticlesSample",
+			"tangentsBuffer",
+			"technique",
+			"CatmullRom",
+			"cp3",
+			"cp0",
+			"numPoints",
+			"this",
+			"end",
+			"start",
+			"this.ratios",
+			"ratios",
+			"flatShade",
+			"constructor",
+			"allocateDataArray",
+			"renderableType",
+			"RenderPass.MESH",
+			"normal",
+			"pg",
+			"__renderGeometry",
+			"startColor",
+			"endColor",
+			"PointMesh",
+			"minFilter",
+			"200",
+			"50",
+			"PhongPass",
+			"ReflectionsSample",
+			"that",
+			"cubemapTexture",
+			"ReflectivePass",
+			"ReflectiveTechnique",
+			"vReflect",
+			"ReflectivePass",
+			"ReflectiveTechnique",
+			"clearColor",
+			"sphereMesh",
+			"that",
+			"AdaptableProgramSample",
+			"StaticParticleSystem",
+			"sampleTexUnit",
+			"alpha",
+			"getRenderPrimitive",
+			"this.",
+			"TriangleMesh",
+			"renderMesh",
+			"mesh",
+			"getRenderPrimitive",
+			"renderMesh",
+			"'mode'",
+			"renderMesh",
+			"renderPoints",
+			"GG.ParticlesTechnique",
+			"ReflectionsSample",
+			"idx",
+			"segmentTime",
+			"ct",
+			"this.ratios",
+			"this.points.length",
+			"vec3.m",
 			"numPoints",
 			"ParticlesTechnique",
 			"PhongPass",
@@ -828,77 +907,7 @@
 			"initialize",
 			"initia",
 			"useCachedProgramInstance",
-			"setupShadersForMaterial",
-			"createProgramFromShaders",
-			"initializeProgram",
-			"initialize",
-			"attributes",
-			"lightInfo",
-			"inBounds",
-			"bool4",
-			"bool3",
-			"light",
-			"getFlatNormals",
-			"avg",
-			"0",
-			"normalsBuffer",
-			"COL",
-			"u_vignetteDarkRatio",
-			"u_vignetteContrast",
-			"textureUnit",
-			"CONTRAST",
-			"SPREAD",
-			"DARK_RATIO",
-			"POW2",
-			"POW1",
-			"GRADIENT_BLACK_RATIO",
-			"256",
-			"text",
-			"sample",
-			"redLight",
-			"sphereMesh",
-			"planeMesh",
-			"	planeMesh.setScale([100.0, 100.0, 1.0]);\n",
-			"cubeMesh",
-			"y_rot",
-			"redLight",
-			"jsonMesh",
-			"phongMat",
-			"PostProcessSample",
-			";",
-			"var",
-			"y_rot",
-			"renderer",
-			"Camera",
-			"camera",
-			"PostProcessSample",
-			"var",
-			"json_model",
-			"this",
-			"GG.TEX_UNIT_",
-			"reflectance",
-			"TODO",
-			"WireframeTechnique",
-			"constructor",
-			"phongMat",
-			"PhongMat",
-			"phongMat",
-			"wireframe",
-			"initializeAttributes",
-			"initializeUniforms",
-			"__locateCustomUniforms",
-			"mesh",
-			"shadeless",
-			"{};\n",
-			"wireColor",
-			"TVLineScreenFilter",
-			"normalizedTime",
-			"VignetteScreenFilter",
-			"this",
-			"texCoord",
-			"pow(",
-			"filters",
-			"output"
+			"setupShadersForMaterial"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -932,33 +941,58 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "renderables/StaticParticleSystem.js",
+					"file": "interaction/SphericalCameraController.js",
 					"settings":
 					{
-						"buffer_size": 1785,
+						"buffer_size": 3611,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								726,
-								726
+								416,
+								416
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
+							"auto_name": "SphericalCameraController",
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 45.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "samples/threejs_model.js",
+					"settings":
+					{
+						"buffer_size": 2971,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								639,
+								639
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 90.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -999,7 +1033,7 @@
 	"menu_visible": false,
 	"output.exec":
 	{
-		"height": 175.0
+		"height": 173.0
 	},
 	"output.jslint_result_view":
 	{
@@ -1016,20 +1050,32 @@
 		"selected_items":
 		[
 			[
-				"ba",
-				"gg-webgl/materials/BaseMaterial.js"
+				"gl",
+				"gg-webgl/externals/gl-matrix.js"
 			],
 			[
-				"pr",
-				"gg-webgl/ProgramSource.js"
+				"bui",
+				"gg-webgl/build.py"
 			],
 			[
-				"spe",
-				"gg-webgl/techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js"
+				"thre",
+				"gg-webgl/samples/threejs_model.js"
+			],
+			[
+				"ma",
+				"gg-webgl/utils/MathUtils.js"
 			],
 			[
 				"pro",
-				"gg-webgl/utils/ProgramUtils.js"
+				"gg-webgl/glsl/ProgramSource.js"
+			],
+			[
+				"rep",
+				"gg-webgl/techniques/RenderPasses/RenderPass.js"
+			],
+			[
+				"bast",
+				"gg-webgl/techniques/BaseTechnique.js"
 			],
 			[
 				"nam",
@@ -1040,8 +1086,136 @@
 				"gg-webgl/techniques/RenderPasses/RenderPass.js"
 			],
 			[
+				"obj",
+				"gg-webgl/renderables/Object3D.js"
+			],
+			[
+				"li",
+				"gg-webgl/renderables/LineMesh.js"
+			],
+			[
+				"o",
+				"gg-webgl/renderables/Object3D.js"
+			],
+			[
+				"nor",
+				"gg-webgl/techniques/NormalsVisualizationTechnique.js"
+			],
+			[
+				"geo",
+				"gg-webgl/geometries/Geometry.js"
+			],
+			[
+				"go",
+				"gg-webgl/geometries/Geometry.js"
+			],
+			[
+				"lim",
+				"gg-webgl/renderables/LineMesh.js"
+			],
+			[
+				"pom",
+				"gg-webgl/renderables/PointMesh.js"
+			],
+			[
+				"ob",
+				"gg-webgl/renderables/Object3D.js"
+			],
+			[
+				"adb",
+				"gg-webgl/buffers/AttributeDataBuffer.js"
+			],
+			[
+				"pr",
+				"gg-webgl/glsl/ProgramSource.js"
+			],
+			[
+				"b",
+				"gg-webgl/build.py"
+			],
+			[
+				"at",
+				"gg-webgl/buffers/AttributeDataBuffer.js"
+			],
+			[
+				"spt",
+				"gg-webgl/techniques/particles/StaticPointParticlesTechnique.js"
+			],
+			[
+				"att",
+				"gg-webgl/buffers/AttributeDataBuffer.js"
+			],
+			[
+				"",
+				"gg-webgl/GG_init.js"
+			],
+			[
+				"ren",
+				"gg-webgl/render/Renderer.js"
+			],
+			[
+				"tr",
+				"gg-webgl/renderables/TriangleMesh.js"
+			],
+			[
+				"la",
+				"gg-webgl/techniques/LatitudeReflectionMappingTechnique.js"
+			],
+			[
+				"texturedshadelesstechnique",
+				"gg-webgl/techniques/TexturedShadelessTechnique.js"
+			],
+			[
+				"te",
+				"gg-webgl/textures/Texture.js"
+			],
+			[
+				"n",
+				"gg-webgl/Naming.js"
+			],
+			[
+				"pru",
+				"gg-webgl/utils/ProgramUtils.js"
+			],
+			[
+				"vi",
+				"gg-webgl/cameras/Viewport.js"
+			],
+			[
+				"wire",
+				"gg-webgl/techniques/WireframeTechnique.js"
+			],
+			[
+				"shl",
+				"gg-webgl/glsl/ShaderLib.js"
+			],
+			[
+				"sp",
+				"gg-webgl/techniques/particles/StaticPointParticlesTechnique.js"
+			],
+			[
+				"na",
+				"gg-webgl/Naming.js"
+			],
+			[
 				"pho",
 				"gg-webgl/techniques/PhongShadingTechnique.js"
+			],
+			[
+				"prs",
+				"gg-webgl/glsl/ProgramSource.js"
+			],
+			[
+				"adaptiverenderpass",
+				"gg-webgl/techniques/RenderPasses/AdaptiveRenderPass.js"
+			],
+			[
+				"ba",
+				"gg-webgl/materials/BaseMaterial.js"
+			],
+			[
+				"spe",
+				"gg-webgl/techniques/RenderPasses/SpecularMappingEmbeddableTechnique.js"
 			],
 			[
 				"sha",
@@ -1070,10 +1244,6 @@
 			[
 				"prou",
 				"gg-webgl/utils/ProgramUtils.js"
-			],
-			[
-				"li",
-				"gg-webgl/Light.js"
 			],
 			[
 				"def",
@@ -1108,10 +1278,6 @@
 				"techniques/PhongShadingTechnique.js"
 			],
 			[
-				"te",
-				"textures/Texture.js"
-			],
-			[
 				"t",
 				"textures/Texture.js"
 			],
@@ -1122,10 +1288,6 @@
 			[
 				"tex",
 				"textures/Texture.js"
-			],
-			[
-				"bui",
-				"build.py"
 			],
 			[
 				"bam",
@@ -1144,10 +1306,6 @@
 				"geometries/SphereGeometry.js"
 			],
 			[
-				"n",
-				"Naming.js"
-			],
-			[
 				"gls",
 				"GLSLProgram.js"
 			],
@@ -1160,20 +1318,12 @@
 				"render/RenderContext.js"
 			],
 			[
-				"b",
-				"build.py"
-			],
-			[
 				"pu",
 				"utils/ProgramUtils.js"
 			],
 			[
 				"po",
 				"samples/post_processing.js"
-			],
-			[
-				"geo",
-				"geometries/Geometry.js"
 			],
 			[
 				"vig",
@@ -1188,20 +1338,8 @@
 				"textures/TextureCubemap.js"
 			],
 			[
-				"",
-				"GG_all.js"
-			],
-			[
 				"bas",
 				"techniques/BaseTechnique.js"
-			],
-			[
-				"rep",
-				"techniques/RenderPasses/RenderPass.js"
-			],
-			[
-				"na",
-				"Naming.js"
 			],
 			[
 				"sam",
@@ -1228,20 +1366,8 @@
 				"samples/Reflections.js"
 			],
 			[
-				"ma",
-				"utils/MathUtils.js"
-			],
-			[
 				"basm",
 				"materials/BaseMaterial.js"
-			],
-			[
-				"gl",
-				"GLSLProgram.js"
-			],
-			[
-				"prs",
-				"ProgramSource.js"
 			],
 			[
 				"pp",
@@ -1284,16 +1410,8 @@
 				"ShaderLib.js"
 			],
 			[
-				"sp",
-				"techniques/RenderPasses/ScreenPass.js"
-			],
-			[
 				"rendp",
 				"techniques/RenderPasses/RenderPass.js"
-			],
-			[
-				"ren",
-				"render/RenderTarget.js"
 			],
 			[
 				"ortho",
