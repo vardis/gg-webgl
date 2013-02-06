@@ -53,8 +53,8 @@ FogSample.prototype.initializeWithAssetsLoaded = function () {
 	this.renderState.fogStart = 2;
 	this.renderState.fogEnd = 100;
 	this.renderState.fogColor = [0.7,0.7,0.7];
-	this.renderState.fogMode = GG.Constants.FOG_LINEAR;
-	this.renderState.fogDensity = 0.02;	
+	this.renderState.fogMode = GG.Constants.FOG_EXP2;
+	this.renderState.fogDensity = 0.076;	
  
 	// to be driven by the gui
 	this.fogMode = this.renderState.fogMode;

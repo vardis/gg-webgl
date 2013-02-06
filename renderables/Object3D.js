@@ -10,7 +10,7 @@ GG.Object3D = function (geometry, material, spec) {
     this.pos           = [0.0, 0.0, 0.0];
     this.rotation      = [0.0, 0.0, 0.0];
     this.scale         = [1.0, 1.0, 1.0];
-    this.renderMode    = GG.RENDER_TRIANGLES;
+    this.renderMode    = spec.renderMode !== undefined ? spec.renderMode : GG.RENDER_TRIANGLES;
 
     if (spec.positionsBuffer != undefined) {
         this.positionsBuffer = spec.positionsBuffer;

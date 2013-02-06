@@ -1,8 +1,6 @@
 StaticParticlesSample = function (spec) {
     this.renderer           = null;
     this.y_rot              = 0.0;
-    this.camera             = null;
-    this.mouseHandler       = null;
     this.particlesTechnique = null;
     this.particlesMaterial  = null;
     GG.SampleBase.call(this, spec);
@@ -27,22 +25,16 @@ StaticParticlesSample.prototype.initializeAssets = function () {
 };
 
 StaticParticlesSample.prototype.initializeWithAssetsLoaded = function () {
-    this.camera = new GG.PerspectiveCamera();
-    this.camera.setPosition([0.0, 0.0, 2.8]);
-
     this.renderer = new GG.Renderer();
     this.renderer.setCamera(this.camera);
     GG.renderer = this.renderer;
-
-    this.mouseHandler = new GG.MouseHandler();
-    this.mouseHandler.setCamera(this.camera);
 
     var sphereGeom = new GG.SphereGeometry(1.0, 64, 64);
 
     this.particlesTechnique = new GG.StaticPointParticlesTechnique();
 
     this.particles = new GG.StaticParticleSystem(sphereGeom, this.particlesMaterial);
-    this.particles.setPointSize(32.0);
+    this.particles.setPointSize(128.0);
 
     this.initialized = true;
 };

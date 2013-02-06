@@ -114,6 +114,7 @@ GG.Naming = {
 	UniformModelViewMatrix   : 'u_matModelView',
 	UniformViewMatrix        : 'u_matView',
 	UniformInverseViewMatrix : 'u_matViewInverse',
+    UniformInverseViewProjectionMatrix : 'u_matViewProjectionInverse',
 	UniformProjectionMatrix  : 'u_matProjection',
 	UniformTime0_X           : 'u_fTime0_X',
 	UniformTime0_1           : 'u_fTime0_1',
@@ -122,6 +123,9 @@ GG.Naming = {
     UniformFogStart          : 'u_fogStart',
     UniformFogEnd            : 'u_fogEnd',
     UniformFogDensity        : 'u_fogDensity',
+
+    // a vec2 that contains the dimensions of the viewport in pixels
+    UniformViewportSize      : 'u_viewportSize',
 	
 	AttributePosition        : 'a_position',
 	AttributeNormal          : 'a_normal',
@@ -138,6 +142,7 @@ GG.Naming = {
     // the final 3-component value to be assigned as the rgb output of the fragment shader
     VarColorOutput           : 'finalColor',
 
+    // the base diffuse color calculate by the material.diffuse and the diffuse texture stack
     VarDiffuseBaseColor      : 'baseColor',
     
     // common preprocessor definition names
@@ -1080,6 +1085,47 @@ GG.ShaderLib = new function (argument) {
 			].join('\n')			
 		},
 
+		matRotateX : [
+			"mat3 matRotateX(float radians) {",
+			"	return mat3(1.0, 0.0, 0.0,",
+			"		0, cos(radians), -sin(radians),",
+			"		0, sin(radians), cos(radians));",
+			"}"
+		].join('\n'),
+
+		rotateAroundAxis :  [
+		"mat3 rotateAroundAxis(float rads, vec3 axis) {",
+			"// the rotation of theta degress of a vector v around an arbritrary ",
+		    "// vector n that passes through the origin is:",
+		    "// cos(theta)*(v - (v . n)*n) + sin(theta)*(n x v) + (v . n)*n",
+
+		    "// the rotation matrix will have as rows the basis vectors i, j and k",
+		    "// transformed by the above formula ",
+
+		    "// transformed X basis vector",
+		    "vec3 v = vec3(1.0, 0.0, 0.0);  ", 
+		    "vec3 parallel = dot(v, axis) * axis;",
+		    "vec3 vertical = v - parallel;",
+		    "vec3 w = cross(axis, v);",
+		    "vec3 i = cos(rads)*vertical + sin(rads)*w + parallel;",
+
+		    "// transformed Y basis vector",
+		    "v = vec3(0.0, 1.0, 0.0);",
+		    "parallel = dot(v, axis) * axis;",
+		    "vertical = v - parallel;",
+		    "w = cross(axis, v);",
+		    "vec3 j = cos(rads)*vertical + sin(rads)*w + parallel;",
+
+		    "// transformed Z basis vector",
+		    "v = vec3(0.0, 0.0, 1.0);",
+		    "parallel = dot(v, axis) * axis;",
+		    "vertical = v - parallel;",
+		    "w = cross(axis, v);",
+		    "vec3 k = cos(rads)*vertical + sin(rads)*w + parallel;",
+
+		    "return mat3(i, j, k);",
+	    "}"].join('\n'),
+
 		blocks : {
 			// returns the world space vector from the vertex to the light source.
 			// assumes the Light_t uniform is present.
@@ -1298,6 +1344,19 @@ GG.ProgramUtils = function() {
 			predefined[GG.Naming.UniformInverseViewMatrix] = function(p, uname) { 
 				var inv = mat4.create();
 				mat4.inverse(renderContext.camera.getViewMatrix(), inv);
+				gl.uniformMatrix4fv(p[uname], false, inv); 
+			};
+
+			predefined[GG.Naming.UniformViewportSize] = function(p, uname) { 
+				var vp = renderContext.camera.getViewport();
+				gl.uniform2fv(p[uname], [vp.width, vp.height]); 
+			};
+
+			predefined[GG.Naming.UniformInverseViewProjectionMatrix] = function(p, uname) {
+				var vp = mat4.create();
+				mat4.multiply(renderContext.camera.getProjectionMatrix(), renderContext.camera.getViewMatrix(), vp);				
+				var inv = mat4.create();
+				mat4.inverse(vp, inv);
 				gl.uniformMatrix4fv(p[uname], false, inv); 
 			};
 
@@ -2041,6 +2100,55 @@ GG.ScreenAlignedQuad = function () {
 GG.ScreenAlignedQuad.prototype = new GG.Geometry();
 GG.ScreenAlignedQuad.prototype.constructor = GG.ScreenAlignedQuad;
 /**
+ * A quad aligned on the XY plane and facing along the +Z axis.
+ */
+GG.Quad = function () {
+    this.vertices = new Float32Array(6 * 3);
+    this.normals = new Float32Array(6 * 3);
+    this.texCoords = new Float32Array(6 * 2);
+
+    /*
+
+     2 +---+ 1
+     |  /|
+     | / |
+     0 +---+ 3
+
+     triangles 0,1,2 and 0,3,1
+     */
+    this.vertices.set([
+        -1.0, -1.0, 0.0,
+        1.0, 1.0, 0.0,
+        -1.0, 1.0, 0.0,
+        -1.0, -1.0, 0.0,
+        1.0, -1.0, 0.0,
+        1.0, 1.0, 0.0
+    ]);
+
+    this.normals.set([
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 1.0
+    ]);
+
+    this.texCoords.set([
+        0.0, 0.0,
+        1.0, 1.0,
+        0.0, 1.0,
+        0.0, 0.0,
+        1.0, 0.0,
+        1.0, 1.0
+    ]);
+
+
+};
+
+GG.Quad.prototype = new GG.Geometry();
+GG.Quad.prototype.constructor = GG.Quad;
+/**
  * A buffer that provides the data for a vertex attribute.
  * The input specfication objects can contain the following fields:
  *  -arrayData: an array that contains the actual data of the buffer
@@ -2162,7 +2270,7 @@ GG.Object3D = function (geometry, material, spec) {
     this.pos           = [0.0, 0.0, 0.0];
     this.rotation      = [0.0, 0.0, 0.0];
     this.scale         = [1.0, 1.0, 1.0];
-    this.renderMode    = GG.RENDER_TRIANGLES;
+    this.renderMode    = spec.renderMode !== undefined ? spec.renderMode : GG.RENDER_TRIANGLES;
 
     if (spec.positionsBuffer != undefined) {
         this.positionsBuffer = spec.positionsBuffer;
@@ -2463,6 +2571,22 @@ GG.StaticParticleSystem.prototype = new GG.PointMesh();
 GG.StaticParticleSystem.prototype.constructor = GG.StaticParticleSystem;
 
 
+GG.Billboard = function (material) {	
+	spec               = {};	
+	spec.usesTexCoords = true;
+	this.billboardType = spec.billboardType !== undefined ? spec.billboardType : GG.Billboard.CYLINDRICAL_BILLBOARD;
+	this.width = spec.width !== undefined ? spec.width : 1.0;
+	this.height = spec.height !== undefined ? spec.height : 1.0;
+
+	GG.Object3D.call(this, new GG.Quad(), material, spec);	
+};
+
+GG.Billboard.prototype = new GG.Object3D();
+GG.Billboard.prototype.constructor = GG.Billboard;
+
+GG.Billboard.CYLINDRICAL_BILLBOARD = 1;
+GG.Billboard.SPHERICAL_BILLBOARD = 2;
+
 /**
  * Encapsulates a cubemap texture. 
  * Basic texture attributes are inherited from the Texture2D class.
@@ -2660,6 +2784,7 @@ GG.Texture.createTexture = function (spec) {
 	gl.bindTexture(gl.TEXTURE_2D, tex);
 
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, spec.flipY != undefined ? spec.flipY : true);
+	//gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
 
 	// maps a format to the triple [internalFormat, format, type] as accepted by gl.TexImage2D
 	var formatDetails         = {};
@@ -2675,7 +2800,7 @@ GG.Texture.createTexture = function (spec) {
 	var useMipmaps      = spec.useMipmaps != undefined ? spec.useMipmaps : true;
 	var mipmapFiltering = spec.minFmipmapFilteringilter != undefined ? spec.mipmapFiltering : gl.NEAREST;
 	var width, height;
-
+	
 	if (spec.image != undefined) {
 		gl.texImage2D(gl.TEXTURE_2D, 0, formatDetails[colorFormat][0],  formatDetails[colorFormat][1], formatDetails[colorFormat][2], spec.image);	
 		width = spec.width;
@@ -2723,6 +2848,10 @@ GG.Viewport = function (spec) {
 	this.zOrder = spec.zOrder != undefined ? spec.zOrder : 0;
 };
 
+GG.Viewport.prototype.activate = function() {
+    gl.viewport(0, 0, this.width, this.height);
+    gl.clearColor(this.clearColor[0], this.clearColor[1], this.clearColor[2], 1.0);
+};
 
 GG.Viewport.prototype.getWidth = function() {
     return this.width;
@@ -2793,6 +2922,15 @@ GG.BaseCamera.prototype.setRotation = function(r) {
 	return this;
 };
 
+GG.BaseCamera.prototype.setLookAt = function (target) {
+	this.lookAt = target;
+	return this;
+}
+
+GG.BaseCamera.prototype.setUp = function (up) {
+	this.up = up;
+	return this;
+}
 
 GG.BaseCamera.prototype.getViewport = function() {
     return this.viewport;
@@ -3246,26 +3384,26 @@ GG.PostProcessChain = function (spec) {
 	this.dest        = null;
 	this.needsUpdate = true;
 
-	this.availableFilters = {
-		'gamma'    : GG.GammaScreenFilter,
-		'vignette' : GG.VignetteScreenFilter,
-		'tvLines'  : GG.TVLinesScreenFilter
-	};
-
-	for (filterName in this.availableFilters) {
-		var that = this;
+	for (filterName in GG.PostProcessChain.availableFilters) {
+		var self = this;
 		this[filterName] = function (fname) {
 			return function (spec) {
-				that.filterChain.push(new that.availableFilters[fname](spec));
-				that.needsUpdate = true;
-				return that;
+				self.filterChain.push(new GG.PostProcessChain.availableFilters[fname](spec));
+				self.needsUpdate = true;
+				return self;
 			}
 		}(filterName);
 	}
-		
 };
 
 GG.PostProcessChain.prototype.constructor = GG.PostProcessChain;
+
+// a map of (filter name -> filter class constructor)
+GG.PostProcessChain.availableFilters = {};
+
+GG.PostProcessChain.registerScreenFilter = function (name, ctor) {
+	GG.PostProcessChain.availableFilters[name] = ctor;
+};
 
 GG.PostProcessChain.prototype.source = function (src) {
 	this.src = src;
@@ -3307,11 +3445,14 @@ GG.PostProcessChain.prototype.process = function () {
 	this.screenPass.setSourceTexture(sourceTexture);
 
 	try {
+		viewport = [];
 		if (this.dest instanceof GG.RenderTarget) {
 			this.dest.activate();
+			viewport = [this.dest.width, this.dest.height ];
 		} else {
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 			gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+			viewport = [gl.viewportWidth, gl.viewportHeight];
 		}
 
 		// call createGpuProgram now in order to get the gpu program
@@ -3321,7 +3462,13 @@ GG.PostProcessChain.prototype.process = function () {
 		for (var i = 0; i < this.filterChain.length; i++) {
 			this.filterChain[i].setUniforms(this.screenPass.program);
         }
-        this.screenPass.render();
+
+        this.camera = new GG.OrthographicCamera();
+        this.camera.getViewport().setWidth(viewport[0]);
+        this.camera.getViewport().setHeight(viewport[1]);
+
+        this.renderContext           = new GG.RenderContext({ camera : this.camera });
+        this.screenPass.render(null, this.renderContext);
 	} finally {
 		if (this.dest instanceof GG.RenderTarget) {
 			this.dest.deactivate();
@@ -3341,11 +3488,12 @@ GG.GammaScreenFilter = function (spec) {
 		this.gamma = spec;
 	} else {
 		this.gamma = spec.gamma != undefined ? spec.gamma : 2.2;
-	}	
-	console.log(this.gamma);
+	}		
 };
 
 GG.GammaScreenFilter.prototype.constructor = GG.GammaScreenFilter;
+
+GG.PostProcessChain.registerScreenFilter('gamma', GG.GammaScreenFilter);
 
 GG.GammaScreenFilter.prototype.inject = function (programSource) {
 	programSource.uniform('float', 'u_gamma')
@@ -3368,6 +3516,8 @@ GG.VignetteScreenFilter = function (spec) {
 };
 
 GG.VignetteScreenFilter.prototype.constructor = GG.VignetteScreenFilter;
+
+GG.PostProcessChain.registerScreenFilter('vignette', GG.VignetteScreenFilter);
 
 GG.VignetteScreenFilter.prototype.inject = function (programSource) {
 	programSource.uniform('float', 'u_vignetteContrast')
@@ -3404,9 +3554,10 @@ GG.VignetteScreenFilter.prototype.setUniforms = function (program) {
 	gl.uniform1f(program.u_vignetteDarkRatio, this.u_vignetteDarkRatio);
 	gl.uniform3fv(program.u_vignetteColor, this.u_vignetteColor);
 };
-GG.TVLinesScreenFilter = function () {
-	// body...
+GG.TVLinesScreenFilter = function () {		
 };
+
+GG.PostProcessChain.registerScreenFilter('tvLines', GG.TVLinesScreenFilter);
 
 GG.TVLinesScreenFilter.prototype.constructor = GG.TVLinesScreenFilter;
 
@@ -3418,6 +3569,87 @@ GG.TVLinesScreenFilter.prototype.inject = function (programSource) {
 GG.TVLinesScreenFilter.prototype.setUniforms = function (program) {
 
 };
+/**
+ * Note: It must be the first filter defined in the post process chain.
+ *
+ * Shader code downloaded from: https://github.com/mitsuhiko/webgl-meincraft/blob/master/assets/shaders/fxaa.glsl
+ */
+GG.FxaaScreenFilter = function (argument) {	
+};
+
+GG.FxaaScreenFilter.prototype.constructor = GG.FxaaScreenFilter;
+
+GG.PostProcessChain.registerScreenFilter('fxaa', GG.FxaaScreenFilter);
+
+GG.FxaaScreenFilter.prototype.inject = function (programSource) {
+	programSource.uniform('vec2', 'u_viewportSize')
+		.addDecl('fxaa', this.getFxaaGlsl())
+		.addMainBlock(" color = applyFXAA(v_texCoords, u_sourceTexture);");
+};
+
+GG.FxaaScreenFilter.prototype.getFxaaGlsl = function (argument) {
+	return ["#ifndef FXAA_GLSL_INCLUDED",
+		"#define FXAA_GLSL_INCLUDED",
+		"",
+		"/* Basic FXAA implementation based on the code on geeks3d.com with the",
+		"   modification that the texture2DLod stuff was removed since it's",
+		"   unsupported by WebGL. */",
+		"",
+		"#define FXAA_REDUCE_MIN   (1.0/ 128.0)",
+		"#define FXAA_REDUCE_MUL   (1.0 / 8.0)",
+		"#define FXAA_SPAN_MAX     8.0",
+		"",
+		"vec4 applyFXAA(vec2 fragCoord, sampler2D tex)",
+		"{",
+		"    vec4 color;",
+		"    vec2 inverseVP = vec2(1.0 / u_viewportSize.x, 1.0 / u_viewportSize.y);",
+		"    vec3 rgbNW = texture2D(tex, (fragCoord + vec2(-1.0, -1.0)) * inverseVP).xyz;",
+		"    vec3 rgbNE = texture2D(tex, (fragCoord + vec2(1.0, -1.0)) * inverseVP).xyz;",
+		"    vec3 rgbSW = texture2D(tex, (fragCoord + vec2(-1.0, 1.0)) * inverseVP).xyz;",
+		"    vec3 rgbSE = texture2D(tex, (fragCoord + vec2(1.0, 1.0)) * inverseVP).xyz;",
+		"    vec3 rgbM  = texture2D(tex, fragCoord  * inverseVP).xyz;",
+		"    vec3 luma = vec3(0.299, 0.587, 0.114);",
+		"    float lumaNW = dot(rgbNW, luma);",
+		"    float lumaNE = dot(rgbNE, luma);",
+		"    float lumaSW = dot(rgbSW, luma);",
+		"    float lumaSE = dot(rgbSE, luma);",
+		"    float lumaM  = dot(rgbM,  luma);",
+		"    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));",
+		"    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));",
+		"    ",
+		"    vec2 dir;",
+		"    dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));",
+		"    dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));",
+		"    ",
+		"    float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) *",
+		"                          (0.25 * FXAA_REDUCE_MUL), FXAA_REDUCE_MIN);",
+		"    ",
+		"    float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);",
+		"    dir = min(vec2(FXAA_SPAN_MAX, FXAA_SPAN_MAX),",
+		"              max(vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX),",
+		"              dir * rcpDirMin)) * inverseVP;",
+		"      ",
+		"    vec3 rgbA = 0.5 * (",
+		"        texture2D(tex, fragCoord * inverseVP + dir * (1.0 / 3.0 - 0.5)).xyz +",
+		"        texture2D(tex, fragCoord * inverseVP + dir * (2.0 / 3.0 - 0.5)).xyz);",
+		"    vec3 rgbB = rgbA * 0.5 + 0.25 * (",
+		"        texture2D(tex, fragCoord * inverseVP + dir * -0.5).xyz +",
+		"        texture2D(tex, fragCoord * inverseVP + dir * 0.5).xyz);",
+		"",
+		"    float lumaB = dot(rgbB, luma);",
+		"    if ((lumaB < lumaMin) || (lumaB > lumaMax))",
+		"        color = vec4(rgbA, 1.0);",
+		"    else",
+		"        color = vec4(rgbB, 1.0);",
+		"    return color;",
+		"}",
+		"",
+		"#endif"].join('\n');
+};
+
+GG.FxaaScreenFilter.prototype.setUniforms = function (program) {
+};
+
 GG.GLSLProgram = function (spec) {
 	spec                = spec || {};
 	this.vertexShader   = spec.vertexShader != undefined ? spec.vertexShader : '';
@@ -4025,6 +4257,10 @@ GG.BaseMaterial.prototype.addDiffuseTexture = function(texture, blendMode) {
 	this.diffuseTextureStack.add(texture, blendMode);
 };
 
+GG.BaseMaterial.prototype.getDiffuseMap = function(index) {
+	return this.diffuseTextureStack.getAt(index);
+};
+
 GG.BaseMaterial.prototype.setSpecularMap = function (texture) {
 	this.specularMap = new GG.TextureUnit({ 'texture' : texture, 'unit' : GG.TEX_UNIT_SPECULAR_MAP });
     return this;
@@ -4607,14 +4843,14 @@ GG.DiffuseTextureStackEmbeddableRenderPass.prototype.evaluateTextureStack = func
 		codeListing.push(this.sampleDiffuseMapAtIndex(i, uniformName));
 		codeListing.push(this.blendDiffuseMapAtIndex(i, textureStack.getAt(i).blendMode, programSource));		
 	}
-	codeListing.push(GG.Naming.VarDiffuseBaseColor + "	= " + this.getSampleVariableNameForMap(stackLen - 1) + ".rgb;");		
+	codeListing.push(GG.Naming.VarDiffuseBaseColor + "	= " + this.getSampleVariableNameForMap(stackLen - 1) + ";");		
 	programSource.addTexturingBlock(codeListing.join('\n'));
 };
 
 GG.DiffuseTextureStackEmbeddableRenderPass.prototype.sampleDiffuseMapAtIndex = function (index, uniformName) {
 	var colorVar = this.getSampleVariableNameForMap(index);		
-	return "	vec3 " + colorVar + " = sampleTexUnit("
-        + GG.Naming.textureUnitUniformMap(uniformName) + ", " + uniformName + ", v_texCoords).rgb;";
+	return "	vec4 " + colorVar + " = sampleTexUnit("
+        + GG.Naming.textureUnitUniformMap(uniformName) + ", " + uniformName + ", v_texCoords);";
 };
 
 GG.DiffuseTextureStackEmbeddableRenderPass.prototype.blendDiffuseMapAtIndex = function (index, blendMode, programSource) {
@@ -4622,7 +4858,8 @@ GG.DiffuseTextureStackEmbeddableRenderPass.prototype.blendDiffuseMapAtIndex = fu
 	var destColorVar = index > 0 ? this.getSampleVariableNameForMap(index - 1) : GG.Naming.VarDiffuseBaseColor;
 	var func = this.declareBlendingFunction(blendMode, programSource);	
 	if (func != null) {
-		return sourceColorVar + " = " + func + "(" + destColorVar + ", " + sourceColorVar + ");";
+		return sourceColorVar + ".rgb = " + func + "(" + destColorVar + ".rgb, " + sourceColorVar + ".rgb);\n" 
+		+ sourceColorVar + ".a = " + destColorVar + ".a * " + sourceColorVar + ".a;";
 	} else {
 		return "";
 	}	
@@ -4907,7 +5144,6 @@ GG.NormalMappingEmbeddableRenderPass.prototype.__setCustomRenderState = function
 };
 GG.BaseTechnique = function(spec) {	
 	spec          = spec || {};	
-	this.textures = spec.textures != undefined ? spec.textures : [];	
 	this.passes   = spec.passes || [];
 	this.program  = null;
 };
@@ -4917,14 +5153,6 @@ GG.BaseTechnique.prototype.constructor = GG.BaseTechnique;
 GG.BaseTechnique.fromShaders = function (vertexShader, fragmentShader) {
 	var pass = new GG.RenderPass({ 'vertexShader' : vertexShader, 'fragmentShader' : fragmentShader });
 	return new GG.BaseTechnique({ passes : [ pass ] });
-};
-
-GG.BaseTechnique.prototype.getTextures = function() {
-	return this.textures;
-};
-
-GG.BaseTechnique.prototype.setTextures = function(t) {
-	this.textures = t;
 };
 
 GG.BaseTechnique.prototype.initialize = function() {
@@ -4943,11 +5171,7 @@ GG.BaseTechnique.prototype.renderPasses = function() {
 	return [].concat(this.passes);
 };
 
-GG.BaseTechnique.prototype.render = function(renderable, ctx) {	
-	if (renderable.material == null) {
-		throw "You must define a material for each renderable";		
-	}
-	
+GG.BaseTechnique.prototype.render = function(renderable, ctx) {		
 	this.passes.forEach(function(pass) {
 		pass.render(renderable, ctx);
 	});
@@ -5144,6 +5368,8 @@ GG.TexturedShadelessTechnique = function(texture, spec) {
 	spec = spec || {};
 	spec.passes = [new GG.TexturedShadelessPass( { 'texture' : texture })];
 	GG.BaseTechnique.call(this, spec);	
+
+	this.useScreenCoords = false;
 };
 
 GG.TexturedShadelessTechnique.prototype = new GG.BaseTechnique();
@@ -5172,10 +5398,11 @@ GG.TexturedShadelessPass.prototype.createProgram = function(material) {
 	var fs = new GG.ProgramSource();
 	fs.asFragmentShader()
 		.varying('vec2', GG.Naming.VaryingTexCoords)
-		.uniform('sampler2D', 'u_texture')
+		//.uniform('sampler2D', 'u_texture')
 		.uniformMaterial()
-		.addMainInitBlock("   vec3 " + GG.Naming.VarDiffuseBaseColor + " = u_material.diffuse;")
-		.addMainBlock("gl_FragColor = texture2D(u_texture, " + GG.Naming.VaryingTexCoords + ");");	
+		.addMainInitBlock("   vec4 " + GG.Naming.VarDiffuseBaseColor + " = vec4(u_material.diffuse, 1.0);")
+		//.addMainBlock("gl_FragColor = texture2D(u_texture, " + GG.Naming.VaryingTexCoords + ");");	
+		.addMainBlock("gl_FragColor = vec4(" + GG.Naming.VarDiffuseBaseColor + ");");
 
 	if (material != null) {
 		this.diffuseTexturingPass.adaptShadersToMaterial(vs, fs, material);
@@ -5187,6 +5414,10 @@ GG.TexturedShadelessPass.prototype.createProgram = function(material) {
 GG.TexturedShadelessPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
 	GG.ProgramUtils.setMaterialUniforms(program, GG.Naming.UniformMaterial, renderable.material);	
 	this.diffuseTexturingPass.__setCustomUniforms(renderable, ctx, program);
+	if (this.useScreenCoords) {
+		gl.uniformMatrix4fv(program.u_matModelView, false, mat4.identity());
+		gl.uniformMatrix4fv(program.u_matProjection, false, mat4.identity());
+	}
 };
 
 GG.TexturedShadelessPass.prototype.__setCustomRenderState = function(renderable, ctx, program) {
@@ -5511,14 +5742,14 @@ GG.PhongPass.prototype.createProgram = function(material, renderContext) {
 			"	vec3 V = normalize(v_viewVec);",
 			"	vec3 L = normalize(v_lightVec);",
 			"	vec3 diffuse = vec3(0.0);",
-			"   vec3 " + GG.Naming.VarDiffuseBaseColor + " = u_material.diffuse;",
+			"   vec4 " + GG.Naming.VarDiffuseBaseColor + " = vec4(u_material.diffuse, 1.0);",
 			"	vec3 specular = vec3(0.0);"
 			].join('\n'))
 		.addMainBlock([						
 			"	lightIrradiance(N, V, L, u_light, u_material, diffuse, specular);"			
 		].join('\n'))
 		.addFinalColorAssignment(
-			"finalColor = vec3(u_material.ambient + baseColor*diffuse + u_material.specular*specular);"
+			"finalColor = vec3(u_material.ambient + baseColor.rgb*diffuse + u_material.specular*specular);"
 			)
 		.writeOutput(
             "	gl_FragColor = vec4(finalColor, " + GG.Naming.VarAlphaOutput + ");"                  
@@ -5670,6 +5901,120 @@ GG.DepthPrePassTechnique.Pass.prototype.getRenderPrimitive = function(renderable
 	//TODO: Handle renderables with multiple render passes
 	return t.passes[0].getRenderPrimitive(renderable);
 };
+GG.BillboardingTechnique = function (spec) {
+	spec        = spec || {};
+	spec.passes = [ new GG.BillboardingTechnique.Pass() ];
+	GG.BaseTechnique.call(this, spec);
+};
+
+GG.BillboardingTechnique.prototype             = new GG.BaseTechnique();
+GG.BillboardingTechnique.prototype.constructor = GG.BillboardingTechnique;
+
+GG.BillboardingTechnique.Pass = function (spec) {
+	GG.AdaptiveRenderPass.call(this, spec);
+	this.diffuseTexturingPass = new GG.DiffuseTextureStackEmbeddableRenderPass();
+};
+
+GG.BillboardingTechnique.Pass.prototype             = new GG.AdaptiveRenderPass();
+GG.BillboardingTechnique.Pass.prototype.constructor = GG.BillboardingTechnique.Pass;
+
+GG.BillboardingTechnique.Pass.prototype.createShadersForMaterial = function (material, renderContext) {
+	var vs = new GG.ProgramSource();
+	vs.position()
+		.texCoord0()
+		.uniformModelMatrix()
+		.uniformViewMatrix()
+		.uniformProjectionMatrix()		
+		.uniform('float', 'u_width')
+		.uniform('float', 'u_height')	
+		.uniform('float', 'u_isSpherical')	
+		.uniform('vec3', GG.Naming.UniformCameraWorldPos)		
+		.varying('vec2', 'v_texCoords')		
+		.addDecl('rotateAroundAxis', GG.ShaderLib.rotateAroundAxis)
+		.addDecl('matRotateX', GG.ShaderLib.matRotateX)
+		.addDecl('cylindricalBillboard', [		
+			"mat4 cylindricalBillboard(vec3 pos, vec3 cameraPos) {"	,
+			"	vec3 forward = vec3(0, 0, 1);",			
+			"	vec3 lookAt = cameraPos - pos;",			
+			"	lookAt = normalize(vec3(lookAt.x, 0.0, lookAt.z));",
+			"	float angle = acos(dot(forward, lookAt));",
+			"	vec3 up = normalize(cross(forward, lookAt));",
+			"	mat3 rot = rotateAroundAxis(angle, up);",
+			"	return mat4(",
+			"		vec4(rot[0], 0.0), ",
+			"		vec4(rot[1], 0.0), ",
+			"		vec4(rot[2], 0.0), ",
+			"		vec4(pos, 1.0)",
+			"	);",			
+			"}"
+		].join('\n'))
+		.addDecl('sphericalBillboard', [		
+			"mat4 sphericalBillboard(vec3 pos) {"	,
+			"	mat3 totalRotation = mat3(u_matView[0][0], u_matView[1][0], u_matView[2][0], ",
+			"		u_matView[0][1], u_matView[1][1], u_matView[2][1], ",
+			"		u_matView[0][2], u_matView[1][2], u_matView[2][2]);",
+			/*
+			"	vec3 forward = vec3(0, 0, 1);",			
+			"	vec3 right = vec3(-1.0, 0.0, 0.0);",
+			"	vec3 lookAt = cameraPos - pos;",			
+			"	vec3 lookAtXZ = normalize(vec3(lookAt.x, 0.0, lookAt.z));",
+
+			"	float angleY = acos(dot(forward, lookAtXZ));",
+			"	vec3 up = normalize(cross(forward, lookAtXZ));",
+			"	mat3 rotY = rotateAroundAxis(angleY, up);",
+			
+			"	float angleX = sign(lookAt[1]) * acos(dot(normalize(lookAt), lookAtXZ));",		
+			"	mat3 rotX = matRotateX(angleX);",
+			"	mat3 totalRotation = rotY * rotX;",			
+			*/
+			"	return mat4(",
+			"		vec4(totalRotation[0], 0.0), ",
+			"		vec4(totalRotation[1], 0.0), ",
+			"		vec4(totalRotation[2], 0.0), ",
+			"		vec4(pos, 1.0)",
+			"	);",
+			"}"
+		].join('\n'))
+		.addMainBlock([						
+			"mat4 matBillboard = (u_isSpherical > 0.0) ? sphericalBillboard(u_matModel[3].xyz) : cylindricalBillboard(u_matModel[3].xyz, u_wCameraPos);",
+			"v_texCoords = a_texCoords;",
+			"gl_Position = u_matProjection * u_matView * matBillboard * vec4(u_width*a_position.x, u_height*a_position.y, a_position.z, 1.0);"	
+		].join('\n'));
+
+	var fs = new GG.ProgramSource();
+	fs.asFragmentShader()
+		.uniformMaterial()
+		.varying('vec2', 'v_texCoords')
+		.declareFinalColorOutput()
+		.addMainInitBlock("   vec4 " + GG.Naming.VarDiffuseBaseColor + " = vec4(u_material.diffuse, 1.0);")		
+		.writeOutput(
+            "	gl_FragColor = vec4(baseColor);"                  
+			);
+
+	if (material != null) {
+		this.diffuseTexturingPass.adaptShadersToMaterial(vs, fs, material, renderContext);
+	}
+
+	this.vertexShader   = vs.toString();
+	this.fragmentShader = fs.toString();
+};
+
+GG.BillboardingTechnique.Pass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	gl.uniform1f(program.u_width, renderable.width);
+	gl.uniform1f(program.u_height, renderable.height);
+	gl.uniform1f(program.u_isSpherical, renderable.billboardType == GG.Billboard.SPHERICAL_BILLBOARD ? 1.0 : 0.0);
+	GG.ProgramUtils.setMaterialUniforms(program, GG.Naming.UniformMaterial, renderable.material);
+	this.diffuseTexturingPass.__setCustomUniforms(renderable, ctx, program);
+};
+
+GG.BillboardingTechnique.Pass.prototype.hashMaterial = function (material, renderContext) {
+	return this.diffuseTexturingPass.hashMaterial(material, renderContext);
+};
+
+
+GG.BillboardingTechnique.Pass.prototype.__setCustomRenderState = function(renderable, ctx, program) {	
+	this.diffuseTexturingPass.__setCustomRenderState(renderable, ctx, program);
+};
 GG.StaticPointParticlesTechnique = function(spec) {
 	spec = spec || {};
 	spec.passes = [new GG.StaticPointParticlesRenderPass()];
@@ -5723,13 +6068,13 @@ GG.StaticPointParticlesRenderPass.prototype.createFragmentShader = function (mat
 	
 	if (material.useVertexColors) {
 		fs.varying('vec3', GG.Naming.VaryingColor);
-		fs.addMainInitBlock('vec3 '  + GG.Naming.VarDiffuseBaseColor + ' = ' + GG.Naming.VaryingColor + ';');
+		fs.addMainInitBlock('vec4 '  + GG.Naming.VarDiffuseBaseColor + ' = vec4(' + GG.Naming.VaryingColor + ', 1.0);');
 	} else {
-		fs.uniform('vec3', 'u_materialDiffuse')
-			.addMainInitBlock('vec3 '  + GG.Naming.VarDiffuseBaseColor + ' = u_materialDiffuse;');
+		fs.uniformMaterial()
+			.addMainInitBlock('vec4 '  + GG.Naming.VarDiffuseBaseColor + ' = vec4(u_material.diffuse, 1.0);');
 	} 
 	fs.addMainInitBlock('vec2 ' + GG.Naming.VaryingTexCoords + ' = gl_PointCoord;');
-	fs.writeOutput('gl_FragColor = vec4(' + GG.Naming.VarDiffuseBaseColor + ', 1.0);');
+	fs.writeOutput('gl_FragColor = vec4(' + GG.Naming.VarDiffuseBaseColor + '.rgb, 1.0);');
 	return fs;
 };
 
@@ -5739,7 +6084,7 @@ GG.StaticPointParticlesRenderPass.prototype.hashMaterial = function (material, r
 
 GG.StaticPointParticlesRenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
 	if (!renderable.material.useVertexColors) {
-		gl.uniform3fv(program.u_materialDiffuse, renderable.material.diffuse);
+		gl.uniform3fv(program['u_material.diffuse'], renderable.material.diffuse);
 	}
 	gl.uniform1f(program.u_pointSize, renderable.pointSize);
 	this.diffuseTexturingPass.__setCustomUniforms(renderable, ctx, program);
@@ -6603,7 +6948,7 @@ GG.MouseHandler.prototype.setCamera = function (c) {
 
 GG.SphericalCameraController = function (spec) {
 	this.center     = [0, 0, 0];
-	this.up         = [0, 1, 0];
+	this.initPos    = [0, 0, 0];
 	this.camera     = null;
 	this.speed      = 0.5;
 	this.rotX = 0;
@@ -6653,13 +6998,20 @@ GG.SphericalCameraController.prototype.rotateUpMatrix = function (angle, eye, up
 	return mat4.rotate(rotMat, angle, cameraX);	
 };
 
-GG.SphericalCameraController.prototype.rotateCamera = function (rx, ry) {
-	var rotLeft = this.rotateLeftMatrix(rx, this.camera.up);
-	mat4.multiplyVec3(rotLeft, this.camera.position);
+GG.SphericalCameraController.prototype.updateCamera = function () {
+	var rx = GG.MathUtils.degToRads(this.rotX);
+	var ry = GG.MathUtils.degToRads(this.rotY);
+	
+	var initUp = [0,1,0];
+	var rotLeft = this.rotateLeftMatrix(rx, initUp);
+	if (!this.camera.position) {
+		console.log('AHA');
+	}
+	mat4.multiplyVec3(rotLeft, this.initPos, this.camera.position);
 
-	var rotUp = this.rotateUpMatrix(ry, this.camera.position, this.camera.up);
+	var rotUp = this.rotateUpMatrix(ry, this.camera.position, initUp);
 	mat4.multiplyVec3(rotUp, this.camera.position);
-	mat4.multiplyVec3(rotUp, this.camera.up);
+	mat4.multiplyVec3(rotUp, initUp, this.camera.up);
 };
 
 GG.SphericalCameraController.prototype.handleMouseDown = function (x, y) {
@@ -6674,14 +7026,12 @@ GG.SphericalCameraController.prototype.handleMouseUp = function (x, y) {
 
 GG.SphericalCameraController.prototype.handleMouseMove = function (x, y) {
     if (this.camera != null && this.dragging) {
-        this.rotX  += x - this.lastMouseX;
-	    this.rotY  += y - this.lastMouseY;
+        this.rotX  += this.speed * (x - this.lastMouseX);
+	    this.rotY  += this.speed * (y - this.lastMouseY);
 		this.lastMouseX = x;
 	    this.lastMouseY = y;
 
-	    this.rotX *= this.speed;
-	    this.rotY *= this.speed;
-	    this.rotateCamera(GG.MathUtils.degToRads(this.rotX), GG.MathUtils.degToRads(this.rotY));
+	    this.updateCamera();
     }
 };
 
@@ -6696,19 +7046,23 @@ GG.SphericalCameraController.prototype.handleKeyDown = function(keyCode) {
 	if (this.camera != null) {
 	    switch (keyCode) {
 	        case GG.KEYS.LEFT:
-	            this.rotateCamera(-0.2, 0);
+	        	this.rotX -= 1.0;
+	            this.updateCamera();
 	            break;
 
 	        case GG.KEYS.RIGHT:
-	            this.rotateCamera(0.2, 0);
+	        	this.rotX += 1.0;
+	            this.updateCamera();
 	            break;
 
 	        case GG.KEYS.UP:
-	            this.rotateCamera(0, -0.2);
+	        	this.rotY -= 1.0;
+	            this.updateCamera();
 	            break;
 
 	        case GG.KEYS.DOWN:
-	            this.rotateCamera(0, 0.2);
+	        	this.rotY += 1.0;
+	            this.updateCamera();
 	            break;
 
 	        default: break;
@@ -6722,7 +7076,13 @@ GG.SphericalCameraController.prototype.getCamera = function () {
 
 GG.SphericalCameraController.prototype.setCamera = function (c) {
     this.camera = c;
+    this.reset();
+    return this;
+};
+
+GG.SphericalCameraController.prototype.reset = function (c) {    
     if (this.camera != null) {
+    	this.initPos = vec3.create(this.camera.position);
     	this.camera.lookAt = [0, 0, 0];
 	}
     return this;

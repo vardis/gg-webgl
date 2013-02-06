@@ -4,6 +4,9 @@ GG.SampleBase = function (spec) {
 
     this.assetsLoaded = false;
     this.initialized  = false;
+
+    this.mouseHandler  = null;
+    this.camera        = null;
 };
 
 GG.SampleBase.prototype.constructor = GG.SampleBase;
@@ -39,6 +42,18 @@ GG.SampleBase.prototype.start = function()  {
 };
 
 GG.SampleBase.prototype.initialize = function () {
+
+	this.camera = new GG.PerspectiveCamera();
+	this.camera.setPosition([0.0, 0.0, 9.8]);	
+	this.camera.getViewport().setWidth(gl.viewportWidth);
+	this.camera.getViewport().setHeight(gl.viewportHeight);
+
+	var vp = this.camera.getViewport();
+    vp.setClearColor([0,0,0]);
+    
+    this.mouseHandler = new GG.SphericalCameraController();
+	this.mouseHandler.setCamera(this.camera);
+
     this.initializeAssets();
 };
 

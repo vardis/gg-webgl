@@ -19,6 +19,7 @@ GG.Naming = {
 	UniformModelViewMatrix   : 'u_matModelView',
 	UniformViewMatrix        : 'u_matView',
 	UniformInverseViewMatrix : 'u_matViewInverse',
+    UniformInverseViewProjectionMatrix : 'u_matViewProjectionInverse',
 	UniformProjectionMatrix  : 'u_matProjection',
 	UniformTime0_X           : 'u_fTime0_X',
 	UniformTime0_1           : 'u_fTime0_1',
@@ -27,6 +28,9 @@ GG.Naming = {
     UniformFogStart          : 'u_fogStart',
     UniformFogEnd            : 'u_fogEnd',
     UniformFogDensity        : 'u_fogDensity',
+
+    // a vec2 that contains the dimensions of the viewport in pixels
+    UniformViewportSize      : 'u_viewportSize',
 	
 	AttributePosition        : 'a_position',
 	AttributeNormal          : 'a_normal',
@@ -43,6 +47,7 @@ GG.Naming = {
     // the final 3-component value to be assigned as the rgb output of the fragment shader
     VarColorOutput           : 'finalColor',
 
+    // the base diffuse color calculate by the material.diffuse and the diffuse texture stack
     VarDiffuseBaseColor      : 'baseColor',
     
     // common preprocessor definition names

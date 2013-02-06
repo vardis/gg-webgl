@@ -21,26 +21,26 @@ GG.PostProcessChain = function (spec) {
 	this.dest        = null;
 	this.needsUpdate = true;
 
-	this.availableFilters = {
-		'gamma'    : GG.GammaScreenFilter,
-		'vignette' : GG.VignetteScreenFilter,
-		'tvLines'  : GG.TVLinesScreenFilter
-	};
-
-	for (filterName in this.availableFilters) {
-		var that = this;
+	for (filterName in GG.PostProcessChain.availableFilters) {
+		var self = this;
 		this[filterName] = function (fname) {
 			return function (spec) {
-				that.filterChain.push(new that.availableFilters[fname](spec));
-				that.needsUpdate = true;
-				return that;
+				self.filterChain.push(new GG.PostProcessChain.availableFilters[fname](spec));
+				self.needsUpdate = true;
+				return self;
 			}
 		}(filterName);
 	}
-		
 };
 
 GG.PostProcessChain.prototype.constructor = GG.PostProcessChain;
+
+// a map of (filter name -> filter class constructor)
+GG.PostProcessChain.availableFilters = {};
+
+GG.PostProcessChain.registerScreenFilter = function (name, ctor) {
+	GG.PostProcessChain.availableFilters[name] = ctor;
+};
 
 GG.PostProcessChain.prototype.source = function (src) {
 	this.src = src;
@@ -82,11 +82,14 @@ GG.PostProcessChain.prototype.process = function () {
 	this.screenPass.setSourceTexture(sourceTexture);
 
 	try {
+		viewport = [];
 		if (this.dest instanceof GG.RenderTarget) {
 			this.dest.activate();
+			viewport = [this.dest.width, this.dest.height ];
 		} else {
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 			gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+			viewport = [gl.viewportWidth, gl.viewportHeight];
 		}
 
 		// call createGpuProgram now in order to get the gpu program
@@ -96,7 +99,13 @@ GG.PostProcessChain.prototype.process = function () {
 		for (var i = 0; i < this.filterChain.length; i++) {
 			this.filterChain[i].setUniforms(this.screenPass.program);
         }
-        this.screenPass.render();
+
+        this.camera = new GG.OrthographicCamera();
+        this.camera.getViewport().setWidth(viewport[0]);
+        this.camera.getViewport().setHeight(viewport[1]);
+
+        this.renderContext           = new GG.RenderContext({ camera : this.camera });
+        this.screenPass.render(null, this.renderContext);
 	} finally {
 		if (this.dest instanceof GG.RenderTarget) {
 			this.dest.deactivate();

@@ -1,6 +1,6 @@
 GG.SphericalCameraController = function (spec) {
 	this.center     = [0, 0, 0];
-	this.up         = [0, 1, 0];
+	this.initPos    = [0, 0, 0];
 	this.camera     = null;
 	this.speed      = 0.5;
 	this.rotX = 0;
@@ -50,13 +50,20 @@ GG.SphericalCameraController.prototype.rotateUpMatrix = function (angle, eye, up
 	return mat4.rotate(rotMat, angle, cameraX);	
 };
 
-GG.SphericalCameraController.prototype.rotateCamera = function (rx, ry) {
-	var rotLeft = this.rotateLeftMatrix(rx, this.camera.up);
-	mat4.multiplyVec3(rotLeft, this.camera.position);
+GG.SphericalCameraController.prototype.updateCamera = function () {
+	var rx = GG.MathUtils.degToRads(this.rotX);
+	var ry = GG.MathUtils.degToRads(this.rotY);
+	
+	var initUp = [0,1,0];
+	var rotLeft = this.rotateLeftMatrix(rx, initUp);
+	if (!this.camera.position) {
+		console.log('AHA');
+	}
+	mat4.multiplyVec3(rotLeft, this.initPos, this.camera.position);
 
-	var rotUp = this.rotateUpMatrix(ry, this.camera.position, this.camera.up);
+	var rotUp = this.rotateUpMatrix(ry, this.camera.position, initUp);
 	mat4.multiplyVec3(rotUp, this.camera.position);
-	mat4.multiplyVec3(rotUp, this.camera.up);
+	mat4.multiplyVec3(rotUp, initUp, this.camera.up);
 };
 
 GG.SphericalCameraController.prototype.handleMouseDown = function (x, y) {
@@ -71,14 +78,12 @@ GG.SphericalCameraController.prototype.handleMouseUp = function (x, y) {
 
 GG.SphericalCameraController.prototype.handleMouseMove = function (x, y) {
     if (this.camera != null && this.dragging) {
-        this.rotX  += x - this.lastMouseX;
-	    this.rotY  += y - this.lastMouseY;
+        this.rotX  += this.speed * (x - this.lastMouseX);
+	    this.rotY  += this.speed * (y - this.lastMouseY);
 		this.lastMouseX = x;
 	    this.lastMouseY = y;
 
-	    this.rotX *= this.speed;
-	    this.rotY *= this.speed;
-	    this.rotateCamera(GG.MathUtils.degToRads(this.rotX), GG.MathUtils.degToRads(this.rotY));
+	    this.updateCamera();
     }
 };
 
@@ -93,19 +98,23 @@ GG.SphericalCameraController.prototype.handleKeyDown = function(keyCode) {
 	if (this.camera != null) {
 	    switch (keyCode) {
 	        case GG.KEYS.LEFT:
-	            this.rotateCamera(-0.2, 0);
+	        	this.rotX -= 1.0;
+	            this.updateCamera();
 	            break;
 
 	        case GG.KEYS.RIGHT:
-	            this.rotateCamera(0.2, 0);
+	        	this.rotX += 1.0;
+	            this.updateCamera();
 	            break;
 
 	        case GG.KEYS.UP:
-	            this.rotateCamera(0, -0.2);
+	        	this.rotY -= 1.0;
+	            this.updateCamera();
 	            break;
 
 	        case GG.KEYS.DOWN:
-	            this.rotateCamera(0, 0.2);
+	        	this.rotY += 1.0;
+	            this.updateCamera();
 	            break;
 
 	        default: break;
@@ -119,7 +128,13 @@ GG.SphericalCameraController.prototype.getCamera = function () {
 
 GG.SphericalCameraController.prototype.setCamera = function (c) {
     this.camera = c;
+    this.reset();
+    return this;
+};
+
+GG.SphericalCameraController.prototype.reset = function (c) {    
     if (this.camera != null) {
+    	this.initPos = vec3.create(this.camera.position);
     	this.camera.lookAt = [0, 0, 0];
 	}
     return this;

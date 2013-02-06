@@ -51,13 +51,13 @@ GG.StaticPointParticlesRenderPass.prototype.createFragmentShader = function (mat
 	
 	if (material.useVertexColors) {
 		fs.varying('vec3', GG.Naming.VaryingColor);
-		fs.addMainInitBlock('vec3 '  + GG.Naming.VarDiffuseBaseColor + ' = ' + GG.Naming.VaryingColor + ';');
+		fs.addMainInitBlock('vec4 '  + GG.Naming.VarDiffuseBaseColor + ' = vec4(' + GG.Naming.VaryingColor + ', 1.0);');
 	} else {
-		fs.uniform('vec3', 'u_materialDiffuse')
-			.addMainInitBlock('vec3 '  + GG.Naming.VarDiffuseBaseColor + ' = u_materialDiffuse;');
+		fs.uniformMaterial()
+			.addMainInitBlock('vec4 '  + GG.Naming.VarDiffuseBaseColor + ' = vec4(u_material.diffuse, 1.0);');
 	} 
 	fs.addMainInitBlock('vec2 ' + GG.Naming.VaryingTexCoords + ' = gl_PointCoord;');
-	fs.writeOutput('gl_FragColor = vec4(' + GG.Naming.VarDiffuseBaseColor + ', 1.0);');
+	fs.writeOutput('gl_FragColor = vec4(' + GG.Naming.VarDiffuseBaseColor + '.rgb, 1.0);');
 	return fs;
 };
 
@@ -67,7 +67,7 @@ GG.StaticPointParticlesRenderPass.prototype.hashMaterial = function (material, r
 
 GG.StaticPointParticlesRenderPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
 	if (!renderable.material.useVertexColors) {
-		gl.uniform3fv(program.u_materialDiffuse, renderable.material.diffuse);
+		gl.uniform3fv(program['u_material.diffuse'], renderable.material.diffuse);
 	}
 	gl.uniform1f(program.u_pointSize, renderable.pointSize);
 	this.diffuseTexturingPass.__setCustomUniforms(renderable, ctx, program);

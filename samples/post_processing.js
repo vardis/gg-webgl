@@ -72,8 +72,8 @@ PostProcessSample.prototype.initializeWithAssetsLoaded = function () {
     this.highResRT.initialize();
 
     this.postProcess = new GG.PostProcessChain();
-    this.postProcess.source(this.highResRT).destination(null)//.filter(myScreenFilter).vignette({ radius : 0.1 })
-        .gamma(2.2).tvLines().vignette();
+    this.postProcess.source(this.highResRT).destination(null)
+        .fxaa().gamma(2.2).tvLines().vignette();
 
     this.blitPass = new GG.BlitPass(this.highResRT.getColorAttachment(0));
 

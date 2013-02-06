@@ -58,6 +58,7 @@ GG.Texture.createTexture = function (spec) {
 	gl.bindTexture(gl.TEXTURE_2D, tex);
 
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, spec.flipY != undefined ? spec.flipY : true);
+	//gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
 
 	// maps a format to the triple [internalFormat, format, type] as accepted by gl.TexImage2D
 	var formatDetails         = {};
@@ -73,7 +74,7 @@ GG.Texture.createTexture = function (spec) {
 	var useMipmaps      = spec.useMipmaps != undefined ? spec.useMipmaps : true;
 	var mipmapFiltering = spec.minFmipmapFilteringilter != undefined ? spec.mipmapFiltering : gl.NEAREST;
 	var width, height;
-
+	
 	if (spec.image != undefined) {
 		gl.texImage2D(gl.TEXTURE_2D, 0, formatDetails[colorFormat][0],  formatDetails[colorFormat][1], formatDetails[colorFormat][2], spec.image);	
 		width = spec.width;

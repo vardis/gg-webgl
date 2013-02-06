@@ -76,14 +76,14 @@ GG.PhongPass.prototype.createProgram = function(material, renderContext) {
 			"	vec3 V = normalize(v_viewVec);",
 			"	vec3 L = normalize(v_lightVec);",
 			"	vec3 diffuse = vec3(0.0);",
-			"   vec3 " + GG.Naming.VarDiffuseBaseColor + " = u_material.diffuse;",
+			"   vec4 " + GG.Naming.VarDiffuseBaseColor + " = vec4(u_material.diffuse, 1.0);",
 			"	vec3 specular = vec3(0.0);"
 			].join('\n'))
 		.addMainBlock([						
 			"	lightIrradiance(N, V, L, u_light, u_material, diffuse, specular);"			
 		].join('\n'))
 		.addFinalColorAssignment(
-			"finalColor = vec3(u_material.ambient + baseColor*diffuse + u_material.specular*specular);"
+			"finalColor = vec3(u_material.ambient + baseColor.rgb*diffuse + u_material.specular*specular);"
 			)
 		.writeOutput(
             "	gl_FragColor = vec4(finalColor, " + GG.Naming.VarAlphaOutput + ");"                  

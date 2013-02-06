@@ -25,8 +25,7 @@ ThreeJsModelSample.prototype.initializeAssets = function () {
 	GG.Loader.loadJSON('teapot', '../assets/models/monkey.js', function (jsonObj) {
         self.jsonMesh = new GG.TriangleMesh(GG.Geometry.fromThreeJsJSON(jsonObj));
         self.jsonMesh.material = self.material;
-        self.jsonMesh.setScale([3,3,3]);
-        self.jsonMesh.setPosition([0,0,-2]);
+        self.jsonMesh.setScale([3,3,3]);        
         self.jsonMesh.material.wireOffset = 0.01;
 
         self.wireframe = self.jsonMesh.asWireframeMesh();

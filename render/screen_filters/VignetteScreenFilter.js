@@ -12,6 +12,8 @@ GG.VignetteScreenFilter = function (spec) {
 
 GG.VignetteScreenFilter.prototype.constructor = GG.VignetteScreenFilter;
 
+GG.PostProcessChain.registerScreenFilter('vignette', GG.VignetteScreenFilter);
+
 GG.VignetteScreenFilter.prototype.inject = function (programSource) {
 	programSource.uniform('float', 'u_vignetteContrast')
 		.uniform('float', 'u_vignetteSpread')

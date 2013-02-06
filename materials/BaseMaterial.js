@@ -69,6 +69,10 @@ GG.BaseMaterial.prototype.addDiffuseTexture = function(texture, blendMode) {
 	this.diffuseTextureStack.add(texture, blendMode);
 };
 
+GG.BaseMaterial.prototype.getDiffuseMap = function(index) {
+	return this.diffuseTextureStack.getAt(index);
+};
+
 GG.BaseMaterial.prototype.setSpecularMap = function (texture) {
 	this.specularMap = new GG.TextureUnit({ 'texture' : texture, 'unit' : GG.TEX_UNIT_SPECULAR_MAP });
     return this;

@@ -77,6 +77,19 @@ GG.ProgramUtils = function() {
 				gl.uniformMatrix4fv(p[uname], false, inv); 
 			};
 
+			predefined[GG.Naming.UniformViewportSize] = function(p, uname) { 
+				var vp = renderContext.camera.getViewport();
+				gl.uniform2fv(p[uname], [vp.width, vp.height]); 
+			};
+
+			predefined[GG.Naming.UniformInverseViewProjectionMatrix] = function(p, uname) {
+				var vp = mat4.create();
+				mat4.multiply(renderContext.camera.getProjectionMatrix(), renderContext.camera.getViewMatrix(), vp);				
+				var inv = mat4.create();
+				mat4.inverse(vp, inv);
+				gl.uniformMatrix4fv(p[uname], false, inv); 
+			};
+
 			predefined[GG.Naming.UniformProjectionMatrix] = function(p, uname) { 
 				gl.uniformMatrix4fv(p[uname], false, renderContext.camera.getProjectionMatrix()); 
 			};

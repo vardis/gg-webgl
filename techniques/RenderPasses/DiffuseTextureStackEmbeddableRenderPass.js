@@ -33,14 +33,14 @@ GG.DiffuseTextureStackEmbeddableRenderPass.prototype.evaluateTextureStack = func
 		codeListing.push(this.sampleDiffuseMapAtIndex(i, uniformName));
 		codeListing.push(this.blendDiffuseMapAtIndex(i, textureStack.getAt(i).blendMode, programSource));		
 	}
-	codeListing.push(GG.Naming.VarDiffuseBaseColor + "	= " + this.getSampleVariableNameForMap(stackLen - 1) + ".rgb;");		
+	codeListing.push(GG.Naming.VarDiffuseBaseColor + "	= " + this.getSampleVariableNameForMap(stackLen - 1) + ";");		
 	programSource.addTexturingBlock(codeListing.join('\n'));
 };
 
 GG.DiffuseTextureStackEmbeddableRenderPass.prototype.sampleDiffuseMapAtIndex = function (index, uniformName) {
 	var colorVar = this.getSampleVariableNameForMap(index);		
-	return "	vec3 " + colorVar + " = sampleTexUnit("
-        + GG.Naming.textureUnitUniformMap(uniformName) + ", " + uniformName + ", v_texCoords).rgb;";
+	return "	vec4 " + colorVar + " = sampleTexUnit("
+        + GG.Naming.textureUnitUniformMap(uniformName) + ", " + uniformName + ", v_texCoords);";
 };
 
 GG.DiffuseTextureStackEmbeddableRenderPass.prototype.blendDiffuseMapAtIndex = function (index, blendMode, programSource) {
@@ -48,7 +48,8 @@ GG.DiffuseTextureStackEmbeddableRenderPass.prototype.blendDiffuseMapAtIndex = fu
 	var destColorVar = index > 0 ? this.getSampleVariableNameForMap(index - 1) : GG.Naming.VarDiffuseBaseColor;
 	var func = this.declareBlendingFunction(blendMode, programSource);	
 	if (func != null) {
-		return sourceColorVar + " = " + func + "(" + destColorVar + ", " + sourceColorVar + ");";
+		return sourceColorVar + ".rgb = " + func + "(" + destColorVar + ".rgb, " + sourceColorVar + ".rgb);\n" 
+		+ sourceColorVar + ".a = " + destColorVar + ".a * " + sourceColorVar + ".a;";
 	} else {
 		return "";
 	}	

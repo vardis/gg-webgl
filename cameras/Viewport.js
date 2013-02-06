@@ -12,6 +12,10 @@ GG.Viewport = function (spec) {
 	this.zOrder = spec.zOrder != undefined ? spec.zOrder : 0;
 };
 
+GG.Viewport.prototype.activate = function() {
+    gl.viewport(0, 0, this.width, this.height);
+    gl.clearColor(this.clearColor[0], this.clearColor[1], this.clearColor[2], 1.0);
+};
 
 GG.Viewport.prototype.getWidth = function() {
     return this.width;

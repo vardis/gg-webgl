@@ -1,6 +1,5 @@
 GG.BaseTechnique = function(spec) {	
 	spec          = spec || {};	
-	this.textures = spec.textures != undefined ? spec.textures : [];	
 	this.passes   = spec.passes || [];
 	this.program  = null;
 };
@@ -10,14 +9,6 @@ GG.BaseTechnique.prototype.constructor = GG.BaseTechnique;
 GG.BaseTechnique.fromShaders = function (vertexShader, fragmentShader) {
 	var pass = new GG.RenderPass({ 'vertexShader' : vertexShader, 'fragmentShader' : fragmentShader });
 	return new GG.BaseTechnique({ passes : [ pass ] });
-};
-
-GG.BaseTechnique.prototype.getTextures = function() {
-	return this.textures;
-};
-
-GG.BaseTechnique.prototype.setTextures = function(t) {
-	this.textures = t;
 };
 
 GG.BaseTechnique.prototype.initialize = function() {
@@ -36,11 +27,7 @@ GG.BaseTechnique.prototype.renderPasses = function() {
 	return [].concat(this.passes);
 };
 
-GG.BaseTechnique.prototype.render = function(renderable, ctx) {	
-	if (renderable.material == null) {
-		throw "You must define a material for each renderable";		
-	}
-	
+GG.BaseTechnique.prototype.render = function(renderable, ctx) {		
 	this.passes.forEach(function(pass) {
 		pass.render(renderable, ctx);
 	});

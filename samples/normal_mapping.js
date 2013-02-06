@@ -1,8 +1,6 @@
 NormalMappingSample = function (spec) {
-    this.camera        = null;
     this.sphereMesh      = null;
     this.y_rot         = 0.0;
-    this.mouseHandler  = null;
     this.light         = null;
     this.technique     = null;
 
@@ -16,7 +14,7 @@ NormalMappingSample.prototype.initializeAssets = function () {
     var self = this;
     self.teapotMat = new GG.BaseMaterial();
 
-GG.Loader.loadImage('earth', '../assets/textures/rockwall.png', function (reqId, image) {
+    GG.Loader.loadImage('earth', '../assets/textures/rockwall.png', function (reqId, image) {
         var diffuseMap = GG.Texture.createTexture({
             'image' : image, width : 1024,
             minFilter : gl.LINEAR, magFilter : gl.LINEAR,
@@ -24,8 +22,8 @@ GG.Loader.loadImage('earth', '../assets/textures/rockwall.png', function (reqId,
             flipY : false
         });
         self.teapotMat.addDiffuseTexture(diffuseMap);
-        self.teapotMat.diffuseMap.scaleU = 3.0;
-        self.teapotMat.diffuseMap.scaleV = 3.0;        
+        self.teapotMat.getDiffuseMap(0).scaleU = 3.0;
+        self.teapotMat.getDiffuseMap(0).scaleV = 3.0;        
     });
 
     GG.Loader.loadImage('earth', '../assets/textures/brickwall-normal.png', function (reqId, image) {
@@ -38,7 +36,7 @@ GG.Loader.loadImage('earth', '../assets/textures/rockwall.png', function (reqId,
         self.teapotMat.setNormalMap(normalMap);
         self.teapotMat.normalMap.scaleU = 3.0;
         self.teapotMat.normalMap.scaleV = 3.0;
-        self.assetsLoaded = true;
+        //self.assetsLoaded = true;
     });
 
     GG.Loader.loadImage('earth', '../assets/textures/rockwall_height.png', function (reqId, image) {
@@ -56,16 +54,14 @@ GG.Loader.loadImage('earth', '../assets/textures/rockwall.png', function (reqId,
 };
 
 NormalMappingSample.prototype.initializeWithAssetsLoaded = function () {
-    this.mouseHandler = new GG.SphericalCameraController();
-    this.camera       = new GG.PerspectiveCamera();
     this.camera.setPosition([0.0, 0.0, 900.8]);
+    this.mouseHandler.reset();
+
     this.camera.far = 1000;
     this.camera.getViewport().setWidth(gl.viewportWidth);
     this.camera.getViewport().setHeight(gl.viewportHeight);
 
-    this.mouseHandler.setCamera(this.camera);
-
-    this.technique = new GG.PhongShadingTechnique();
+   this.technique = new GG.PhongShadingTechnique();
 
     this.teapotMat.diffuse   = [1.0, 1.0, 1.0];
     this.teapotMat.ambient   = [0.05, 0.05, 0.05];

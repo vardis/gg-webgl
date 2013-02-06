@@ -4,8 +4,6 @@
 ShaderMaterialSample = function (spec) {
     this.renderer           = null;
     this.y_rot              = 0.0;
-    this.camera             = null;
-    this.mouseHandler       = null;
     GG.SampleBase.call(this, spec);
 };
 
@@ -19,15 +17,12 @@ ShaderMaterialSample.prototype.initializeAssets = function () {
 ShaderMaterialSample.prototype.initializeWithAssetsLoaded = function () {
     this.shaderMaterial = new GG.BaseMaterial();
 
-    this.camera = new GG.PerspectiveCamera();
     this.camera.setPosition([0.0, 0.0, 2.8]);
+    this.mouseHandler.reset();
 
     this.renderer = new GG.Renderer();
     this.renderer.setCamera(this.camera);
     GG.renderer = this.renderer;
-
-    this.mouseHandler = new GG.MouseHandler();
-    this.mouseHandler.setCamera(this.camera);
 
     this.sphere = new GG.TriangleMesh(new GG.SphereGeometry(1.0, 64, 64));
 
@@ -43,10 +38,7 @@ ShaderMaterialSample.prototype.initializeWithAssetsLoaded = function () {
         gl.uniform3fv(program.StripeColor, [ self.StripeColor[0]/256, self.StripeColor[1]/256, self.StripeColor[2]/256 ]);
         gl.uniform3fv(program.DiffuseColor, [ self.DiffuseColor[0]/256, self.DiffuseColor[1]/256, self.DiffuseColor[2]/256 ]);
     };
-    this.shaderTechnique = GG.BaseTechnique.fromShaders(vertexShader, fragmentShader);
-    this.shaderTechnique.uniforms = {
-        'Fuzz' 
-    };
+    this.shaderTechnique = GG.BaseTechnique.fromShaders(vertexShader, fragmentShader);    
 
     this.Scale = 10.0;
     this.Width = 0.2;

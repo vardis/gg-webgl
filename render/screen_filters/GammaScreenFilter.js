@@ -4,11 +4,12 @@ GG.GammaScreenFilter = function (spec) {
 		this.gamma = spec;
 	} else {
 		this.gamma = spec.gamma != undefined ? spec.gamma : 2.2;
-	}	
-	console.log(this.gamma);
+	}		
 };
 
 GG.GammaScreenFilter.prototype.constructor = GG.GammaScreenFilter;
+
+GG.PostProcessChain.registerScreenFilter('gamma', GG.GammaScreenFilter);
 
 GG.GammaScreenFilter.prototype.inject = function (programSource) {
 	programSource.uniform('float', 'u_gamma')

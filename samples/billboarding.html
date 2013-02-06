@@ -2,13 +2,18 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
+
 		<script src="../externals/gl-matrix.js"></script>		
+		
 		<script src="../gl-inspector/embed.js"></script>
+
 		<script src="../GG_all.js"></script>
 		<script src="SampleBase.js"></script>
-		<script src="post_processing.js"></script>
+		<script src="billboarding.js"></script>
+		
 	</head>
-	<body onload="new PostProcessSample().start();">		
+	<body onload="new BillboardingSample().start();" style="color: red">		
 		<canvas id="canvasGL" style="border: none;" width="640" height="480"></canvas>
-	</body>	
+	</body>
+
 </html>

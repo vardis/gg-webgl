@@ -141,6 +141,47 @@ GG.ShaderLib = new function (argument) {
 			].join('\n')			
 		},
 
+		matRotateX : [
+			"mat3 matRotateX(float radians) {",
+			"	return mat3(1.0, 0.0, 0.0,",
+			"		0, cos(radians), -sin(radians),",
+			"		0, sin(radians), cos(radians));",
+			"}"
+		].join('\n'),
+
+		rotateAroundAxis :  [
+		"mat3 rotateAroundAxis(float rads, vec3 axis) {",
+			"// the rotation of theta degress of a vector v around an arbritrary ",
+		    "// vector n that passes through the origin is:",
+		    "// cos(theta)*(v - (v . n)*n) + sin(theta)*(n x v) + (v . n)*n",
+
+		    "// the rotation matrix will have as rows the basis vectors i, j and k",
+		    "// transformed by the above formula ",
+
+		    "// transformed X basis vector",
+		    "vec3 v = vec3(1.0, 0.0, 0.0);  ", 
+		    "vec3 parallel = dot(v, axis) * axis;",
+		    "vec3 vertical = v - parallel;",
+		    "vec3 w = cross(axis, v);",
+		    "vec3 i = cos(rads)*vertical + sin(rads)*w + parallel;",
+
+		    "// transformed Y basis vector",
+		    "v = vec3(0.0, 1.0, 0.0);",
+		    "parallel = dot(v, axis) * axis;",
+		    "vertical = v - parallel;",
+		    "w = cross(axis, v);",
+		    "vec3 j = cos(rads)*vertical + sin(rads)*w + parallel;",
+
+		    "// transformed Z basis vector",
+		    "v = vec3(0.0, 0.0, 1.0);",
+		    "parallel = dot(v, axis) * axis;",
+		    "vertical = v - parallel;",
+		    "w = cross(axis, v);",
+		    "vec3 k = cos(rads)*vertical + sin(rads)*w + parallel;",
+
+		    "return mat3(i, j, k);",
+	    "}"].join('\n'),
+
 		blocks : {
 			// returns the world space vector from the vertex to the light source.
 			// assumes the Light_t uniform is present.

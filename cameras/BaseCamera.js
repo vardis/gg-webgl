@@ -38,6 +38,15 @@ GG.BaseCamera.prototype.setRotation = function(r) {
 	return this;
 };
 
+GG.BaseCamera.prototype.setLookAt = function (target) {
+	this.lookAt = target;
+	return this;
+}
+
+GG.BaseCamera.prototype.setUp = function (up) {
+	this.up = up;
+	return this;
+}
 
 GG.BaseCamera.prototype.getViewport = function() {
     return this.viewport;
