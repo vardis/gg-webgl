@@ -7,8 +7,6 @@ SceneRendererSample = function (spec) {
 
     this.y_rot = 0.0;
 
-    this.mouseHandler = null;
-
     this.redLight = null;
     this.greenLight = null;
     this.phongMat = null;
@@ -39,20 +37,22 @@ SceneRendererSample.prototype.initializeAssets = function () {
             'image':image, width:1024,
             minFilter:gl.LINEAR, magFilter:gl.LINEAR,
             'wrapS':gl.REPEAT, wrapT:gl.REPEAT,
-            flipY:false
+            flipY:false            
         });
         that.texturedMaterial.addDiffuseTexture(earthTexture);
+        that.assetsLoaded = true;
     });
 
     this.testScene = new GG.Scene();
 
     GG.Loader.loadJSON('teapot', '../assets/models/teapot.js', function (jsonObj) {
-            that.sphereMesh = new GG.TriangleMesh(GG.Geometry.fromJSON(jsonObj));
-            that.sphereMesh.setPosition([0.0, 1.0, 15.0]);
-            that.sphereMesh.setScale([0.5, 0.5, 0.5]);
-            that.sphereMesh.material = new GG.PhongMaterial();
-            that.testScene.addObject(that.sphereMesh);
-            that.assetsLoaded = true;
+            that.teapotMesh = new GG.TriangleMesh(GG.Geometry.fromJSON(jsonObj));
+            that.teapotMesh.setPosition([0.0, 1.0, 15.0]);
+            that.teapotMesh.setScale([0.5, 0.5, 0.5]);
+            that.teapotMesh.material = new GG.BaseMaterial();
+            that.teapotMesh.material.castsShadows = true;
+            that.testScene.addObject(that.teapotMesh);
+            
         },
         function () {
             alert('failed to load the json model');
@@ -60,15 +60,9 @@ SceneRendererSample.prototype.initializeAssets = function () {
 };
 
 SceneRendererSample.prototype.initializeWithAssetsLoaded = function () {
-    this.mouseHandler = new GG.MouseHandler();
-
-    this.camera = new GG.PerspectiveCamera();
     this.camera.setPosition([0.0, 9.0, 22]);
-    this.camera.getViewport().setWidth(gl.viewportWidth);
-    this.camera.getViewport().setHeight(gl.viewportWidth);
-
-    this.mouseHandler.setCamera(this.camera);
-
+    this.mouseHandler.reset();
+    
     this.renderer = new GG.Renderer();
     this.renderer.setCamera(this.camera);
     GG.renderer = this.renderer;
@@ -79,9 +73,9 @@ SceneRendererSample.prototype.initializeWithAssetsLoaded = function () {
     this.lightModel = new GG.TriangleMesh(new GG.SphereGeometry());
 
     this.phongMat = new GG.PhongMaterial();
-    this.phongMat.ambient = [0.0, 0.0, 0.0];
+    this.phongMat.ambient = [0.2, 0.2, 0.0];
     this.phongMat.shininess = 20.0;
-
+    this.phongMat.receivesShadows = true;
 
     this.sphereMesh.material = this.texturedMaterial;
     this.cubeMesh.material = this.phongMat;
@@ -95,7 +89,7 @@ SceneRendererSample.prototype.initializeWithAssetsLoaded = function () {
         type:GG.LT_DIRECTIONAL,
         position:[0.0, 3.0, 21.0],
         direction:[-0.0, -0.4, -0.70],
-        diffuse:[1.0, 0.0, 0.0],
+        diffuse:[1.0, 1.0, 1.0],
         cosCutOff:0.9
     });
     //var shadowCamera =
@@ -112,16 +106,19 @@ SceneRendererSample.prototype.initializeWithAssetsLoaded = function () {
         name:'green',
         type:GG.LT_POINT,
         position:[10.0, 3.0, 2.0],
-        diffuse:[0.0, 1.0, 0.0]
+        diffuse:[1.0, 1.0, 1.0]
     });
 
     this.testScene.addObject(this.planeMesh)
         .addObject(this.cubeMesh)
         .addObject(this.sphereMesh)
         .addObject(this.lightModel)
-        .addLight(this.redLight)
-        .addLight(this.greenLight)
+        //.addLight(this.redLight)
+        //.addLight(this.greenLight)
         .shadows(true);
+
+    var ambient = new GG.Light({ type: GG.LT_AMBIENT, ambient: [0.3, 0.3, 0.3] });
+    this.testScene.ambientLight = ambient;
 
     this.sceneRenderer = new GG.DefaultSceneRenderer({ scene: this.testScene, camera:this.camera });
 

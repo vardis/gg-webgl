@@ -1,17 +1,18 @@
 GG.Scene = function(name) {
-	this.name = name;
-
-	this.objects = [];
-	this.pointLights = [];
+	this.name             = name;
+	
+	this.ambientLight     = null;
+	this.objects          = [];
+	this.pointLights      = [];
 	this.directionaLights = [];
-	this.spotLights = [];
-	this.shadowsEnabled = false;
-
-	this.showFog = false;
-	this.fogStart = 10;
-	this.fogEnd = 100;
-	this.fogDensity = 2;
-	this.fogColor = [0.7, 0.7, 0.7];
+	this.spotLights       = [];
+	this.shadowsEnabled   = false;
+	
+	this.showFog          = false;
+	this.fogStart         = 10;
+	this.fogEnd           = 100;
+	this.fogDensity       = 2;
+	this.fogColor         = [0.7, 0.7, 0.7];
 };
 
 GG.Scene.prototype.addObject = function(object) {

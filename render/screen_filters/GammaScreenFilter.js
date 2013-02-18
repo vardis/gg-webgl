@@ -7,6 +7,7 @@ GG.GammaScreenFilter = function (spec) {
 	}		
 };
 
+GG.GammaScreenFilter.prototype = new GG.ScreenFilter();
 GG.GammaScreenFilter.prototype.constructor = GG.GammaScreenFilter;
 
 GG.PostProcessChain.registerScreenFilter('gamma', GG.GammaScreenFilter);

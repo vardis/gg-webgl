@@ -46,6 +46,26 @@ GG.MathUtils = function() {
 
 		isPowerOf2 : function (val) {
 			return (val & (val - 1)) === 0;
+		},
+
+		gaussianWeight : function(x, sigma) {
+			var sigma2 = sigma * sigma;
+			return (1 / Math.sqrt(2 * 3.141592 * sigma2)) * Math.exp(-((x * x) / (2.0*sigma2)));  
+		},
+				
+		getGaussianWeights : function(size, sigma) {
+			var weights = [];	
+			weights[0] = GG.MathUtils.gaussianWeight(0, sigma);
+			var sum = weights[0];
+			for (var i = 1; i < size; i++) {
+				weights[i] = GG.MathUtils.gaussianWeight(i, sigma);
+				sum += 2*weights[i];
+			}
+		    
+			for (i = 0; i < size; i++) {
+				weights[i] /= sum;
+			}
+			return weights;
 		}
 	}
 }();

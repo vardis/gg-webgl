@@ -5,7 +5,7 @@
 GG.ScreenPass = function(spec) {
 	spec = spec || {};
 	spec.customRendering = true;
-	
+	spec.usesLighting    = false;
 	GG.RenderPass.call(this, spec);
 
 	this.sourceTexture = spec.sourceTexture;

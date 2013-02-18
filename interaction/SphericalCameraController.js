@@ -56,9 +56,7 @@ GG.SphericalCameraController.prototype.updateCamera = function () {
 	
 	var initUp = [0,1,0];
 	var rotLeft = this.rotateLeftMatrix(rx, initUp);
-	if (!this.camera.position) {
-		console.log('AHA');
-	}
+	
 	mat4.multiplyVec3(rotLeft, this.initPos, this.camera.position);
 
 	var rotUp = this.rotateUpMatrix(ry, this.camera.position, initUp);

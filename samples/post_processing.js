@@ -28,12 +28,7 @@ PostProcessSample.prototype.initializeAssets = function () {
 };
 
 PostProcessSample.prototype.initializeWithAssetsLoaded = function () {
-    this.mouseHandler = new GG.MouseHandler();
-    this.camera = new GG.PerspectiveCamera();
     this.camera.setPosition([0.0, 0.0, 9.8]);
-    this.camera.getViewport().setWidth(gl.viewportWidth);
-    this.camera.getViewport().setHeight(gl.viewportHeight);
-
     this.mouseHandler.setCamera(this.camera);
 
     var phongMat = new GG.PhongMaterial();
@@ -55,7 +50,7 @@ PostProcessSample.prototype.initializeWithAssetsLoaded = function () {
     this.light = new GG.Light({
         name:'red',
         type:GG.LT_POINT,
-        position:[0.0, 1.0, 5.0],
+        position:[0.0, 0.0, 17.0],
         direction:[0.0, 0.0, 0.90],
         diffuse:[0.30, 0.20, 0.70],
         cosCutOff:0.9
@@ -73,9 +68,10 @@ PostProcessSample.prototype.initializeWithAssetsLoaded = function () {
 
     this.postProcess = new GG.PostProcessChain();
     this.postProcess.source(this.highResRT).destination(null)
-        .fxaa().gamma(2.2).tvLines().vignette();
+        .gaussianBlur({ filterSize : 5 });
+        //.fxaa().tvLines().vignette().gamma(2.2);
 
-    this.blitPass = new GG.BlitPass(this.highResRT.getColorAttachment(0));
+    //this.blitPass = new GG.BlitPass(this.highResRT.getColorAttachment(0));
 
     this.initialized = true;
 };
@@ -83,10 +79,11 @@ PostProcessSample.prototype.initializeWithAssetsLoaded = function () {
 PostProcessSample.prototype.update = function () {
     GG.SampleBase.prototype.update.call(this);
     if (this.initialized) {
+        /*
         this.light.position[0] = 15.0 * Math.cos(0.5 * this.y_rot);
         this.light.position[1] = 5.0;
         this.light.position[2] = 15.0 * Math.sin(0.5 * this.y_rot);
-
+*/
         this.sphereMesh.setScale([0.3, 0.3, 0.3]);
         this.sphereMesh.setPosition([0.0, 5.0, -6.0]);
         this.sphereMesh.setRotation([this.y_rot, this.y_rot, 0.0]);
@@ -101,6 +98,7 @@ PostProcessSample.prototype.update = function () {
 
 PostProcessSample.prototype.draw = function () {
     this.sceneRenderer.render(this.highResRT);
+    //this.sceneRenderer.render();
 
     // input RT -> output BACK_BUFFER or RT_2
     this.postProcess.process();

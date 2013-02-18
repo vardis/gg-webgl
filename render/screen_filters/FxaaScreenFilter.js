@@ -6,6 +6,7 @@
 GG.FxaaScreenFilter = function (argument) {	
 };
 
+GG.FxaaScreenFilter.prototype = new GG.ScreenFilter();
 GG.FxaaScreenFilter.prototype.constructor = GG.FxaaScreenFilter;
 
 GG.PostProcessChain.registerScreenFilter('fxaa', GG.FxaaScreenFilter);
@@ -32,11 +33,11 @@ GG.FxaaScreenFilter.prototype.getFxaaGlsl = function (argument) {
 		"{",
 		"    vec4 color;",
 		"    vec2 inverseVP = vec2(1.0 / u_viewportSize.x, 1.0 / u_viewportSize.y);",
-		"    vec3 rgbNW = texture2D(tex, (fragCoord + vec2(-1.0, -1.0)) * inverseVP).xyz;",
-		"    vec3 rgbNE = texture2D(tex, (fragCoord + vec2(1.0, -1.0)) * inverseVP).xyz;",
-		"    vec3 rgbSW = texture2D(tex, (fragCoord + vec2(-1.0, 1.0)) * inverseVP).xyz;",
-		"    vec3 rgbSE = texture2D(tex, (fragCoord + vec2(1.0, 1.0)) * inverseVP).xyz;",
-		"    vec3 rgbM  = texture2D(tex, fragCoord  * inverseVP).xyz;",
+		"    vec3 rgbNW = texture2D(tex, fragCoord + vec2(-1.0, -1.0) * inverseVP).xyz;",
+		"    vec3 rgbNE = texture2D(tex, fragCoord + vec2(1.0, -1.0) * inverseVP).xyz;",
+		"    vec3 rgbSW = texture2D(tex, fragCoord + vec2(-1.0, 1.0) * inverseVP).xyz;",
+		"    vec3 rgbSE = texture2D(tex, fragCoord + vec2(1.0, 1.0) * inverseVP).xyz;",
+		"    vec3 rgbM  = texture2D(tex, fragCoord).xyz;",
 		"    vec3 luma = vec3(0.299, 0.587, 0.114);",
 		"    float lumaNW = dot(rgbNW, luma);",
 		"    float lumaNE = dot(rgbNE, luma);",
@@ -59,11 +60,11 @@ GG.FxaaScreenFilter.prototype.getFxaaGlsl = function (argument) {
 		"              dir * rcpDirMin)) * inverseVP;",
 		"      ",
 		"    vec3 rgbA = 0.5 * (",
-		"        texture2D(tex, fragCoord * inverseVP + dir * (1.0 / 3.0 - 0.5)).xyz +",
-		"        texture2D(tex, fragCoord * inverseVP + dir * (2.0 / 3.0 - 0.5)).xyz);",
+		"        texture2D(tex, fragCoord  + dir * (1.0 / 3.0 - 0.5)).xyz +",
+		"        texture2D(tex, fragCoord  + dir * (2.0 / 3.0 - 0.5)).xyz);",
 		"    vec3 rgbB = rgbA * 0.5 + 0.25 * (",
-		"        texture2D(tex, fragCoord * inverseVP + dir * -0.5).xyz +",
-		"        texture2D(tex, fragCoord * inverseVP + dir * 0.5).xyz);",
+		"        texture2D(tex, fragCoord  + dir * -0.5).xyz +",
+		"        texture2D(tex, fragCoord  + dir * 0.5).xyz);",
 		"",
 		"    float lumaB = dot(rgbB, luma);",
 		"    if ((lumaB < lumaMin) || (lumaB > lumaMax))",

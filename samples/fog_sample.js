@@ -41,7 +41,7 @@ FogSample.prototype.initializeWithAssetsLoaded = function () {
 		cosCutOff : 0.9
 	});
 
-	this.mouseHandler = new GG.MouseHandler();
+	this.mouseHandler = new GG.FpsCamera();
 	this.mouseHandler.setCamera(this.camera);
 
 	this.scene = new GG.Scene();

@@ -103,6 +103,16 @@ GG.ShaderLib = new function (argument) {
 			"	v_texCoords = 0.5*(a_position.xy + vec2(1.0));",
 			"	gl_Position = a_position;",
 			"}"].join('\n'),
+
+			/**
+			 * Gets the Gaussian value in the first dimension.",
+             * @param x Distance from origin on the x-axis
+             * @returns The gaussian value on the x-axis
+             */
+		gaussianKernel : [			
+            "float gaussianKernel (float x) {",
+            "       return (1.0 / sqrt(2.0 * 3.141592)) * exp(-((x * x) / 2.0));  ",
+            "}"].join('\n'),
 			
 		blit : {
 			vertex : [

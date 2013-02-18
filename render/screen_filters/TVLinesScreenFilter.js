@@ -3,6 +3,7 @@ GG.TVLinesScreenFilter = function () {
 
 GG.PostProcessChain.registerScreenFilter('tvLines', GG.TVLinesScreenFilter);
 
+GG.TVLinesScreenFilter.prototype = new GG.ScreenFilter();
 GG.TVLinesScreenFilter.prototype.constructor = GG.TVLinesScreenFilter;
 
 GG.TVLinesScreenFilter.prototype.inject = function (programSource) {

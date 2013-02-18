@@ -38,6 +38,10 @@ GG.PingPongBuffer.prototype.activate = function() {
 	this.fbos[this.writeFBO].activate();	
 };
 
+GG.PingPongBuffer.prototype.activateOnlyTarget = function() {
+	this.fbos[this.writeFBO].activate();	
+};
+
 GG.PingPongBuffer.prototype.deactivate = function() {
 	this.fbos[this.writeFBO].deactivate();	
 };

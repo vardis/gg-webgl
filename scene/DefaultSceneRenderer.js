@@ -1,16 +1,18 @@
 GG.DefaultSceneRenderer = function (spec) {
-	spec                 = spec || {};
-	this.scene           = spec.scene;
-	this.camera          = spec.camera;
-	this.programCache    = {};
-	this.shadowTechnique = new GG.ShadowMapTechnique({ shadowType : GG.SHADOW_MAPPING_VSM });
-	this.dbg             = new GG.DepthMapDebugOutput();	
+	spec                       = spec || {};
+	this.scene                 = spec.scene;
+	this.camera                = spec.camera;
+	this.programCache          = {};
+	this.shadowTechnique       = new GG.ShadowMapTechnique({ shadowType : GG.SHADOW_MAPPING });
+	this.ambientTechnique      = new GG.AmbientLightingTechnique();
+	this.depthPrePassTechnique = new GG.DepthPrePassTechnique();
+	this.dbg                   = new GG.DepthMapDebugOutput();	
 	/*
 	this.backgroundQueue = new GG.RenderQueue({ name : 'background', priority : 0 });
 	this.defaultQueue    = new GG.RenderQueue({ name : 'default', priority : 1 });
 	this.overlayQueue    = new GG.RenderQueue({ name : 'overlay', priority : 2 });
 */
-	this.depthPrePassTechnique = new GG.DepthPrePassTechnique();
+	
 };
 
 GG.DefaultSceneRenderer.prototype.setScene = function(sc) {
@@ -36,7 +38,33 @@ GG.DefaultSceneRenderer.prototype.findVisibleObjects = function(scene, camera) {
 };
 
 GG.DefaultSceneRenderer.prototype.findShadowCasters = function(scene, camera) {
-	return scene.listObjects();
+	return scene.listObjects().filter(function castsShadows(obj) {
+		return obj.material.castsShadows;
+	});
+};
+
+GG.DefaultSceneRenderer.prototype.findShadowReceivers = function(objectsList) {
+	return objectsList.filter(function receivesShadows(obj) {
+		return obj.material.receivesShadows;
+	});
+};
+
+GG.DefaultSceneRenderer.prototype.findNonShadowed = function(objectsList) {
+	return objectsList.filter(function receivesShadows(obj) {
+		return !obj.material.receivesShadows;
+	});
+};
+
+GG.DefaultSceneRenderer.prototype.findShadelessObjects = function(objectsList) {
+	return objectsList.filter(function shadeless(obj) {
+		return obj.material.shadeless;
+	});
+};
+
+GG.DefaultSceneRenderer.prototype.findShadedObjects = function(objectsList) {
+	return objectsList.filter(function shaded(obj) {
+		return !obj.material.shadeless;
+	});
 };
 
 GG.DefaultSceneRenderer.prototype.findEffectiveLights = function(scene, camera) {
@@ -61,15 +89,21 @@ GG.DefaultSceneRenderer.prototype.findShadowCastingLights = function(lights) {
  *   Render the list of objects 
  * Unbind render target, if any
  */
-GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {
-	
+GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {	
 	var ctx            = new GG.RenderContext();
 	ctx.camera         = this.camera;
 	ctx.scene          = this.scene;
 	ctx.renderTarget   = renderTarget;
 	
-	var visibleObjects = this.findVisibleObjects(this.scene, this.camera);
-	var shadowCasters  = this.findShadowCasters(this.scene);
+	var visibleObjects   = this.findVisibleObjects(this.scene, this.camera);
+	var shadedObjects    = this.findShadedObjects(visibleObjects);
+	var nonShadedObjects = this.findShadelessObjects(visibleObjects);
+	var shadowCasters    = this.findShadowCasters(this.scene);
+	var shadowReceivers  = this.findShadowReceivers(visibleObjects);
+	var shadedShadowedObjects = this.findShadowReceivers(shadedObjects);
+	var shadedNonShadowedObjects = this.findNonShadowed(shadedObjects);
+	var nonShadedShadowedObjects = this.findShadowReceivers(nonShadedObjects);
+	var nonShadedNonShadowedObjects = this.findNonShadowed(nonShadedObjects);
 
 	// TODO: Create an ambient light set to the ambient light of the scene
 	var effectiveLights = this.findEffectiveLights(this.scene, this.camera);
@@ -91,32 +125,35 @@ GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {
 		gl.depthFunc(gl.LEQUAL);
 
 		// fills the depth buffer only in order to skip processing for invisible fragments
-		this.renderDepthPrePass(visibleObjects, ctx);
+		this.renderDepthPrePass(visibleObjects, ctx);		
 
 		// additively blend the individual light passes
 		gl.enable(gl.BLEND);
 		gl.blendEquation(gl.FUNC_ADD);
 		gl.blendFunc(gl.ONE, gl.ONE);
 
-
 		gl.cullFace(gl.BACK);
 		gl.frontFace(gl.CCW);
 		gl.enable(gl.CULL_FACE);
 
-		for (var i = effectiveLights.length - 1; i >= 0; i--) {
-            ctx.light = effectiveLights[i];
-			for (var j = visibleObjects.length - 1; j >= 0; j--) {
-				var renderable = visibleObjects[j];						
-				var technique = renderable.getMaterial().getTechnique();
-				technique.render(renderable, ctx);				
-			}
+		// render objects that are affected by lighting and by shadows		
+		if (this.scene.ambientLight !== null) {
+			ctx.light = this.scene.ambientLight;
+			this.renderObjectsWithAmbient(ctx, shadedShadowedObjects);
 		}
 
+		for (var i = effectiveLights.length - 1; i >= 0; i--) {
+            ctx.light = effectiveLights[i];
+            this.renderListOfObjects(ctx, shadedShadowedObjects);
+		}
+
+		// render objects that are not affected by lighting but are affected by shadows
+		this.renderListOfObjects(ctx, nonShadedNonShadowedObjects);
+
 		var shadowLights = this.findShadowCastingLights(effectiveLights);
-		var enableShadows = this.scene.hasShadows() && this.shadowTechnique && shadowLights.length > 0;
-		if (enableShadows) {
-			
-			// applies the shadows on top of the scene
+		var enableShadows = this.scene.hasShadows() && this.shadowTechnique && shadowLights.length > 0 && shadowReceivers.length > 0 && shadowCasters.length > 0;
+		if (enableShadows) {			
+			// applies the shadows on top of the scene with multiplicative blending
 			for (var i = shadowLights.length - 1; i >= 0; i--) {	
 				var light = shadowLights[i];
 				ctx.light = light;	
@@ -138,11 +175,28 @@ GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {
 				gl.cullFace(gl.BACK);
 				gl.frontFace(gl.CCW);
 
-				for (var j = visibleObjects.length - 1; j >= 0; j--) {		
-					this.shadowTechnique.render(visibleObjects[j], ctx);		
+				for (var j = shadowReceivers.length - 1; j >= 0; j--) {		
+					this.shadowTechnique.render(shadowReceivers[j], ctx);		
 				}				
 			}
 		}
+
+		gl.disable(gl.BLEND);
+
+		// render objects that are affected by lighting but not by shadows		
+		if (this.scene.ambientLight !== null) {
+			ctx.light = this.scene.ambientLight;
+			this.renderObjectsWithAmbient(ctx, shadedNonShadowedObjects);
+		}
+		
+		for (var i = effectiveLights.length - 1; i >= 0; i--) {
+            ctx.light = effectiveLights[i];
+            this.renderListOfObjects(ctx, shadedNonShadowedObjects);
+		}
+
+		// render objects that are not affected by lighting nor by shadows
+		this.renderListOfObjects(ctx, nonShadedNonShadowedObjects);
+
 	} finally {
 		gl.disable(gl.BLEND);
 		if (renderTarget) renderTarget.deactivate();
@@ -171,3 +225,18 @@ GG.DefaultSceneRenderer.prototype.renderDepthPrePass = function (visibleObjects,
 	}
 	
 };
+
+GG.DefaultSceneRenderer.prototype.renderListOfObjects = function (renderContext, objectsList) {
+	for (var j = objectsList.length - 1; j >= 0; j--) {
+		var renderable = objectsList[j];						
+		var technique = renderable.getMaterial().getTechnique();
+		technique.render(renderable, renderContext);				
+	}
+}
+
+GG.DefaultSceneRenderer.prototype.renderObjectsWithAmbient = function (renderContext, objectsList) {
+	for (var j = objectsList.length - 1; j >= 0; j--) {
+		var renderable = objectsList[j];								
+		this.ambientTechnique.render(renderable, renderContext);				
+	}
+}

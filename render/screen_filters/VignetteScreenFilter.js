@@ -10,6 +10,7 @@ GG.VignetteScreenFilter = function (spec) {
 	this.u_vignetteColor     = spec.u_vignetteColor != undefined ? spec.u_vignetteColor : [0.02, 0.02, 0.02];
 };
 
+GG.VignetteScreenFilter.prototype = new GG.ScreenFilter();
 GG.VignetteScreenFilter.prototype.constructor = GG.VignetteScreenFilter;
 
 GG.PostProcessChain.registerScreenFilter('vignette', GG.VignetteScreenFilter);

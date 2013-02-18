@@ -40,6 +40,8 @@ GG_files = [
 	'render/RenderContext.js',
 	'render/PingPongBuffer.js',
 	'render/PostProcessChain.js',
+	'render/screen_filters/ScreenFilter.js',
+	'render/screen_filters/GaussianBlurScreenFilter.js',
 	'render/screen_filters/GammaScreenFilter.js',
 	'render/screen_filters/VignetteScreenFilter.js',
 	'render/screen_filters/TVLinesScreenFilter.js',
@@ -61,6 +63,7 @@ GG_files = [
 	'techniques/RenderPasses/AlphaMappingEmbeddableRenderPass.js',
 	'techniques/RenderPasses/NormalMappingEmbeddableRenderPass.js',	
 	'techniques/BaseTechnique.js',
+	'techniques/AmbientLightingTechnique.js',
 	'techniques/NormalsVisualizationTechnique.js',
 	'techniques/ConstantColorTechnique.js',
 	'techniques/VertexColorsTechnique.js',
@@ -83,6 +86,7 @@ GG_files = [
 	'render/Renderer.js',	
 	'interaction/MouseHandler.js',
 	'interaction/SphericalCameraController.js',
+	'interaction/FpsCamera.js',
 	'scene/Scene.js',
 	'scene/DefaultSceneRenderer.js'
 ]

@@ -489,6 +489,30 @@ mat3.identity = function (dest) {
     return dest;
 };
 
+mat3.x = function (mat) {
+    var x = vec3.create();
+    x[0] = mat[0];
+    x[1] = mat[3];
+    x[2] = mat[6];
+    return x;
+};
+
+mat3.y = function (mat) {
+    var x = vec3.create();
+    x[0] = mat[1];
+    x[1] = mat[4];
+    x[2] = mat[7];
+    return x;
+};
+
+mat3.z = function (mat) {
+    var x = vec3.create();
+    x[0] = mat[2];
+    x[1] = mat[5];
+    x[2] = mat[8];
+    return x;
+};
+
 /**
  * Transposes a mat3 (flips the values over the diagonal)
  *

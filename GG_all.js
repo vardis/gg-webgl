@@ -1047,6 +1047,16 @@ GG.ShaderLib = new function (argument) {
 			"	v_texCoords = 0.5*(a_position.xy + vec2(1.0));",
 			"	gl_Position = a_position;",
 			"}"].join('\n'),
+
+			/**
+			 * Gets the Gaussian value in the first dimension.",
+             * @param x Distance from origin on the x-axis
+             * @returns The gaussian value on the x-axis
+             */
+		gaussianKernel : [			
+            "float gaussianKernel (float x) {",
+            "       return (1.0 / sqrt(2.0 * 3.141592)) * exp(-((x * x) / 2.0));  ",
+            "}"].join('\n'),
 			
 		blit : {
 			vertex : [
@@ -1263,6 +1273,26 @@ GG.MathUtils = function() {
 
 		isPowerOf2 : function (val) {
 			return (val & (val - 1)) === 0;
+		},
+
+		gaussianWeight : function(x, sigma) {
+			var sigma2 = sigma * sigma;
+			return (1 / Math.sqrt(2 * 3.141592 * sigma2)) * Math.exp(-((x * x) / (2.0*sigma2)));  
+		},
+				
+		getGaussianWeights : function(size, sigma) {
+			var weights = [];	
+			weights[0] = GG.MathUtils.gaussianWeight(0, sigma);
+			var sum = weights[0];
+			for (var i = 1; i < size; i++) {
+				weights[i] = GG.MathUtils.gaussianWeight(i, sigma);
+				sum += 2*weights[i];
+			}
+		    
+			for (i = 0; i < size; i++) {
+				weights[i] /= sum;
+			}
+			return weights;
 		}
 	}
 }();
@@ -3052,8 +3082,9 @@ GG.OrthographicCamera.prototype.setup = function(pos, lookAt, up, left, right, b
 };
 
 GG.LT_DIRECTIONAL = 1;
-GG.LT_POINT = 2;
-GG.LT_SPOT = 3;
+GG.LT_POINT       = 2;
+GG.LT_SPOT        = 3;
+GG.LT_AMBIENT     = 4;
 
 GG.Light = function(spec) {
 	spec              = spec || {};
@@ -3061,6 +3092,7 @@ GG.Light = function(spec) {
 	this.lightType    = spec.type != undefined ? spec.type : GG.LT_POINT;
 	this.position     = spec.position != undefined ? spec.position : [0.0, 0.0, 0.0];
 	this.direction    = spec.direction != undefined ? spec.direction : [0.0, 0.0, -1.0];
+	this.ambient      = spec.ambient != undefined ? spec.ambient : [1.0, 1.0, 1.0];
 	this.diffuse      = spec.diffuse != undefined ? spec.diffuse : [1.0, 1.0, 1.0];
 	this.specular     = spec.specular != undefined ? spec.specular : [1.0, 1.0, 1.0];
 	this.attenuation  = spec.attenuation != undefined ? spec.attenuation : 5.0;
@@ -3344,6 +3376,10 @@ GG.PingPongBuffer.prototype.activate = function() {
 	this.fbos[this.writeFBO].activate();	
 };
 
+GG.PingPongBuffer.prototype.activateOnlyTarget = function() {
+	this.fbos[this.writeFBO].activate();	
+};
+
 GG.PingPongBuffer.prototype.deactivate = function() {
 	this.fbos[this.writeFBO].deactivate();	
 };
@@ -3374,26 +3410,31 @@ GG.PingPongBuffer.prototype.targetTexture = function() {
  * E.g.:
  * var postProcess = new GG.PostProcessChain();
  * postProcess.input(highResRT).output(null)
- * 	.filter(myScreenFilter).vignette({ radius : 0.1 }).gamma(2.2);
- */ 	               
+ *      .filter(myScreenFilter).vignette({ radius : 0.1 }).gamma(2.2);
+ */                    
 GG.PostProcessChain = function (spec) {
-	this.filterChain = [];
-	this.screenPass  = new GG.ScreenPass();
-	this.program     = null;
-	this.src         = null;
-	this.dest        = null;
-	this.needsUpdate = true;
+    this.filterChain = [];
+    this.screenPasses  = [];
+    this.program     = null;
+    this.src         = null;
+    this.dest        = null;
+    this.needsUpdate = true;
+    this.pingpongBuffer = null;
 
-	for (filterName in GG.PostProcessChain.availableFilters) {
-		var self = this;
-		this[filterName] = function (fname) {
-			return function (spec) {
-				self.filterChain.push(new GG.PostProcessChain.availableFilters[fname](spec));
-				self.needsUpdate = true;
-				return self;
-			}
-		}(filterName);
-	}
+    // Creates an instance method for each registered screen filter.
+    // The method has the same name as the registration name of the filter.
+    // When the method is called, it will then add the screen filter 
+    // to the filter chain of the bound PostProcessChain instance.
+    for (filterName in GG.PostProcessChain.availableFilters) {
+        var self = this;
+        this[filterName] = function (fname) {
+            return function (spec) {
+                self.filterChain.push(new GG.PostProcessChain.availableFilters[fname](spec));
+                self.needsUpdate = true;
+                return self;
+            }
+        }(filterName);
+    }
 };
 
 GG.PostProcessChain.prototype.constructor = GG.PostProcessChain;
@@ -3402,85 +3443,196 @@ GG.PostProcessChain.prototype.constructor = GG.PostProcessChain;
 GG.PostProcessChain.availableFilters = {};
 
 GG.PostProcessChain.registerScreenFilter = function (name, ctor) {
-	GG.PostProcessChain.availableFilters[name] = ctor;
+    GG.PostProcessChain.availableFilters[name] = ctor;
 };
 
 GG.PostProcessChain.prototype.source = function (src) {
-	this.src = src;
-	return this;
+    this.src = src;
+    return this;
 };
 
 GG.PostProcessChain.prototype.destination = function (dest) {
-	this.dest = dest;
-	return this;
+    this.dest = dest;
+    return this;
+};
+
+GG.PostProcessChain.prototype.createPassesFromInputFilters = function () {
+    var passes = [];
+    var combinedFilters = [];
+    for (var i = 0; i < this.filterChain.length; i++) {
+        var filter = this.filterChain[i];
+        if (filter.standalone) {
+            if (combinedFilters.length > 0) {
+                var pass = createPassFromCombinedFilters(combinedFilters);
+                pass['filters'] = combinedFilters;
+                passes.push(pass);
+                combinedFilters = [];
+            }
+            passes = passes.concat(filter.getScreenPasses());
+        } else {
+            combinedFilters.push(filter);
+        }
+    }
+
+    if (combinedFilters.length > 0) {
+        var pass = this.createPassFromCombinedFilters(combinedFilters);
+        pass['filters'] = combinedFilters;
+        passes.push(pass);                         
+    }
+    return passes;
+};
+
+GG.PostProcessChain.prototype.createPassFromCombinedFilters = function (filtersList) {
+    var programSource = new GG.ProgramSource();
+    programSource.asFragmentShader().floatPrecision('highp')
+        .uniform('sampler2D', 'u_sourceTexture')
+        .varying('vec2', 'v_texCoords')
+        .addMainInitBlock('vec4 color = texture2D(u_sourceTexture, v_texCoords);');
+
+    for (var i = 0; i < filtersList.length; i++) {
+        filtersList[i].inject(programSource);
+    }
+    programSource.addMainBlock("gl_FragColor = vec4(color.rgb, 1.0);");
+    
+    var screenPass = new GG.ScreenPass({
+        vertexShader   : GG.ShaderLib.screen_filter_vertex,
+        fragmentShader : programSource.toString()                       
+    });
+    screenPass.createGpuProgram();
+    return screenPass;
 };
 
 GG.PostProcessChain.prototype.process = function () {
-	if (this.needsUpdate) {
-		this.screenPass.destroy();
+    if (this.needsUpdate) {
+        this.screenPasses = this.createPassesFromInputFilters();
+        this.needsUpdate = false;
+    }
 
-		var programSource = new GG.ProgramSource();
-		programSource.asFragmentShader().floatPrecision('highp')
-			.uniform('sampler2D', 'u_sourceTexture')
-			.varying('vec2', 'v_texCoords')
-			.addMainInitBlock('vec4 color = texture2D(u_sourceTexture, v_texCoords);');
+    var sourceTexture = this.src;
+    if (this.src instanceof GG.RenderTarget) {
+        sourceTexture = this.src.getColorAttachment(0);
+    }        
 
-		for (var i = 0; i < this.filterChain.length; i++) {
-			this.filterChain[i].inject(programSource);
+    this.camera = new GG.OrthographicCamera();
+    var targetViewportDimensions = this.getDestinationViewport();
+    this.camera.getViewport().setWidth(targetViewportDimensions[0]);
+    this.camera.getViewport().setHeight(targetViewportDimensions[1]);
+    this.renderContext = new GG.RenderContext({ camera : this.camera });
+
+    try {        
+        if (this.screenPasses.length > 1 && this.pingpongBuffer == null) {
+        	// TODO: set the dimensions according to the source or dest render target
+            this.pingpongBuffer = new GG.PingPongBuffer({ width : targetViewportDimensions[0], height : targetViewportDimensions[1] });
+            this.pingpongBuffer.initialize();
         }
-        programSource.addMainBlock("gl_FragColor = vec4(color.rgb, 1.0);");
-		
-		this.screenPass = new GG.ScreenPass({
-			vertexShader   : GG.ShaderLib.screen_filter_vertex,
-			fragmentShader : programSource.toString()			
-		});
-
-		this.needsUpdate = false;
-	}
-
-	var sourceTexture = this.src;
-	if (this.src instanceof GG.RenderTarget) {
-		sourceTexture = this.src.getColorAttachment(0);
-	}
-	this.screenPass.setSourceTexture(sourceTexture);
-
-	try {
-		viewport = [];
-		if (this.dest instanceof GG.RenderTarget) {
-			this.dest.activate();
-			viewport = [this.dest.width, this.dest.height ];
-		} else {
-			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-			gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-			viewport = [gl.viewportWidth, gl.viewportHeight];
-		}
-
-		// call createGpuProgram now in order to get the gpu program
-		this.screenPass.createGpuProgram();
-		gl.useProgram(this.screenPass.program);
-		
-		for (var i = 0; i < this.filterChain.length; i++) {
-			this.filterChain[i].setUniforms(this.screenPass.program);
+        for (var i = 0; i < this.screenPasses.length; i++) {
+        	var pass = this.screenPasses[i];
+            // input from?
+            if (i == 0) {
+                pass.setSourceTexture(sourceTexture);        
+            } else {
+                pass.setSourceTexture(this.pingpongBuffer.sourceTexture());
+            }
+            // destination to?
+            if (i == this.screenPasses.length - 1) {
+                this.bindFinalRenderTarget(this.dest);
+            } else if (i == 0) {
+                this.pingpongBuffer.activateOnlyTarget();
+            } else {
+                this.pingpongBuffer.activate();
+            }                                
+            if (pass.hasOwnProperty('filters')) {
+            	var filters = pass.filters;
+            	gl.useProgram(pass.program);
+            	for (var f = 0; f < filters.length; f++) {
+            		filters[f].setUniforms(pass.program);
+            	}
+            }
+            pass.render(null, this.renderContext);
+            if (this.pingpongBuffer != null) {
+                this.pingpongBuffer.swap();
+            }
         }
 
-        this.camera = new GG.OrthographicCamera();
-        this.camera.getViewport().setWidth(viewport[0]);
-        this.camera.getViewport().setHeight(viewport[1]);
+            
+    } finally {
+        this.unbindFinalRenderTarget(this.dest);
+    }
+};
 
-        this.renderContext           = new GG.RenderContext({ camera : this.camera });
-        this.screenPass.render(null, this.renderContext);
-	} finally {
-		if (this.dest instanceof GG.RenderTarget) {
-			this.dest.deactivate();
-		}
+GG.PostProcessChain.prototype.getDestinationViewport = function (argument) {
+	if (this.dest == null) {
+		return [gl.viewportWidth, gl.viewportHeight];
+	} else {
+		return [ this.dest.width, this.dest.height ];
 	}
 };
 
-GG.PostProcessChain.prototype.filter = function (screenFilter) {
-	// body...
-	return this;
+GG.PostProcessChain.prototype.bindFinalRenderTarget = function (dest) {
+    if (this.dest instanceof GG.RenderTarget) {
+        this.dest.activate();
+        viewport = [this.dest.width, this.dest.height ];
+    } else {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        viewport = [gl.viewportWidth, gl.viewportHeight];
+    }
 };
 
+GG.PostProcessChain.prototype.unbindFinalRenderTarget = function (dest) {
+    if (this.dest instanceof GG.RenderTarget) {
+        this.dest.deactivate();
+    }
+};
+/**
+ * Defines an element of the post process filter chain. Each element is considered
+ * to perform a screen space effect.
+ * A screen filter can operate in two modes: as standalone or combined with other screen
+ * filters of the same post process chain.
+ * When in standalone mode, the filter must provide one or more ScreenPass instances 
+ * from its getScreenPasses instance method.
+ * Otherwise, the filter is supposed to inject its code in the same gpu program as the rest
+ * filters of the chain. The filters inject their code in the same order as they are defined
+ * in the post process chain.
+ */
+GG.ScreenFilter = function(spec) {
+	spec = spec || {};
+	this.standalone = spec.standalone !== undefined ? spec.standalone : false;
+	this.screenPasses = spec.screenPasses !== undefined ? spec.screenPasses : null;
+};
+
+GG.ScreenFilter.prototype.constructor = GG.ScreenFilter;
+
+/** Called for screen filter that have this.standalone = false */
+GG.ScreenFilter.prototype.inject = function (programSource) {
+};
+
+/** Called for screen filter that have this.standalone = true */
+GG.ScreenFilter.prototype.getScreenPasses = function (programSource) {
+	return this.standalone ? this.screenPasses : null;
+};
+
+
+GG.GaussianBlurScreenFilter = function (spec) {
+    spec = spec || {};
+    spec.standalone = true;
+
+    var horizontalSpec = GG.cloneDictionary(spec);
+    horizontalSpec.horizontal = true;
+	var horizontalPass = new GG.GaussianBlurPass(verticalSpec);
+
+    var verticalSpec = GG.cloneDictionary(spec);
+    verticalSpec.horizontal = false;
+    var verticalPass = new GG.GaussianBlurPass(verticalSpec);
+
+    spec.screenPasses = [ horizontalPass, verticalPass ];
+ 	GG.ScreenFilter.call(this, spec);
+};
+
+GG.GaussianBlurScreenFilter.prototype = new GG.ScreenFilter();
+GG.GaussianBlurScreenFilter.prototype.constructor = GG.GaussianBlurScreenFilter;
+
+GG.PostProcessChain.registerScreenFilter('gaussianBlur', GG.GaussianBlurScreenFilter);
 
 GG.GammaScreenFilter = function (spec) {
 	spec = spec || {};
@@ -3491,6 +3643,7 @@ GG.GammaScreenFilter = function (spec) {
 	}		
 };
 
+GG.GammaScreenFilter.prototype = new GG.ScreenFilter();
 GG.GammaScreenFilter.prototype.constructor = GG.GammaScreenFilter;
 
 GG.PostProcessChain.registerScreenFilter('gamma', GG.GammaScreenFilter);
@@ -3515,6 +3668,7 @@ GG.VignetteScreenFilter = function (spec) {
 	this.u_vignetteColor     = spec.u_vignetteColor != undefined ? spec.u_vignetteColor : [0.02, 0.02, 0.02];
 };
 
+GG.VignetteScreenFilter.prototype = new GG.ScreenFilter();
 GG.VignetteScreenFilter.prototype.constructor = GG.VignetteScreenFilter;
 
 GG.PostProcessChain.registerScreenFilter('vignette', GG.VignetteScreenFilter);
@@ -3559,6 +3713,7 @@ GG.TVLinesScreenFilter = function () {
 
 GG.PostProcessChain.registerScreenFilter('tvLines', GG.TVLinesScreenFilter);
 
+GG.TVLinesScreenFilter.prototype = new GG.ScreenFilter();
 GG.TVLinesScreenFilter.prototype.constructor = GG.TVLinesScreenFilter;
 
 GG.TVLinesScreenFilter.prototype.inject = function (programSource) {
@@ -3577,6 +3732,7 @@ GG.TVLinesScreenFilter.prototype.setUniforms = function (program) {
 GG.FxaaScreenFilter = function (argument) {	
 };
 
+GG.FxaaScreenFilter.prototype = new GG.ScreenFilter();
 GG.FxaaScreenFilter.prototype.constructor = GG.FxaaScreenFilter;
 
 GG.PostProcessChain.registerScreenFilter('fxaa', GG.FxaaScreenFilter);
@@ -3603,11 +3759,11 @@ GG.FxaaScreenFilter.prototype.getFxaaGlsl = function (argument) {
 		"{",
 		"    vec4 color;",
 		"    vec2 inverseVP = vec2(1.0 / u_viewportSize.x, 1.0 / u_viewportSize.y);",
-		"    vec3 rgbNW = texture2D(tex, (fragCoord + vec2(-1.0, -1.0)) * inverseVP).xyz;",
-		"    vec3 rgbNE = texture2D(tex, (fragCoord + vec2(1.0, -1.0)) * inverseVP).xyz;",
-		"    vec3 rgbSW = texture2D(tex, (fragCoord + vec2(-1.0, 1.0)) * inverseVP).xyz;",
-		"    vec3 rgbSE = texture2D(tex, (fragCoord + vec2(1.0, 1.0)) * inverseVP).xyz;",
-		"    vec3 rgbM  = texture2D(tex, fragCoord  * inverseVP).xyz;",
+		"    vec3 rgbNW = texture2D(tex, fragCoord + vec2(-1.0, -1.0) * inverseVP).xyz;",
+		"    vec3 rgbNE = texture2D(tex, fragCoord + vec2(1.0, -1.0) * inverseVP).xyz;",
+		"    vec3 rgbSW = texture2D(tex, fragCoord + vec2(-1.0, 1.0) * inverseVP).xyz;",
+		"    vec3 rgbSE = texture2D(tex, fragCoord + vec2(1.0, 1.0) * inverseVP).xyz;",
+		"    vec3 rgbM  = texture2D(tex, fragCoord).xyz;",
 		"    vec3 luma = vec3(0.299, 0.587, 0.114);",
 		"    float lumaNW = dot(rgbNW, luma);",
 		"    float lumaNE = dot(rgbNE, luma);",
@@ -3630,11 +3786,11 @@ GG.FxaaScreenFilter.prototype.getFxaaGlsl = function (argument) {
 		"              dir * rcpDirMin)) * inverseVP;",
 		"      ",
 		"    vec3 rgbA = 0.5 * (",
-		"        texture2D(tex, fragCoord * inverseVP + dir * (1.0 / 3.0 - 0.5)).xyz +",
-		"        texture2D(tex, fragCoord * inverseVP + dir * (2.0 / 3.0 - 0.5)).xyz);",
+		"        texture2D(tex, fragCoord  + dir * (1.0 / 3.0 - 0.5)).xyz +",
+		"        texture2D(tex, fragCoord  + dir * (2.0 / 3.0 - 0.5)).xyz);",
 		"    vec3 rgbB = rgbA * 0.5 + 0.25 * (",
-		"        texture2D(tex, fragCoord * inverseVP + dir * -0.5).xyz +",
-		"        texture2D(tex, fragCoord * inverseVP + dir * 0.5).xyz);",
+		"        texture2D(tex, fragCoord  + dir * -0.5).xyz +",
+		"        texture2D(tex, fragCoord  + dir * 0.5).xyz);",
 		"",
 		"    float lumaB = dot(rgbB, luma);",
 		"    if ((lumaB < lumaMin) || (lumaB > lumaMax))",
@@ -4198,13 +4354,16 @@ GG.BaseMaterial = function(spec) {
 	
 	this.specularMap = new GG.TextureUnit({ 'texture' : spec.specularMap, 'unit' : GG.TEX_UNIT_SPECULAR_MAP });
 	this.alphaMap    = new GG.TextureUnit({ 'texture' : spec.alphaMap, 'unit' : GG.TEX_UNIT_ALPHA_MAP });
+
 	this.normalMap   = new GG.TextureUnit({ 'texture' : spec.normalMap, 'unit' : GG.TEX_UNIT_NORMAL_MAP });
 	this.parallaxMap = new GG.TextureUnit({ 'texture' : spec.parallaxMap, 'unit' : GG.TEX_UNIT_PARALLAX_MAP });
-
     this.normalMapScale = 0.0005;
 
 	this.diffuseTextureStack = new GG.TextureStack();
 	
+	this.castsShadows    = spec.castsShadows === undefined ? false : spec.castsShadows;
+	this.receivesShadows = spec.receivesShadows === undefined ? false : spec.receivesShadows;
+
 	this.flatShade       = spec.flatShade != undefined ? spec.flatShade : false;
 	this.phongShade      = spec.phongShade != undefined ? spec.phongShade : true;	
 	this.shadeless       = spec.shadeless != undefined ? spec.shadeless : false;
@@ -4222,7 +4381,6 @@ GG.BaseMaterial = function(spec) {
 
 	// controls the reflectance using a texture
 	this.glowMap     = spec.glowMap;
-
 
 	// index of refraction 
 	this.IOR             = spec.IOR != undefined ? spec.IOR : [ 1.0, 1.0, 1.0 ];
@@ -4471,7 +4629,7 @@ GG.RenderPass.prototype.overrideRenderPrimitive = function(renderable) {
 GG.ScreenPass = function(spec) {
 	spec = spec || {};
 	spec.customRendering = true;
-	
+	spec.usesLighting    = false;
 	GG.RenderPass.call(this, spec);
 
 	this.sourceTexture = spec.sourceTexture;
@@ -4527,6 +4685,7 @@ GG.GaussianBlurPass = function (spec) {
 	spec              = spec || {};
 	this.filterSize   = spec.filterSize != undefined ? spec.filterSize : 2;
 	this.isHorizontal = spec.horizontal != undefined ? spec.horizontal : true;	
+	this.sigma        = spec.sigma === undefined ? 4.0 : spec.sigma;
 
 	var fs = [
 		"precision highp float;",
@@ -4534,22 +4693,24 @@ GG.GaussianBlurPass = function (spec) {
 		"uniform int u_filterSize;",
 		"uniform float u_isHorizontal;",
 		"uniform vec2 u_texStepSize;",
+		"uniform mediump float u_gaussianWeights[12];",
 		"varying vec2 v_texCoords;",
+
+		GG.ShaderLib.gaussianKernel,
 
 		"const int MAX_FILTER_SIZE = 24;",
 
 		"void main() {",
 		"	int halfFilterSize = u_filterSize / 2;",
-		"	vec4 color;",
+		"	vec4 color = u_gaussianWeights[0] * texture2D(u_sourceTexture, v_texCoords);",
 		"	vec2 basis = vec2(u_isHorizontal, 1.0 - u_isHorizontal);",			
 		"	for (int i = 0; i < MAX_FILTER_SIZE; i++) {",
 		"		if (i > halfFilterSize) break;",
 		"		vec2 offset = u_texStepSize * float(i);",
-		"		color += texture2D(u_sourceTexture, v_texCoords + offset * basis);",
-		"		color += texture2D(u_sourceTexture, v_texCoords - offset * basis);",
-		"	}",
-		
-		"	color /= float(u_filterSize);",
+		"       float w = u_gaussianWeights[i];",
+		"		color += w * texture2D(u_sourceTexture, v_texCoords + offset * basis);",
+		"		color += w * texture2D(u_sourceTexture, v_texCoords - offset * basis);",
+		"	}",		
 		"	gl_FragColor = vec4(color.rgb, 1.0);",
 		"}"].join('\n');
 
@@ -4579,6 +4740,9 @@ GG.GaussianBlurPass.prototype.__setCustomUniforms = function(renderable, renderC
 	gl.uniform1f(this.program.u_isHorizontal, this.isHorizontal ? 1.0 : 0.0);
 	texStep = [ 1.0 / this.sourceTexture.width, 1.0 / this.sourceTexture.height ];
 	gl.uniform2fv(program.u_texStepSize, texStep);
+
+	var weights = GG.MathUtils.getGaussianWeights(this.filterSize, this.sigma);
+	gl.uniform1fv(program['u_gaussianWeights[0]'], weights);
 };
 
 /**
@@ -5177,6 +5341,47 @@ GG.BaseTechnique.prototype.render = function(renderable, ctx) {
 	});
 };
 
+
+GG.AmbientLightingTechnique = function (argument) {
+	spec          = spec || {};     
+	spec.passes = [ new GG.AmbientLightingPass() ];
+	GG.BaseTechnique.call(this, spec);
+};
+
+GG.AmbientLightingTechnique.prototype = new GG.BaseTechnique();
+GG.AmbientLightingTechnique.prototype.constructor = GG.AmbientLightingTechnique;
+
+GG.AmbientLightingPass = function(spec) {
+    spec = spec || {};
+    spec.vertexShader = [
+            "attribute vec4 a_position;",
+            "uniform mat4 u_matModelView;",
+            "uniform mat4 u_matProjection;",
+            "void main() {",
+            "       gl_Position = u_matProjection*u_matModelView*a_position;",
+            "}"
+    ].join("\n");
+    
+    spec.fragmentShader = [
+            "precision mediump float;",
+            
+            "uniform vec3 u_ambientLight;",
+            "uniform vec3 u_materialAmbient;",
+            "void main() {",
+            "       gl_FragColor = vec4(u_materialAmbient * u_ambientLight, 1.0);",
+            "}"
+    ].join("\n");
+
+    GG.RenderPass.call(this, spec);
+};
+
+GG.AmbientLightingPass.prototype = new GG.RenderPass();
+GG.AmbientLightingPass.prototype.constructor = GG.AmbientLightingPass;
+
+GG.AmbientLightingPass.prototype.__setCustomUniforms = function(renderable, ctx, program) {
+	gl.uniform3fv(program.u_materialAmbient, renderable.getMaterial().ambient);               
+	gl.uniform3fv(program.u_ambientLight, ctx.light.ambient);               
+};
 
 /**
  * Draws the normals of a renderable object for debugging purposes.
@@ -7004,9 +7209,7 @@ GG.SphericalCameraController.prototype.updateCamera = function () {
 	
 	var initUp = [0,1,0];
 	var rotLeft = this.rotateLeftMatrix(rx, initUp);
-	if (!this.camera.position) {
-		console.log('AHA');
-	}
+	
 	mat4.multiplyVec3(rotLeft, this.initPos, this.camera.position);
 
 	var rotUp = this.rotateUpMatrix(ry, this.camera.position, initUp);
@@ -7088,20 +7291,173 @@ GG.SphericalCameraController.prototype.reset = function (c) {
     return this;
 };
 
+GG.FpsCamera = function() {
+	this.mouseDown  = false;
+	this.lastMouseX = null;
+	this.lastMouseY = null;
+	this.camera     = null;
+	this.rotX       = 0.0;
+	this.rotY       = 0.0;
+	this.forwardSpeed = 0.2;
+	this.strafeSpeed = 0.1;
+	
+    var self = this;
+    this.mouseDownCallback = function(x, y) {
+        self.handleMouseDown(x, y);
+    }
+    this.mouseUpCallback = function(x, y) {
+        self.handleMouseUp(x, y);
+    }
+    this.mouseMoveCallback = function(x, y) {
+        self.handleMouseMove(x, y);
+    }
+    this.mouseWheelCallback = function(deltaY) {
+        self.handleMouseWheel(deltaY);
+    }
+    this.keyDownCallback = function(keyCode) {
+        self.handleKeyDown(keyCode);
+    };
+
+    GG.mouseInput.onMouseDown(this.mouseDownCallback);
+    GG.mouseInput.onMouseUp(this.mouseUpCallback);
+    GG.mouseInput.onMouseMove(this.mouseMoveCallback);
+    GG.mouseInput.onMouseWheel(this.mouseWheelCallback);
+    GG.keyboardInput.onKeyDown(this.keyDownCallback);
+};
+
+GG.FpsCamera.FRONT_VEC = [0, 0, -1];
+GG.FpsCamera.UP_VEC    = [0, 1, 0];
+
+GG.FpsCamera.prototype.constructor = GG.FpsCamera;
+
+GG.FpsCamera.prototype.handleMouseDown = function (x, y) {
+    this.mouseDown  = true;
+    this.lastMouseX = x;
+    this.lastMouseY = y;
+};
+
+/**
+ * inclination is the angle between the +Z direction of the frame and the global +Z vector, 
+ * where the angles measures from the XZ plane, not from the zenith.
+ * azimuth is the angle between the global +X direction and the +X direction of the frame.
+ */
+GG.FpsCamera.prototype.rotateReferenceFrame = function (frameViewDir, frameUpDir, inclination, azimuth) {
+	var frameZ = vec3.normalize(vec3.create(frameViewDir));
+	var frameY = vec3.normalize(vec3.create(frameUpDir));
+	var frameX = vec3.cross(frameZ, frameY, vec3.create());
+
+	var azimuthRotation = mat4.identity();
+    mat4.rotate(azimuthRotation, azimuth, frameY);
+	
+	var inclinationRotation = mat4.identity();
+	mat4.rotate(inclinationRotation, inclination, frameX);
+
+	var m = mat4.create();
+	mat4.multiply(inclinationRotation, azimuthRotation, m);
+	return mat4.toMat3(m);
+};
+
+GG.FpsCamera.prototype.handleMouseUp = function (x, y) {
+    this.mouseDown = false;
+};
+
+GG.FpsCamera.prototype.rotateCameraFrame = function () {
+	var rx = GG.MathUtils.degToRads(this.rotX);
+	var ry = GG.MathUtils.degToRads(this.rotY);
+	this.viewFrame = this.rotateReferenceFrame(GG.FpsCamera.FRONT_VEC, GG.FpsCamera.UP_VEC, rx, ry);
+	var z = mat3.z(this.viewFrame);
+	vec3.scale(z, -1.0);
+	this.viewFrame[2] = z[0];
+	this.viewFrame[5] = z[1];
+	this.viewFrame[8] = z[2];
+	this.camera.setUp(mat3.y(this.viewFrame));
+	vec3.add(this.camera.position, mat3.z(this.viewFrame), this.camera.lookAt);
+};
+
+GG.FpsCamera.prototype.handleMouseMove = function (x, y) {
+    if (!this.mouseDown) {
+        return;
+    }
+    this.rotY  += x - this.lastMouseX;
+    this.rotX  += y - this.lastMouseY;
+
+    this.lastMouseX = x;
+    this.lastMouseY = y;
+
+    this.rotateCameraFrame();
+};
+
+GG.FpsCamera.prototype.handleMouseWheel = function (deltaY) {
+    var delta = deltaY * 0.01;
+    this.camera.zoom(delta);
+};
+
+GG.FpsCamera.prototype.handleKeyDown = function(keyCode) {
+    switch (keyCode) {
+        case GG.KEYS.LEFT:
+            var offset = vec3.scale(mat3.x(this.viewFrame), -this.strafeSpeed);
+			vec3.add(this.camera.position, offset, this.camera.position);
+			vec3.add(this.camera.lookAt, offset, this.camera.lookAt);
+            break;
+
+        case GG.KEYS.RIGHT:
+            var offset = vec3.scale(mat3.x(this.viewFrame), this.strafeSpeed);
+			vec3.add(this.camera.position, offset, this.camera.position);
+			vec3.add(this.camera.lookAt, offset, this.camera.lookAt);
+            break;
+
+        case GG.KEYS.UP:            
+			var offset = vec3.scale( mat3.z(this.viewFrame), -this.forwardSpeed);						
+			vec3.add(this.camera.position, offset, this.camera.position);	
+			vec3.add(this.camera.lookAt, offset, this.camera.lookAt);		
+            break;
+
+        case GG.KEYS.DOWN:
+            var offset = vec3.scale(mat3.z(this.viewFrame), this.forwardSpeed);						
+			vec3.add(this.camera.position, offset, this.camera.position);
+			vec3.add(this.camera.lookAt, offset, this.camera.lookAt);
+            break;
+
+        case GG.KEYS.PAGE_UP:
+        	var offset = vec3.scale(mat3.y(this.viewFrame), this.forwardSpeed);						
+			vec3.add(this.camera.position, offset, this.camera.position);
+			vec3.add(this.camera.lookAt, offset, this.camera.lookAt);
+            break;
+
+        case GG.KEYS.PAGE_DOWN:
+            var offset = vec3.scale(mat3.y(this.viewFrame), -this.forwardSpeed);						
+			vec3.add(this.camera.position, offset, this.camera.position);
+			vec3.add(this.camera.lookAt, offset, this.camera.lookAt);
+            break;
+
+        default: break;
+    }
+};
+    
+GG.FpsCamera.prototype.getCamera = function () {
+    return this.camera;
+};
+
+GG.FpsCamera.prototype.setCamera = function (c) {
+    this.camera = c;
+    this.viewFrame = mat4.toMat3(this.camera.getViewMatrix());
+    return this;
+};
 GG.Scene = function(name) {
-	this.name = name;
-
-	this.objects = [];
-	this.pointLights = [];
+	this.name             = name;
+	
+	this.ambientLight     = null;
+	this.objects          = [];
+	this.pointLights      = [];
 	this.directionaLights = [];
-	this.spotLights = [];
-	this.shadowsEnabled = false;
-
-	this.showFog = false;
-	this.fogStart = 10;
-	this.fogEnd = 100;
-	this.fogDensity = 2;
-	this.fogColor = [0.7, 0.7, 0.7];
+	this.spotLights       = [];
+	this.shadowsEnabled   = false;
+	
+	this.showFog          = false;
+	this.fogStart         = 10;
+	this.fogEnd           = 100;
+	this.fogDensity       = 2;
+	this.fogColor         = [0.7, 0.7, 0.7];
 };
 
 GG.Scene.prototype.addObject = function(object) {
@@ -7191,18 +7547,20 @@ GG.Scene.prototype.constructor = GG.Scene;
 
 
 GG.DefaultSceneRenderer = function (spec) {
-	spec                 = spec || {};
-	this.scene           = spec.scene;
-	this.camera          = spec.camera;
-	this.programCache    = {};
-	this.shadowTechnique = new GG.ShadowMapTechnique({ shadowType : GG.SHADOW_MAPPING_VSM });
-	this.dbg             = new GG.DepthMapDebugOutput();	
+	spec                       = spec || {};
+	this.scene                 = spec.scene;
+	this.camera                = spec.camera;
+	this.programCache          = {};
+	this.shadowTechnique       = new GG.ShadowMapTechnique({ shadowType : GG.SHADOW_MAPPING });
+	this.ambientTechnique      = new GG.AmbientLightingTechnique();
+	this.depthPrePassTechnique = new GG.DepthPrePassTechnique();
+	this.dbg                   = new GG.DepthMapDebugOutput();	
 	/*
 	this.backgroundQueue = new GG.RenderQueue({ name : 'background', priority : 0 });
 	this.defaultQueue    = new GG.RenderQueue({ name : 'default', priority : 1 });
 	this.overlayQueue    = new GG.RenderQueue({ name : 'overlay', priority : 2 });
 */
-	this.depthPrePassTechnique = new GG.DepthPrePassTechnique();
+	
 };
 
 GG.DefaultSceneRenderer.prototype.setScene = function(sc) {
@@ -7228,7 +7586,33 @@ GG.DefaultSceneRenderer.prototype.findVisibleObjects = function(scene, camera) {
 };
 
 GG.DefaultSceneRenderer.prototype.findShadowCasters = function(scene, camera) {
-	return scene.listObjects();
+	return scene.listObjects().filter(function castsShadows(obj) {
+		return obj.material.castsShadows;
+	});
+};
+
+GG.DefaultSceneRenderer.prototype.findShadowReceivers = function(objectsList) {
+	return objectsList.filter(function receivesShadows(obj) {
+		return obj.material.receivesShadows;
+	});
+};
+
+GG.DefaultSceneRenderer.prototype.findNonShadowed = function(objectsList) {
+	return objectsList.filter(function receivesShadows(obj) {
+		return !obj.material.receivesShadows;
+	});
+};
+
+GG.DefaultSceneRenderer.prototype.findShadelessObjects = function(objectsList) {
+	return objectsList.filter(function shadeless(obj) {
+		return obj.material.shadeless;
+	});
+};
+
+GG.DefaultSceneRenderer.prototype.findShadedObjects = function(objectsList) {
+	return objectsList.filter(function shaded(obj) {
+		return !obj.material.shadeless;
+	});
 };
 
 GG.DefaultSceneRenderer.prototype.findEffectiveLights = function(scene, camera) {
@@ -7253,15 +7637,21 @@ GG.DefaultSceneRenderer.prototype.findShadowCastingLights = function(lights) {
  *   Render the list of objects 
  * Unbind render target, if any
  */
-GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {
-	
+GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {	
 	var ctx            = new GG.RenderContext();
 	ctx.camera         = this.camera;
 	ctx.scene          = this.scene;
 	ctx.renderTarget   = renderTarget;
 	
-	var visibleObjects = this.findVisibleObjects(this.scene, this.camera);
-	var shadowCasters  = this.findShadowCasters(this.scene);
+	var visibleObjects   = this.findVisibleObjects(this.scene, this.camera);
+	var shadedObjects    = this.findShadedObjects(visibleObjects);
+	var nonShadedObjects = this.findShadelessObjects(visibleObjects);
+	var shadowCasters    = this.findShadowCasters(this.scene);
+	var shadowReceivers  = this.findShadowReceivers(visibleObjects);
+	var shadedShadowedObjects = this.findShadowReceivers(shadedObjects);
+	var shadedNonShadowedObjects = this.findNonShadowed(shadedObjects);
+	var nonShadedShadowedObjects = this.findShadowReceivers(nonShadedObjects);
+	var nonShadedNonShadowedObjects = this.findNonShadowed(nonShadedObjects);
 
 	// TODO: Create an ambient light set to the ambient light of the scene
 	var effectiveLights = this.findEffectiveLights(this.scene, this.camera);
@@ -7283,32 +7673,35 @@ GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {
 		gl.depthFunc(gl.LEQUAL);
 
 		// fills the depth buffer only in order to skip processing for invisible fragments
-		this.renderDepthPrePass(visibleObjects, ctx);
+		this.renderDepthPrePass(visibleObjects, ctx);		
 
 		// additively blend the individual light passes
 		gl.enable(gl.BLEND);
 		gl.blendEquation(gl.FUNC_ADD);
 		gl.blendFunc(gl.ONE, gl.ONE);
 
-
 		gl.cullFace(gl.BACK);
 		gl.frontFace(gl.CCW);
 		gl.enable(gl.CULL_FACE);
 
-		for (var i = effectiveLights.length - 1; i >= 0; i--) {
-            ctx.light = effectiveLights[i];
-			for (var j = visibleObjects.length - 1; j >= 0; j--) {
-				var renderable = visibleObjects[j];						
-				var technique = renderable.getMaterial().getTechnique();
-				technique.render(renderable, ctx);				
-			}
+		// render objects that are affected by lighting and by shadows		
+		if (this.scene.ambientLight !== null) {
+			ctx.light = this.scene.ambientLight;
+			this.renderObjectsWithAmbient(ctx, shadedShadowedObjects);
 		}
 
+		for (var i = effectiveLights.length - 1; i >= 0; i--) {
+            ctx.light = effectiveLights[i];
+            this.renderListOfObjects(ctx, shadedShadowedObjects);
+		}
+
+		// render objects that are not affected by lighting but are affected by shadows
+		this.renderListOfObjects(ctx, nonShadedNonShadowedObjects);
+
 		var shadowLights = this.findShadowCastingLights(effectiveLights);
-		var enableShadows = this.scene.hasShadows() && this.shadowTechnique && shadowLights.length > 0;
-		if (enableShadows) {
-			
-			// applies the shadows on top of the scene
+		var enableShadows = this.scene.hasShadows() && this.shadowTechnique && shadowLights.length > 0 && shadowReceivers.length > 0 && shadowCasters.length > 0;
+		if (enableShadows) {			
+			// applies the shadows on top of the scene with multiplicative blending
 			for (var i = shadowLights.length - 1; i >= 0; i--) {	
 				var light = shadowLights[i];
 				ctx.light = light;	
@@ -7330,11 +7723,28 @@ GG.DefaultSceneRenderer.prototype.render = function(renderTarget) {
 				gl.cullFace(gl.BACK);
 				gl.frontFace(gl.CCW);
 
-				for (var j = visibleObjects.length - 1; j >= 0; j--) {		
-					this.shadowTechnique.render(visibleObjects[j], ctx);		
+				for (var j = shadowReceivers.length - 1; j >= 0; j--) {		
+					this.shadowTechnique.render(shadowReceivers[j], ctx);		
 				}				
 			}
 		}
+
+		gl.disable(gl.BLEND);
+
+		// render objects that are affected by lighting but not by shadows		
+		if (this.scene.ambientLight !== null) {
+			ctx.light = this.scene.ambientLight;
+			this.renderObjectsWithAmbient(ctx, shadedNonShadowedObjects);
+		}
+		
+		for (var i = effectiveLights.length - 1; i >= 0; i--) {
+            ctx.light = effectiveLights[i];
+            this.renderListOfObjects(ctx, shadedNonShadowedObjects);
+		}
+
+		// render objects that are not affected by lighting nor by shadows
+		this.renderListOfObjects(ctx, nonShadedNonShadowedObjects);
+
 	} finally {
 		gl.disable(gl.BLEND);
 		if (renderTarget) renderTarget.deactivate();
@@ -7363,3 +7773,18 @@ GG.DefaultSceneRenderer.prototype.renderDepthPrePass = function (visibleObjects,
 	}
 	
 };
+
+GG.DefaultSceneRenderer.prototype.renderListOfObjects = function (renderContext, objectsList) {
+	for (var j = objectsList.length - 1; j >= 0; j--) {
+		var renderable = objectsList[j];						
+		var technique = renderable.getMaterial().getTechnique();
+		technique.render(renderable, renderContext);				
+	}
+}
+
+GG.DefaultSceneRenderer.prototype.renderObjectsWithAmbient = function (renderContext, objectsList) {
+	for (var j = objectsList.length - 1; j >= 0; j--) {
+		var renderable = objectsList[j];								
+		this.ambientTechnique.render(renderable, renderContext);				
+	}
+}

@@ -10,13 +10,16 @@ GG.BaseMaterial = function(spec) {
 	
 	this.specularMap = new GG.TextureUnit({ 'texture' : spec.specularMap, 'unit' : GG.TEX_UNIT_SPECULAR_MAP });
 	this.alphaMap    = new GG.TextureUnit({ 'texture' : spec.alphaMap, 'unit' : GG.TEX_UNIT_ALPHA_MAP });
+
 	this.normalMap   = new GG.TextureUnit({ 'texture' : spec.normalMap, 'unit' : GG.TEX_UNIT_NORMAL_MAP });
 	this.parallaxMap = new GG.TextureUnit({ 'texture' : spec.parallaxMap, 'unit' : GG.TEX_UNIT_PARALLAX_MAP });
-
     this.normalMapScale = 0.0005;
 
 	this.diffuseTextureStack = new GG.TextureStack();
 	
+	this.castsShadows    = spec.castsShadows === undefined ? false : spec.castsShadows;
+	this.receivesShadows = spec.receivesShadows === undefined ? false : spec.receivesShadows;
+
 	this.flatShade       = spec.flatShade != undefined ? spec.flatShade : false;
 	this.phongShade      = spec.phongShade != undefined ? spec.phongShade : true;	
 	this.shadeless       = spec.shadeless != undefined ? spec.shadeless : false;
@@ -34,7 +37,6 @@ GG.BaseMaterial = function(spec) {
 
 	// controls the reflectance using a texture
 	this.glowMap     = spec.glowMap;
-
 
 	// index of refraction 
 	this.IOR             = spec.IOR != undefined ? spec.IOR : [ 1.0, 1.0, 1.0 ];
